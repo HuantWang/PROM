@@ -21,7 +21,7 @@ PROM is  an open-source software framework to enhance the robustness and perform
 
 Prom builds upon:
 
--	Python 3.8
+-	Python 3.7 to 3.9
 -	Mapie 0.8.2
 
 The system was tested on the following operating systems:
