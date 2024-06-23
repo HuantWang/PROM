@@ -1,0 +1,1421 @@
+-----label-----
+1
+-----code-----
+void CWE195_Signed_to_Unsigned_Conversion_Error__connect_socket_malloc_31_bad()
+{
+    int data;
+    /* Initialize data */
+    data = -1;
+    {
+#ifdef _WIN32
+        WSADATA wsaData;
+        int wsaDataInit = 0;
+#endif
+        int recvResult;
+        struct sockaddr_in service;
+        SOCKET connectSocket = INVALID_SOCKET;
+        char inputBuffer[CHAR_ARRAY_SIZE];
+        do
+        {
+#ifdef _WIN32
+            if (WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR)
+            {
+                break;
+            }
+            wsaDataInit = 1;
+#endif
+            /* POTENTIAL FLAW: Read data using a connect socket */
+            connectSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+            if (connectSocket == INVALID_SOCKET)
+            {
+                break;
+            }
+            memset(&service, 0, sizeof(service));
+            service.sin_family = AF_INET;
+            service.sin_addr.s_addr = inet_addr(IP_ADDRESS);
+            service.sin_port = htons(TCP_PORT);
+            if (connect(connectSocket, (struct sockaddr*)&service, sizeof(service)) == SOCKET_ERROR)
+            {
+                break;
+            }
+            /* Abort on error or the connection was closed, make sure to recv one
+             * less char than is in the recv_buf in order to append a terminator */
+            recvResult = recv(connectSocket, inputBuffer, CHAR_ARRAY_SIZE - 1, 0);
+            if (recvResult == SOCKET_ERROR || recvResult == 0)
+            {
+                break;
+            }
+            /* NUL-terminate the string */
+            inputBuffer[recvResult] = '\0';
+            /* Convert to int */
+            data = atoi(inputBuffer);
+        }
+        while (0);
+        if (connectSocket != INVALID_SOCKET)
+        {
+            CLOSE_SOCKET(connectSocket);
+        }
+#ifdef _WIN32
+        if (wsaDataInit)
+        {
+            WSACleanup();
+        }
+#endif
+    }
+    {
+        int dataCopy = data;
+        int data = dataCopy;
+        /* Assume we want to allocate a relatively small buffer */
+        if (data < 100)
+        {
+            /* POTENTIAL FLAW: malloc() takes a size_t (unsigned int) as input and therefore if it is negative,
+             * the conversion will cause malloc() to allocate a very large amount of data or fail */
+            char * dataBuffer = (char *)malloc(data);
+            if (dataBuffer == NULL) {exit(-1);}
+            /* Do something with dataBuffer */
+            memset(dataBuffer, 'A', data-1);
+            dataBuffer[data-1] = '\0';
+            printLine(dataBuffer);
+            free(dataBuffer);
+        }
+    }
+}
+-----children-----
+1,2
+1,3
+1,4
+3,4
+5,6
+5,7
+5,8
+5,9
+6,7
+7,8
+7,9
+9,10
+11,12
+12,13
+12,14
+13,14
+15,16
+17,18
+17,19
+17,20
+17,21
+17,22
+17,23
+18,19
+19,20
+19,21
+21,22
+23,24
+24,25
+24,26
+25,26
+27,28
+29,30
+30,31
+30,32
+31,32
+33,34
+33,35
+35,36
+36,37
+38,39
+39,40
+39,41
+41,42
+41,43
+43,44
+44,45
+46,47
+46,48
+47,48
+47,49
+47,50
+47,51
+47,52
+47,53
+47,54
+47,55
+47,56
+47,57
+47,58
+48,49
+49,50
+49,51
+50,51
+52,53
+52,54
+52,55
+52,56
+53,54
+55,56
+57,58
+59,60
+61,62
+61,63
+62,63
+62,64
+63,64
+65,66
+67,68
+69,70
+70,71
+70,72
+70,73
+70,74
+71,72
+73,74
+74,75
+77,78
+78,79
+79,80
+81,82
+82,83
+82,84
+83,84
+83,85
+84,85
+87,88
+89,90
+90,91
+90,92
+91,92
+91,93
+92,93
+92,94
+93,94
+97,98
+97,99
+98,99
+100,101
+102,103
+103,104
+103,105
+104,105
+104,106
+105,106
+108,109
+108,110
+109,110
+111,112
+113,114
+113,115
+114,115
+114,116
+115,116
+115,117
+115,118
+115,119
+116,117
+118,119
+120,121
+120,122
+121,122
+121,123
+122,123
+124,125
+126,127
+127,128
+129,130
+130,131
+131,132
+133,134
+135,136
+137,138
+138,139
+138,140
+139,140
+141,142
+141,143
+141,144
+141,145
+141,146
+142,143
+144,145
+146,147
+148,149
+148,150
+149,150
+153,154
+153,155
+154,155
+154,156
+155,156
+155,157
+156,157
+158,159
+160,161
+160,162
+161,162
+164,165
+166,167
+167,168
+167,169
+168,169
+168,170
+169,170
+171,172
+174,175
+175,176
+175,177
+176,177
+178,179
+178,180
+179,180
+181,182
+184,185
+184,186
+185,186
+185,187
+186,187
+188,189
+190,191
+191,192
+192,193
+192,194
+193,194
+195,196
+197,198
+197,199
+197,200
+198,199
+199,200
+199,201
+201,202
+201,203
+203,204
+204,205
+206,207
+207,208
+207,209
+209,210
+209,211
+211,212
+212,213
+214,215
+214,216
+215,216
+215,217
+216,217
+219,220
+219,221
+219,222
+219,223
+219,224
+219,225
+220,221
+221,222
+221,223
+223,224
+223,225
+223,226
+226,227
+227,228
+227,229
+228,229
+228,230
+230,231
+232,233
+232,234
+233,234
+235,236
+237,238
+237,239
+238,239
+238,240
+239,240
+241,242
+243,244
+244,245
+245,246
+245,247
+246,247
+248,249
+250,251
+251,252
+251,253
+251,254
+251,255
+252,253
+254,255
+257,258
+257,259
+258,259
+261,262
+262,263
+262,264
+263,264
+263,265
+264,265
+266,267
+266,268
+267,268
+271,272
+272,273
+272,274
+273,274
+275,276
+277,278
+278,279
+278,280
+279,280
+281,282
+-----nextToken-----
+2,4,8,10,14,16,20,22,26,28,32,34,37,40,42,45,51,54,56,58,60,64,66,68,72,75,76,80,85,86,88,94,95,96,99,101,106,107,110,112,117,119,123,125,128,132,134,136,140,143,145,147,150,151,152,157,159,162,163,165,170,172,173,177,180,182,183,187,189,194,196,200,202,205,208,210,213,217,218,222,224,225,229,231,234,236,240,242,247,249,253,255,256,259,260,265,268,269,270,274,276,280,282
+-----computeFrom-----
+12,13
+12,14
+49,50
+49,51
+62,63
+62,64
+82,83
+82,84
+90,91
+90,92
+103,104
+103,105
+114,115
+114,116
+138,139
+138,140
+148,149
+148,150
+154,155
+154,156
+155,156
+155,157
+160,161
+160,162
+167,168
+167,169
+175,176
+175,177
+185,186
+185,187
+215,216
+215,217
+238,239
+238,240
+257,258
+257,259
+262,263
+262,264
+266,267
+266,268
+-----guardedBy-----
+187,196
+217,268
+-----guardedByNegation-----
+-----lastLexicalUse-----
+-----jump-----
+-----attribute-----
+FunctionDefinition;SimpleDeclSpecifier;FunctionDeclarator;Name;CompoundStatement;DeclarationStatement;SimpleDeclaration;SimpleDeclSpecifier;Declarator;Name;ExpressionStatement;BinaryExpression;IdExpression;Name;UnaryExpression;LiteralExpression;CompoundStatement;DeclarationStatement;SimpleDeclaration;SimpleDeclSpecifier;Declarator;Name;DeclarationStatement;SimpleDeclaration;ElaboratedTypeSpecifier;Name;Declarator;Name;DeclarationStatement;SimpleDeclaration;NamedTypeSpecifier;Name;Declarator;Name;EqualsInitializer;IdExpression;Name;DeclarationStatement;SimpleDeclaration;SimpleDeclSpecifier;ArrayDeclarator;Name;ArrayModifier;IdExpression;Name;DoStatement;CompoundStatement;ExpressionStatement;BinaryExpression;IdExpression;Name;FunctionCallExpression;IdExpression;Name;IdExpression;Name;IdExpression;Name;IdExpression;Name;IfStatement;BinaryExpression;IdExpression;Name;IdExpression;Name;CompoundStatement;BreakStatement;ExpressionStatement;FunctionCallExpression;IdExpression;Name;UnaryExpression;IdExpression;Name;LiteralExpression;UnaryExpression;UnaryExpression;IdExpression;Name;ExpressionStatement;BinaryExpression;FieldReference;IdExpression;Name;Name;IdExpression;Name;ExpressionStatement;BinaryExpression;FieldReference;FieldReference;IdExpression;Name;Name;Name;FunctionCallExpression;IdExpression;Name;IdExpression;Name;ExpressionStatement;BinaryExpression;FieldReference;IdExpression;Name;Name;FunctionCallExpression;IdExpression;Name;IdExpression;Name;IfStatement;BinaryExpression;FunctionCallExpression;IdExpression;Name;IdExpression;Name;CastExpression;TypeId;ElaboratedTypeSpecifier;Name;Declarator;Pointer;UnaryExpression;IdExpression;Name;UnaryExpression;UnaryExpression;IdExpression;Name;IdExpression;Name;CompoundStatement;BreakStatement;ExpressionStatement;BinaryExpression;IdExpression;Name;FunctionCallExpression;IdExpression;Name;IdExpression;Name;IdExpression;Name;BinaryExpression;IdExpression;Name;LiteralExpression;LiteralExpression;IfStatement;BinaryExpression;BinaryExpression;IdExpression;Name;IdExpression;Name;BinaryExpression;IdExpression;Name;LiteralExpression;CompoundStatement;BreakStatement;ExpressionStatement;BinaryExpression;ArraySubscriptExpression;IdExpression;Name;IdExpression;Name;LiteralExpression;ExpressionStatement;BinaryExpression;IdExpression;Name;FunctionCallExpression;IdExpression;Name;IdExpression;Name;LiteralExpression;IfStatement;BinaryExpression;IdExpression;Name;IdExpression;Name;CompoundStatement;ExpressionStatement;FunctionCallExpression;IdExpression;Name;IdExpression;Name;CompoundStatement;DeclarationStatement;SimpleDeclaration;SimpleDeclSpecifier;Declarator;Name;EqualsInitializer;IdExpression;Name;DeclarationStatement;SimpleDeclaration;SimpleDeclSpecifier;Declarator;Name;EqualsInitializer;IdExpression;Name;IfStatement;BinaryExpression;IdExpression;Name;LiteralExpression;CompoundStatement;DeclarationStatement;SimpleDeclaration;SimpleDeclSpecifier;Declarator;Pointer;Name;EqualsInitializer;CastExpression;TypeId;SimpleDeclSpecifier;Declarator;Pointer;FunctionCallExpression;IdExpression;Name;IdExpression;Name;IfStatement;BinaryExpression;IdExpression;Name;IdExpression;Name;CompoundStatement;ExpressionStatement;FunctionCallExpression;IdExpression;Name;UnaryExpression;LiteralExpression;ExpressionStatement;FunctionCallExpression;IdExpression;Name;IdExpression;Name;LiteralExpression;BinaryExpression;IdExpression;Name;LiteralExpression;ExpressionStatement;BinaryExpression;ArraySubscriptExpression;IdExpression;Name;BinaryExpression;IdExpression;Name;LiteralExpression;LiteralExpression;ExpressionStatement;FunctionCallExpression;IdExpression;Name;IdExpression;Name;ExpressionStatement;FunctionCallExpression;IdExpression;Name;IdExpression;Name;
+-----ast_node-----
+void CWE195_Signed_to_Unsigned_Conversion_Error__connect_socket_malloc_31_bad(){    int data;    /* Initialize data */    data = -1;    {#ifdef _WIN32        WSADATA wsaData;        int wsaDataInit = 0;#endif        int recvResult;        struct sockaddr_in service;        SOCKET connectSocket = INVALID_SOCKET;        char inputBuffer[CHAR_ARRAY_SIZE];        do        {#ifdef _WIN32            if (WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR)            {                break;            }            wsaDataInit = 1;#endif            /* POTENTIAL FLAW: Read data using a connect socket */            connectSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);            if (connectSocket == INVALID_SOCKET)            {                break;            }            memset(&service, 0, sizeof(service));            service.sin_family = AF_INET;            service.sin_addr.s_addr = inet_addr(IP_ADDRESS);            service.sin_port = htons(TCP_PORT);            if (connect(connectSocket, (struct sockaddr*)&service, sizeof(service)) == SOCKET_ERROR)            {                break;            }            /* Abort on error or the connection was closed, make sure to recv one             * less char than is in the recv_buf in order to append a terminator */            recvResult = recv(connectSocket, inputBuffer, CHAR_ARRAY_SIZE - 1, 0);            if (recvResult == SOCKET_ERROR || recvResult == 0)            {                break;            }            /* NUL-terminate the string */            inputBuffer[recvResult] = '\0';            /* Convert to int */            data = atoi(inputBuffer);        }        while (0);        if (connectSocket != INVALID_SOCKET)        {            CLOSE_SOCKET(connectSocket);        }#ifdef _WIN32        if (wsaDataInit)        {            WSACleanup();        }#endif    }    {        int dataCopy = data;        int data = dataCopy;        /* Assume we want to allocate a relatively small buffer */        if (data < 100)        {            /* POTENTIAL FLAW: malloc() takes a size_t (unsigned int) as input and therefore if it is negative,             * the conversion will cause malloc() to allocate a very large amount of data or fail */            char * dataBuffer = (char *)malloc(data);            if (dataBuffer == NULL) {exit(-1);}            /* Do something with dataBuffer */            memset(dataBuffer, 'A', data-1);            dataBuffer[data-1] = '\0';            printLine(dataBuffer);            free(dataBuffer);        }    }}
+void
+CWE195_Signed_to_Unsigned_Conversion_Error__connect_socket_malloc_31_bad()
+CWE195_Signed_to_Unsigned_Conversion_Error__connect_socket_malloc_31_bad
+{    int data;    /* Initialize data */    data = -1;    {#ifdef _WIN32        WSADATA wsaData;        int wsaDataInit = 0;#endif        int recvResult;        struct sockaddr_in service;        SOCKET connectSocket = INVALID_SOCKET;        char inputBuffer[CHAR_ARRAY_SIZE];        do        {#ifdef _WIN32            if (WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR)            {                break;            }            wsaDataInit = 1;#endif            /* POTENTIAL FLAW: Read data using a connect socket */            connectSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);            if (connectSocket == INVALID_SOCKET)            {                break;            }            memset(&service, 0, sizeof(service));            service.sin_family = AF_INET;            service.sin_addr.s_addr = inet_addr(IP_ADDRESS);            service.sin_port = htons(TCP_PORT);            if (connect(connectSocket, (struct sockaddr*)&service, sizeof(service)) == SOCKET_ERROR)            {                break;            }            /* Abort on error or the connection was closed, make sure to recv one             * less char than is in the recv_buf in order to append a terminator */            recvResult = recv(connectSocket, inputBuffer, CHAR_ARRAY_SIZE - 1, 0);            if (recvResult == SOCKET_ERROR || recvResult == 0)            {                break;            }            /* NUL-terminate the string */            inputBuffer[recvResult] = '\0';            /* Convert to int */            data = atoi(inputBuffer);        }        while (0);        if (connectSocket != INVALID_SOCKET)        {            CLOSE_SOCKET(connectSocket);        }#ifdef _WIN32        if (wsaDataInit)        {            WSACleanup();        }#endif    }    {        int dataCopy = data;        int data = dataCopy;        /* Assume we want to allocate a relatively small buffer */        if (data < 100)        {            /* POTENTIAL FLAW: malloc() takes a size_t (unsigned int) as input and therefore if it is negative,             * the conversion will cause malloc() to allocate a very large amount of data or fail */            char * dataBuffer = (char *)malloc(data);            if (dataBuffer == NULL) {exit(-1);}            /* Do something with dataBuffer */            memset(dataBuffer, 'A', data-1);            dataBuffer[data-1] = '\0';            printLine(dataBuffer);            free(dataBuffer);        }    }}
+int data;
+int data;
+int
+data
+data
+data = -1;
+data = -1
+data
+data
+-1
+1
+{#ifdef _WIN32        WSADATA wsaData;        int wsaDataInit = 0;#endif        int recvResult;        struct sockaddr_in service;        SOCKET connectSocket = INVALID_SOCKET;        char inputBuffer[CHAR_ARRAY_SIZE];        do        {#ifdef _WIN32            if (WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR)            {                break;            }            wsaDataInit = 1;#endif            /* POTENTIAL FLAW: Read data using a connect socket */            connectSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);            if (connectSocket == INVALID_SOCKET)            {                break;            }            memset(&service, 0, sizeof(service));            service.sin_family = AF_INET;            service.sin_addr.s_addr = inet_addr(IP_ADDRESS);            service.sin_port = htons(TCP_PORT);            if (connect(connectSocket, (struct sockaddr*)&service, sizeof(service)) == SOCKET_ERROR)            {                break;            }            /* Abort on error or the connection was closed, make sure to recv one             * less char than is in the recv_buf in order to append a terminator */            recvResult = recv(connectSocket, inputBuffer, CHAR_ARRAY_SIZE - 1, 0);            if (recvResult == SOCKET_ERROR || recvResult == 0)            {                break;            }            /* NUL-terminate the string */            inputBuffer[recvResult] = '\0';            /* Convert to int */            data = atoi(inputBuffer);        }        while (0);        if (connectSocket != INVALID_SOCKET)        {            CLOSE_SOCKET(connectSocket);        }#ifdef _WIN32        if (wsaDataInit)        {            WSACleanup();        }#endif    }
+int recvResult;
+int recvResult;
+int
+recvResult
+recvResult
+struct sockaddr_in service;
+struct sockaddr_in service;
+struct sockaddr_in
+sockaddr_in
+service
+service
+SOCKET connectSocket = INVALID_SOCKET;
+SOCKET connectSocket = INVALID_SOCKET;
+SOCKET
+SOCKET
+connectSocket = INVALID_SOCKET
+connectSocket
+= INVALID_SOCKET
+INVALID_SOCKET
+INVALID_SOCKET
+char inputBuffer[CHAR_ARRAY_SIZE];
+char inputBuffer[CHAR_ARRAY_SIZE];
+char
+inputBuffer[CHAR_ARRAY_SIZE]
+inputBuffer
+[CHAR_ARRAY_SIZE]
+CHAR_ARRAY_SIZE
+CHAR_ARRAY_SIZE
+do        {#ifdef _WIN32            if (WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR)            {                break;            }            wsaDataInit = 1;#endif            /* POTENTIAL FLAW: Read data using a connect socket */            connectSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);            if (connectSocket == INVALID_SOCKET)            {                break;            }            memset(&service, 0, sizeof(service));            service.sin_family = AF_INET;            service.sin_addr.s_addr = inet_addr(IP_ADDRESS);            service.sin_port = htons(TCP_PORT);            if (connect(connectSocket, (struct sockaddr*)&service, sizeof(service)) == SOCKET_ERROR)            {                break;            }            /* Abort on error or the connection was closed, make sure to recv one             * less char than is in the recv_buf in order to append a terminator */            recvResult = recv(connectSocket, inputBuffer, CHAR_ARRAY_SIZE - 1, 0);            if (recvResult == SOCKET_ERROR || recvResult == 0)            {                break;            }            /* NUL-terminate the string */            inputBuffer[recvResult] = '\0';            /* Convert to int */            data = atoi(inputBuffer);        }        while (0);
+{#ifdef _WIN32            if (WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR)            {                break;            }            wsaDataInit = 1;#endif            /* POTENTIAL FLAW: Read data using a connect socket */            connectSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);            if (connectSocket == INVALID_SOCKET)            {                break;            }            memset(&service, 0, sizeof(service));            service.sin_family = AF_INET;            service.sin_addr.s_addr = inet_addr(IP_ADDRESS);            service.sin_port = htons(TCP_PORT);            if (connect(connectSocket, (struct sockaddr*)&service, sizeof(service)) == SOCKET_ERROR)            {                break;            }            /* Abort on error or the connection was closed, make sure to recv one             * less char than is in the recv_buf in order to append a terminator */            recvResult = recv(connectSocket, inputBuffer, CHAR_ARRAY_SIZE - 1, 0);            if (recvResult == SOCKET_ERROR || recvResult == 0)            {                break;            }            /* NUL-terminate the string */            inputBuffer[recvResult] = '\0';            /* Convert to int */            data = atoi(inputBuffer);        }
+connectSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+connectSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)
+connectSocket
+connectSocket
+socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)
+socket
+socket
+AF_INET
+AF_INET
+SOCK_STREAM
+SOCK_STREAM
+IPPROTO_TCP
+IPPROTO_TCP
+if (connectSocket == INVALID_SOCKET)            {                break;            }
+connectSocket == INVALID_SOCKET
+connectSocket
+connectSocket
+INVALID_SOCKET
+INVALID_SOCKET
+{                break;            }
+break;
+memset(&service, 0, sizeof(service));
+memset(&service, 0, sizeof(service))
+memset
+memset
+&service
+service
+service
+0
+sizeof(service)
+(service)
+service
+service
+service.sin_family = AF_INET;
+service.sin_family = AF_INET
+service.sin_family
+service
+service
+sin_family
+AF_INET
+AF_INET
+service.sin_addr.s_addr = inet_addr(IP_ADDRESS);
+service.sin_addr.s_addr = inet_addr(IP_ADDRESS)
+service.sin_addr.s_addr
+service.sin_addr
+service
+service
+sin_addr
+s_addr
+inet_addr(IP_ADDRESS)
+inet_addr
+inet_addr
+IP_ADDRESS
+IP_ADDRESS
+service.sin_port = htons(TCP_PORT);
+service.sin_port = htons(TCP_PORT)
+service.sin_port
+service
+service
+sin_port
+htons(TCP_PORT)
+htons
+htons
+TCP_PORT
+TCP_PORT
+if (connect(connectSocket, (struct sockaddr*)&service, sizeof(service)) == SOCKET_ERROR)            {                break;            }
+connect(connectSocket, (struct sockaddr*)&service, sizeof(service)) == SOCKET_ERROR
+connect(connectSocket, (struct sockaddr*)&service, sizeof(service))
+connect
+connect
+connectSocket
+connectSocket
+(struct sockaddr*)&service
+struct sockaddr*
+struct sockaddr
+sockaddr
+*
+*
+&service
+service
+service
+sizeof(service)
+(service)
+service
+service
+SOCKET_ERROR
+SOCKET_ERROR
+{                break;            }
+break;
+recvResult = recv(connectSocket, inputBuffer, CHAR_ARRAY_SIZE - 1, 0);
+recvResult = recv(connectSocket, inputBuffer, CHAR_ARRAY_SIZE - 1, 0)
+recvResult
+recvResult
+recv(connectSocket, inputBuffer, CHAR_ARRAY_SIZE - 1, 0)
+recv
+recv
+connectSocket
+connectSocket
+inputBuffer
+inputBuffer
+CHAR_ARRAY_SIZE - 1
+CHAR_ARRAY_SIZE
+CHAR_ARRAY_SIZE
+1
+0
+if (recvResult == SOCKET_ERROR || recvResult == 0)            {                break;            }
+recvResult == SOCKET_ERROR || recvResult == 0
+recvResult == SOCKET_ERROR
+recvResult
+recvResult
+SOCKET_ERROR
+SOCKET_ERROR
+recvResult == 0
+recvResult
+recvResult
+0
+{                break;            }
+break;
+inputBuffer[recvResult] = '\0';
+inputBuffer[recvResult] = '\0'
+inputBuffer[recvResult]
+inputBuffer
+inputBuffer
+recvResult
+recvResult
+'\0'
+data = atoi(inputBuffer);
+data = atoi(inputBuffer)
+data
+data
+atoi(inputBuffer)
+atoi
+atoi
+inputBuffer
+inputBuffer
+0
+if (connectSocket != INVALID_SOCKET)        {            CLOSE_SOCKET(connectSocket);        }
+connectSocket != INVALID_SOCKET
+connectSocket
+connectSocket
+INVALID_SOCKET
+INVALID_SOCKET
+{            CLOSE_SOCKET(connectSocket);        }
+CLOSE_SOCKET(connectSocket);
+CLOSE_SOCKET(connectSocket)
+CLOSE_SOCKET
+CLOSE_SOCKET
+connectSocket
+connectSocket
+{        int dataCopy = data;        int data = dataCopy;        /* Assume we want to allocate a relatively small buffer */        if (data < 100)        {            /* POTENTIAL FLAW: malloc() takes a size_t (unsigned int) as input and therefore if it is negative,             * the conversion will cause malloc() to allocate a very large amount of data or fail */            char * dataBuffer = (char *)malloc(data);            if (dataBuffer == NULL) {exit(-1);}            /* Do something with dataBuffer */            memset(dataBuffer, 'A', data-1);            dataBuffer[data-1] = '\0';            printLine(dataBuffer);            free(dataBuffer);        }    }
+int dataCopy = data;
+int dataCopy = data;
+int
+dataCopy = data
+dataCopy
+= data
+data
+data
+int data = dataCopy;
+int data = dataCopy;
+int
+data = dataCopy
+data
+= dataCopy
+dataCopy
+dataCopy
+if (data < 100)        {            /* POTENTIAL FLAW: malloc() takes a size_t (unsigned int) as input and therefore if it is negative,             * the conversion will cause malloc() to allocate a very large amount of data or fail */            char * dataBuffer = (char *)malloc(data);            if (dataBuffer == NULL) {exit(-1);}            /* Do something with dataBuffer */            memset(dataBuffer, 'A', data-1);            dataBuffer[data-1] = '\0';            printLine(dataBuffer);            free(dataBuffer);        }
+data < 100
+data
+data
+100
+{            /* POTENTIAL FLAW: malloc() takes a size_t (unsigned int) as input and therefore if it is negative,             * the conversion will cause malloc() to allocate a very large amount of data or fail */            char * dataBuffer = (char *)malloc(data);            if (dataBuffer == NULL) {exit(-1);}            /* Do something with dataBuffer */            memset(dataBuffer, 'A', data-1);            dataBuffer[data-1] = '\0';            printLine(dataBuffer);            free(dataBuffer);        }
+char * dataBuffer = (char *)malloc(data);
+char * dataBuffer = (char *)malloc(data);
+char
+* dataBuffer = (char *)malloc(data)
+*
+dataBuffer
+= (char *)malloc(data)
+(char *)malloc(data)
+char *
+char
+*
+*
+malloc(data)
+malloc
+malloc
+data
+data
+if (dataBuffer == NULL) {exit(-1);}
+dataBuffer == NULL
+dataBuffer
+dataBuffer
+NULL
+NULL
+{exit(-1);}
+exit(-1);
+exit(-1)
+exit
+exit
+-1
+1
+memset(dataBuffer, 'A', data-1);
+memset(dataBuffer, 'A', data-1)
+memset
+memset
+dataBuffer
+dataBuffer
+'A'
+data-1
+data
+data
+1
+dataBuffer[data-1] = '\0';
+dataBuffer[data-1] = '\0'
+dataBuffer[data-1]
+dataBuffer
+dataBuffer
+data-1
+data
+data
+1
+'\0'
+printLine(dataBuffer);
+printLine(dataBuffer)
+printLine
+printLine
+dataBuffer
+dataBuffer
+free(dataBuffer);
+free(dataBuffer)
+free
+free
+dataBuffer
+dataBuffer
+-----joern-----
+(116,29,0)
+(52,32,0)
+(86,109,0)
+(35,32,0)
+(107,177,0)
+(99,176,0)
+(43,130,0)
+(151,4,0)
+(146,148,0)
+(29,107,0)
+(67,31,0)
+(114,90,0)
+(107,29,0)
+(1,73,0)
+(150,82,0)
+(70,10,0)
+(94,37,0)
+(76,74,0)
+(21,74,0)
+(0,150,0)
+(69,22,0)
+(177,107,0)
+(95,62,0)
+(64,106,0)
+(41,13,0)
+(38,32,0)
+(34,175,0)
+(83,4,0)
+(149,144,0)
+(26,151,0)
+(167,106,0)
+(127,1,0)
+(20,160,0)
+(156,13,0)
+(45,32,0)
+(54,175,0)
+(16,120,0)
+(120,150,0)
+(78,34,0)
+(79,4,0)
+(177,150,0)
+(28,83,0)
+(158,62,0)
+(41,71,0)
+(91,71,0)
+(19,10,0)
+(10,70,0)
+(92,40,0)
+(109,167,0)
+(57,175,0)
+(73,1,0)
+(100,4,0)
+(126,177,0)
+(6,173,0)
+(46,32,0)
+(168,72,0)
+(122,71,0)
+(142,113,0)
+(128,10,0)
+(49,42,0)
+(154,93,0)
+(141,9,0)
+(47,85,0)
+(53,101,0)
+(48,120,0)
+(8,11,0)
+(117,75,0)
+(77,98,0)
+(57,75,0)
+(81,80,0)
+(109,41,0)
+(73,160,0)
+(22,69,0)
+(74,70,0)
+(118,157,0)
+(134,176,0)
+(70,4,0)
+(22,18,0)
+(139,95,0)
+(90,118,0)
+(152,138,0)
+(162,95,0)
+(125,71,0)
+(111,79,0)
+(90,70,0)
+(87,32,0)
+(159,80,0)
+(85,118,0)
+(79,93,0)
+(145,144,0)
+(171,177,0)
+(163,138,0)
+(84,4,0)
+(157,118,0)
+(172,30,0)
+(90,114,0)
+(118,90,0)
+(80,4,0)
+(31,175,0)
+(13,22,0)
+(108,25,0)
+(153,1,0)
+(59,121,0)
+(123,32,0)
+(74,138,0)
+(119,10,0)
+(44,96,0)
+(120,84,0)
+(170,42,0)
+(42,32,0)
+(13,80,0)
+(15,32,0)
+(90,55,0)
+(147,55,0)
+(58,57,0)
+(75,25,0)
+(40,134,0)
+(151,26,0)
+(75,57,0)
+(7,90,0)
+(140,29,0)
+(3,82,0)
+(65,81,0)
+(32,18,0)
+(63,4,0)
+(39,94,0)
+(155,34,0)
+(93,79,0)
+(68,175,0)
+(131,99,0)
+(34,57,0)
+(94,70,0)
+(135,4,0)
+(13,71,0)
+(24,82,0)
+(151,9,0)
+(129,111,0)
+(164,82,0)
+(89,13,0)
+(80,81,0)
+(176,4,0)
+(31,57,0)
+(72,41,0)
+(176,99,0)
+(61,56,0)
+(23,84,0)
+(9,151,0)
+(112,5,0)
+(2,148,0)
+(110,72,0)
+(75,117,0)
+(27,70,0)
+(94,138,0)
+(60,111,0)
+(112,96,0)
+(30,175,0)
+(167,57,0)
+(138,32,0)
+(29,150,0)
+(73,130,0)
+(62,4,0)
+(161,98,0)
+(121,41,0)
+(133,151,0)
+(130,73,0)
+(124,18,0)
+(51,41,0)
+(169,32,0)
+(118,85,0)
+(71,18,0)
+(98,70,0)
+(103,121,0)
+(121,34,0)
+(106,175,0)
+(167,109,0)
+(105,41,0)
+(136,134,0)
+(55,90,0)
+(30,57,0)
+(148,82,0)
+(150,4,0)
+(25,75,0)
+(144,57,0)
+(33,22,0)
+(134,40,0)
+(36,26,0)
+(82,150,0)
+(66,83,0)
+(104,114,0)
+(96,112,0)
+(17,4,0)
+(160,73,0)
+(14,109,0)
+(50,69,0)
+(82,70,0)
+(82,148,0)
+(115,40,0)
+(34,121,0)
+(88,167,0)
+(25,41,0)
+(82,148,1)
+(72,110,1)
+(140,116,1)
+(144,145,1)
+(26,36,1)
+(88,34,1)
+(21,142,1)
+(23,120,1)
+(0,114,1)
+(171,126,1)
+(164,0,1)
+(170,49,1)
+(141,133,1)
+(115,62,1)
+(118,157,1)
+(57,75,1)
+(111,60,1)
+(98,70,1)
+(136,40,1)
+(80,81,1)
+(82,70,1)
+(55,147,1)
+(85,47,1)
+(90,70,1)
+(158,95,1)
+(177,171,1)
+(13,22,1)
+(25,41,1)
+(60,129,1)
+(114,90,1)
+(31,67,1)
+(29,140,1)
+(167,109,1)
+(43,1,1)
+(50,33,1)
+(44,144,1)
+(72,41,1)
+(108,58,1)
+(13,80,1)
+(67,30,1)
+(20,73,1)
+(30,57,1)
+(94,70,1)
+(69,50,1)
+(36,98,1)
+(83,28,1)
+(9,141,1)
+(112,96,1)
+(176,99,1)
+(103,78,1)
+(31,57,1)
+(134,40,1)
+(6,12,1)
+(42,170,1)
+(109,41,1)
+(73,130,1)
+(82,24,1)
+(13,156,1)
+(30,172,1)
+(70,10,1)
+(114,104,1)
+(76,21,1)
+(133,26,1)
+(21,61,1)
+(21,174,1)
+(160,20,1)
+(65,159,1)
+(161,77,1)
+(73,1,1)
+(107,177,1)
+(75,25,1)
+(110,168,1)
+(139,151,1)
+(155,112,1)
+(129,176,1)
+(104,90,1)
+(59,103,1)
+(168,41,1)
+(142,114,1)
+(107,29,1)
+(172,106,1)
+(49,22,1)
+(24,148,1)
+(81,65,1)
+(160,73,1)
+(8,98,1)
+(159,84,1)
+(163,152,1)
+(75,117,1)
+(95,162,1)
+(12,94,1)
+(74,138,1)
+(120,150,1)
+(165,72,1)
+(94,138,1)
+(151,9,1)
+(27,83,1)
+(12,74,1)
+(167,57,1)
+(147,118,1)
+(174,80,1)
+(39,74,1)
+(99,131,1)
+(98,161,1)
+(77,70,1)
+(34,57,1)
+(109,86,1)
+(25,108,1)
+(165,31,1)
+(10,128,1)
+(148,2,1)
+(66,160,1)
+(153,127,1)
+(47,7,1)
+(29,150,1)
+(127,138,1)
+(78,155,1)
+(150,82,1)
+(62,158,1)
+(90,118,1)
+(162,139,1)
+(96,44,1)
+(19,119,1)
+(22,69,1)
+(154,111,1)
+(86,14,1)
+(16,107,1)
+(151,26,1)
+(131,134,1)
+(51,13,1)
+(3,164,1)
+(145,149,1)
+(134,136,1)
+(74,70,1)
+(53,160,1)
+(89,6,1)
+(155,144,1)
+(14,88,1)
+(146,3,1)
+(177,150,1)
+(126,150,1)
+(28,66,1)
+(128,19,1)
+(138,163,1)
+(34,121,1)
+(121,59,1)
+(1,153,1)
+(21,53,1)
+(90,55,1)
+(127,174,1)
+(93,154,1)
+(48,16,1)
+(92,115,1)
+(2,146,1)
+(21,8,1)
+(118,85,1)
+(156,89,1)
+(149,57,1)
+(105,51,1)
+(89,12,1)
+(120,48,1)
+(58,72,1)
+(41,13,1)
+(7,79,1)
+(64,167,1)
+(116,177,1)
+(94,39,1)
+(61,107,1)
+(152,42,1)
+(41,105,1)
+(84,23,1)
+(119,27,1)
+(106,64,1)
+(121,41,1)
+(144,57,1)
+(74,76,1)
+(79,93,1)
+(40,92,1)
+(130,43,1)
+(114,90,2)
+(29,177,2)
+(134,98,2)
+(129,98,2)
+(162,98,2)
+(94,74,2)
+(0,114,2)
+(94,70,2)
+(131,98,2)
+(73,130,2)
+(114,98,2)
+(75,72,2)
+(177,114,2)
+(93,98,2)
+(22,69,2)
+(82,148,2)
+(92,98,2)
+(20,174,2)
+(70,160,2)
+(177,150,2)
+(26,98,2)
+(107,177,2)
+(88,72,2)
+(148,114,2)
+(31,57,2)
+(108,72,2)
+(34,121,2)
+(112,96,2)
+(95,98,2)
+(64,72,2)
+(57,75,2)
+(90,55,2)
+(8,98,2)
+(176,98,2)
+(128,160,2)
+(151,26,2)
+(25,72,2)
+(86,72,2)
+(171,114,2)
+(151,98,2)
+(74,138,2)
+(155,72,2)
+(94,138,2)
+(75,25,2)
+(34,57,2)
+(167,72,2)
+(99,98,2)
+(25,41,2)
+(13,22,2)
+(119,160,2)
+(150,114,2)
+(134,40,2)
+(55,98,2)
+(62,98,2)
+(61,107,2)
+(147,98,2)
+(30,72,2)
+(164,114,2)
+(144,72,2)
+(82,70,2)
+(90,118,2)
+(80,81,2)
+(29,150,2)
+(140,177,2)
+(47,98,2)
+(6,12,2)
+(73,1,2)
+(158,98,2)
+(118,98,2)
+(167,109,2)
+(79,98,2)
+(3,114,2)
+(112,144,2)
+(80,107,2)
+(160,73,2)
+(44,144,2)
+(36,98,2)
+(16,107,2)
+(78,72,2)
+(107,114,2)
+(28,160,2)
+(13,80,2)
+(133,98,2)
+(141,98,2)
+(98,70,2)
+(145,72,2)
+(9,98,2)
+(19,160,2)
+(67,72,2)
+(142,114,2)
+(14,72,2)
+(31,72,2)
+(74,70,2)
+(116,177,2)
+(43,174,2)
+(98,160,2)
+(40,98,2)
+(75,117,2)
+(39,74,2)
+(153,174,2)
+(161,160,2)
+(70,10,2)
+(115,98,2)
+(77,160,2)
+(109,41,2)
+(23,107,2)
+(121,41,2)
+(174,107,2)
+(1,174,2)
+(159,107,2)
+(53,160,2)
+(130,174,2)
+(41,13,2)
+(27,160,2)
+(10,160,2)
+(66,160,2)
+(65,107,2)
+(7,98,2)
+(82,114,2)
+(126,114,2)
+(2,114,2)
+(167,57,2)
+(73,174,2)
+(48,107,2)
+(118,157,2)
+(60,98,2)
+(24,114,2)
+(58,72,2)
+(79,93,2)
+(90,98,2)
+(90,70,2)
+(151,9,2)
+(30,57,2)
+(72,41,2)
+(154,98,2)
+(146,114,2)
+(109,72,2)
+(59,72,2)
+(160,174,2)
+(118,85,2)
+(104,98,2)
+(120,107,2)
+(121,72,2)
+(107,29,2)
+(136,98,2)
+(84,107,2)
+(103,72,2)
+(176,99,2)
+(96,144,2)
+(139,98,2)
+(149,72,2)
+(57,72,2)
+(150,82,2)
+(85,98,2)
+(34,72,2)
+(111,98,2)
+(83,160,2)
+(127,174,2)
+(144,57,2)
+(172,72,2)
+(81,107,2)
+(106,72,2)
+(120,150,2)
+-----------------------------------
+(0,recvResult)
+(1,MAKEWORD(2,2)
+(2,1)
+(3,inputBuffer)
+(4,)
+(5,)
+(6,WSACleanup()
+(7,connectSocket)
+(8,break;)
+(9,sizeof(service)
+(10,socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)
+(11,)
+(12,wsaDataInit)
+(13,dataCopy = data)
+(14,data)
+(15,wsaDataInit)
+(16,inputBuffer)
+(17,if (connectSocket == INVALID_SOCKET)
+(18,)
+(19,SOCK_STREAM)
+(20,NO_ERROR)
+(21,connectSocket)
+(22,data = -1)
+(23,'\\\\0')
+(24,0)
+(25,malloc(data)
+(26,&service)
+(27,connectSocket)
+(28,1)
+(29,recvResult == 0)
+(30,printLine(dataBuffer)
+(31,free(dataBuffer)
+(32,)
+(33,data)
+(34,memset(dataBuffer, 'A', data-1)
+(35,if (wsaDataInit)
+(36,service)
+(37,)
+(38,recvResult)
+(39,connectSocket)
+(40,service.sin_addr)
+(41,data = dataCopy)
+(42,wsaDataInit = 0)
+(43,wsaData)
+(44,1)
+(45,connectSocket)
+(46,wsaData)
+(47,service)
+(48,recvResult)
+(49,wsaDataInit)
+(50,1)
+(51,data)
+(52,if (connectSocket != INVALID_SOCKET)
+(53,break;)
+(54,dataBuffer)
+(55,sizeof(service)
+(56,)
+(57,* dataBuffer = (char *)
+(58,dataBuffer)
+(59,1)
+(60,sin_port)
+(61,break;)
+(62,service.sin_family = AF_INET)
+(63,if (connect(connectSocket, (struct sockaddr*)
+(64,'\\\\0')
+(65,inputBuffer)
+(66,wsaDataInit)
+(67,dataBuffer)
+(68,if (dataBuffer == NULL)
+(69,-1)
+(70,connectSocket = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP)
+(71,)
+(72,data < 100)
+(73,WSAStartup(MAKEWORD(2,2)
+(74,connectSocket != INVALID_SOCKET)
+(75,(char *)
+(76,INVALID_SOCKET)
+(77,connectSocket)
+(78,'A')
+(79,service.sin_port = htons(TCP_PORT)
+(80,data = atoi(inputBuffer)
+(81,atoi(inputBuffer)
+(82,recv(connectSocket, inputBuffer, CHAR_ARRAY_SIZE - 1, 0)
+(83,wsaDataInit = 1)
+(84,inputBuffer[recvResult] = \'\\\\0\')
+(85,&service)
+(86,1)
+(87,do)
+(88,dataBuffer)
+(89,dataCopy)
+(90,connect(connectSocket, (struct sockaddr*)
+(91,dataCopy)
+(92,sin_addr)
+(93,htons(TCP_PORT)
+(94,CLOSE_SOCKET(connectSocket)
+(95,service.sin_family)
+(96,-1)
+(97,memset(dataBuffer, \'A\', data-1)
+(98,connectSocket == INVALID_SOCKET)
+(99,inet_addr(IP_ADDRESS)
+(100,if (WSAStartup(MAKEWORD(2,2)
+(101,)
+(102,\'\\\\0\')
+(103,data)
+(104,SOCKET_ERROR)
+(105,dataCopy)
+(106,dataBuffer[data-1] = \'\\\\0\')
+(107,recvResult == SOCKET_ERROR || recvResult == 0)
+(108,data)
+(109,data-1)
+(110,100)
+(111,service.sin_port)
+(112,exit(-1)
+(113,)
+(114,connect(connectSocket, (struct sockaddr*)
+(115,service)
+(116,recvResult)
+(117,char *)
+(118,(struct sockaddr*)
+(119,AF_INET)
+(120,inputBuffer[recvResult])
+(121,data-1)
+(122,if (data < 100)
+(123,inputBuffer)
+(124,data)
+(125,data)
+(126,recvResult)
+(127,2)
+(128,IPPROTO_TCP)
+(129,service)
+(130,&wsaData)
+(131,IP_ADDRESS)
+(132,\'A\')
+(133,0)
+(134,service.sin_addr.s_addr)
+(135,if (recvResult == SOCKET_ERROR || recvResult == 0)
+(136,s_addr)
+(137,inputBuffer[recvResult] = '\\\\0')
+(138,connectSocket = INVALID_SOCKET)
+(139,service)
+(140,0)
+(141,service)
+(142,break;)
+(143,dataBuffer[data-1] = '\\\\0')
+(144,dataBuffer == NULL)
+(145,NULL)
+(146,CHAR_ARRAY_SIZE)
+(147,service)
+(148,CHAR_ARRAY_SIZE - 1)
+(149,dataBuffer)
+(150,recvResult = recv(connectSocket, inputBuffer, CHAR_ARRAY_SIZE - 1, 0)
+(151,memset(&service, 0, sizeof(service)
+(152,connectSocket)
+(153,2)
+(154,TCP_PORT)
+(155,dataBuffer)
+(156,data)
+(157,struct sockaddr*)
+(158,AF_INET)
+(159,data)
+(160,WSAStartup(MAKEWORD(2,2)
+(161,INVALID_SOCKET)
+(162,sin_family)
+(163,INVALID_SOCKET)
+(164,connectSocket)
+(165,RET)
+(166,\'\\\\0\')
+(167,dataBuffer[data-1])
+(168,data)
+(169,service)
+(170,0)
+(171,SOCKET_ERROR)
+(172,dataBuffer)
+(173,)
+(174,0)
+(175,)
+(176,service.sin_addr.s_addr = inet_addr(IP_ADDRESS)
+(177,recvResult == SOCKET_ERROR)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
