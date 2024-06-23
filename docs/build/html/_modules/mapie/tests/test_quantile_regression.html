@@ -1,0 +1,914 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mapie.tests.test_quantile_regression &mdash; Prom v0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="author" title="About these documents" href="../../../about.html" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Prom
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../faq.html">Frequently Asked Questions</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Python API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../src/prom.html">prom module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../src/util.html">util module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Python API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../prom_mapie/mapie.conformity_scores.html">mapie.conformity_scores package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../prom_mapie/mapie.control_risk.html">mapie.control_risk package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../prom_mapie/mapie.estimator.html">mapie.estimator package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../prom_mapie/mapie.regression.html">mapie.regression package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../prom_mapie/mapie.tests.html">mapie.tests package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../prom_mapie/modules.html">thirdpackage</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Prom</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">mapie.tests.test_quantile_regression</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for mapie.tests.test_quantile_regression</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">from</span> <span class="nn">inspect</span> <span class="kn">import</span> <span class="n">signature</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">pytest</span>
+<span class="kn">from</span> <span class="nn">sklearn.base</span> <span class="kn">import</span> <span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">RegressorMixin</span><span class="p">,</span> <span class="n">clone</span>
+<span class="kn">from</span> <span class="nn">sklearn.compose</span> <span class="kn">import</span> <span class="n">ColumnTransformer</span>
+<span class="kn">from</span> <span class="nn">sklearn.datasets</span> <span class="kn">import</span> <span class="n">make_regression</span>
+<span class="kn">from</span> <span class="nn">sklearn.ensemble</span> <span class="kn">import</span> <span class="n">GradientBoostingRegressor</span><span class="p">,</span> <span class="n">RandomForestClassifier</span>
+<span class="kn">from</span> <span class="nn">sklearn.impute</span> <span class="kn">import</span> <span class="n">SimpleImputer</span>
+<span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">LinearRegression</span><span class="p">,</span> <span class="n">QuantileRegressor</span>
+<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">KFold</span><span class="p">,</span> <span class="n">LeaveOneOut</span><span class="p">,</span> <span class="n">train_test_split</span>
+<span class="kn">from</span> <span class="nn">sklearn.pipeline</span> <span class="kn">import</span> <span class="n">Pipeline</span><span class="p">,</span> <span class="n">make_pipeline</span>
+<span class="kn">from</span> <span class="nn">sklearn.preprocessing</span> <span class="kn">import</span> <span class="n">OneHotEncoder</span>
+<span class="kn">from</span> <span class="nn">sklearn.utils.validation</span> <span class="kn">import</span> <span class="n">check_is_fitted</span>
+<span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="kn">import</span> <span class="n">TypedDict</span>
+
+<span class="kn">from</span> <span class="nn">mapie._typing</span> <span class="kn">import</span> <span class="n">NDArray</span>
+<span class="kn">from</span> <span class="nn">mapie.metrics</span> <span class="kn">import</span> <span class="n">regression_coverage_score</span>
+<span class="kn">from</span> <span class="nn">mapie.regression</span> <span class="kn">import</span> <span class="n">MapieQuantileRegressor</span>
+
+<span class="n">X_toy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+    <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span>
+     <span class="mi">5</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">]</span>
+<span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">y_toy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+    <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span>
+     <span class="mi">11</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">15</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">15</span><span class="p">]</span>
+<span class="p">)</span>
+
+<span class="n">random_state</span> <span class="o">=</span> <span class="mi">1</span>
+
+<span class="n">X_train_toy</span><span class="p">,</span> <span class="n">X_calib_toy</span><span class="p">,</span> <span class="n">y_train_toy</span><span class="p">,</span> <span class="n">y_calib_toy</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span>
+    <span class="n">X_toy</span><span class="p">,</span>
+    <span class="n">y_toy</span><span class="p">,</span>
+    <span class="n">test_size</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span>
+<span class="p">)</span>
+
+<span class="n">qt</span> <span class="o">=</span> <span class="n">QuantileRegressor</span><span class="p">(</span><span class="n">solver</span><span class="o">=</span><span class="s2">&quot;highs-ds&quot;</span><span class="p">)</span>
+<span class="n">gb</span> <span class="o">=</span> <span class="n">GradientBoostingRegressor</span><span class="p">(</span>
+            <span class="n">loss</span><span class="o">=</span><span class="s2">&quot;quantile&quot;</span><span class="p">,</span>
+            <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span>
+            <span class="p">)</span>
+
+<span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">make_regression</span><span class="p">(</span>
+    <span class="n">n_samples</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span>
+    <span class="n">n_features</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span>
+    <span class="n">noise</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span>
+    <span class="p">)</span>
+<span class="n">X_train</span><span class="p">,</span> <span class="n">X_calib</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">y_calib</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span>
+    <span class="n">X</span><span class="p">,</span>
+    <span class="n">y</span><span class="p">,</span>
+    <span class="n">test_size</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span>
+<span class="p">)</span>
+
+<span class="n">SYMMETRY</span> <span class="o">=</span> <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">]</span>
+<span class="n">ESTIMATOR</span> <span class="o">=</span> <span class="p">[</span><span class="n">qt</span><span class="p">,</span> <span class="n">gb</span><span class="p">]</span>
+
+<span class="n">Params</span> <span class="o">=</span> <span class="n">TypedDict</span><span class="p">(</span>
+    <span class="s2">&quot;Params&quot;</span><span class="p">,</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="s2">&quot;alpha&quot;</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span>
+    <span class="p">},</span>
+<span class="p">)</span>
+
+<span class="n">STRATEGIES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;quantile_alpha2&quot;</span><span class="p">:</span> <span class="n">Params</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;quantile&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">),</span>
+    <span class="s2">&quot;quantile_alpha3&quot;</span><span class="p">:</span> <span class="n">Params</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;quantile&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">),</span>
+    <span class="s2">&quot;quantile_alpha4&quot;</span><span class="p">:</span> <span class="n">Params</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;quantile&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.4</span><span class="p">),</span>
+    <span class="s2">&quot;quantile_alpha8&quot;</span><span class="p">:</span> <span class="n">Params</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s2">&quot;quantile&quot;</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.8</span><span class="p">),</span>
+    <span class="p">}</span>
+
+<span class="n">WIDTHS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;quantile_alpha2&quot;</span><span class="p">:</span> <span class="mf">2.7360884795455576</span><span class="p">,</span>
+    <span class="s2">&quot;quantile_alpha3&quot;</span><span class="p">:</span> <span class="mf">2.185652142101473</span><span class="p">,</span>
+    <span class="s2">&quot;quantile_alpha4&quot;</span><span class="p">:</span> <span class="mf">1.731718678152845</span><span class="p">,</span>
+    <span class="s2">&quot;quantile_alpha8&quot;</span><span class="p">:</span> <span class="mf">0.66909752420949</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">COVERAGES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;quantile_alpha2&quot;</span><span class="p">:</span> <span class="mf">0.834</span><span class="p">,</span>
+    <span class="s2">&quot;quantile_alpha3&quot;</span><span class="p">:</span> <span class="mf">0.738</span><span class="p">,</span>
+    <span class="s2">&quot;quantile_alpha4&quot;</span><span class="p">:</span> <span class="mf">0.646</span><span class="p">,</span>
+    <span class="s2">&quot;quantile_alpha8&quot;</span><span class="p">:</span> <span class="mf">0.264</span><span class="p">,</span>
+<span class="p">}</span>
+
+
+<div class="viewcode-block" id="NotFitPredictEstimator"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.NotFitPredictEstimator">[docs]</a><span class="k">class</span> <span class="nc">NotFitPredictEstimator</span><span class="p">:</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">alpha</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="n">alpha</span></div>
+
+
+<div class="viewcode-block" id="NoLossPamameterEstimator"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.NoLossPamameterEstimator">[docs]</a><span class="k">class</span> <span class="nc">NoLossPamameterEstimator</span><span class="p">(</span><span class="n">BaseEstimator</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">alpha</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="n">alpha</span>
+
+<div class="viewcode-block" id="NoLossPamameterEstimator.fit"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.NoLossPamameterEstimator.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Dummy fit.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="NoLossPamameterEstimator.predict"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.NoLossPamameterEstimator.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Dummy predict.&quot;&quot;&quot;</span></div></div>
+
+
+<div class="viewcode-block" id="NoAlphaPamameterEstimator"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.NoAlphaPamameterEstimator">[docs]</a><span class="k">class</span> <span class="nc">NoAlphaPamameterEstimator</span><span class="p">(</span><span class="n">BaseEstimator</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">alpha</span><span class="p">,</span> <span class="n">loss</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">alpha</span> <span class="o">=</span> <span class="n">alpha</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">loss</span> <span class="o">=</span> <span class="n">loss</span>
+
+<div class="viewcode-block" id="NoAlphaPamameterEstimator.fit"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.NoAlphaPamameterEstimator.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Dummy fit.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="NoAlphaPamameterEstimator.predict"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.NoAlphaPamameterEstimator.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Dummy predict.&quot;&quot;&quot;</span></div></div>
+
+
+<div class="viewcode-block" id="test_default_parameters"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.test_default_parameters">[docs]</a><span class="k">def</span> <span class="nf">test_default_parameters</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test default values of input parameters.&quot;&quot;&quot;</span>
+    <span class="n">mapie_reg</span> <span class="o">=</span> <span class="n">MapieQuantileRegressor</span><span class="p">()</span>
+    <span class="k">assert</span> <span class="n">mapie_reg</span><span class="o">.</span><span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;quantile&quot;</span>
+    <span class="k">assert</span> <span class="n">mapie_reg</span><span class="o">.</span><span class="n">cv</span> <span class="ow">is</span> <span class="kc">None</span>
+    <span class="k">assert</span> <span class="n">mapie_reg</span><span class="o">.</span><span class="n">alpha</span> <span class="o">==</span> <span class="mf">0.1</span></div>
+
+
+<div class="viewcode-block" id="test_default_sample_weight"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.test_default_sample_weight">[docs]</a><span class="k">def</span> <span class="nf">test_default_sample_weight</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test default sample weights.&quot;&quot;&quot;</span>
+    <span class="n">mapie_reg</span> <span class="o">=</span> <span class="n">MapieQuantileRegressor</span><span class="p">()</span>
+    <span class="k">assert</span> <span class="p">(</span>
+        <span class="n">signature</span><span class="p">(</span><span class="n">mapie_reg</span><span class="o">.</span><span class="n">fit</span><span class="p">)</span><span class="o">.</span><span class="n">parameters</span><span class="p">[</span><span class="s2">&quot;sample_weight&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">default</span>
+        <span class="ow">is</span> <span class="kc">None</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_default_parameters_estimator"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.test_default_parameters_estimator">[docs]</a><span class="k">def</span> <span class="nf">test_default_parameters_estimator</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test default values of estimator.&quot;&quot;&quot;</span>
+    <span class="n">mapie_reg</span> <span class="o">=</span> <span class="n">MapieQuantileRegressor</span><span class="p">()</span>
+    <span class="n">mapie_reg</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+        <span class="n">X_train</span><span class="p">,</span>
+        <span class="n">y_train</span><span class="p">,</span>
+        <span class="n">X_calib</span><span class="o">=</span><span class="n">X_calib</span><span class="p">,</span>
+        <span class="n">y_calib</span><span class="o">=</span><span class="n">y_calib</span>
+        <span class="p">)</span>
+    <span class="k">for</span> <span class="n">estimator</span> <span class="ow">in</span> <span class="n">mapie_reg</span><span class="o">.</span><span class="n">estimators_</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">estimator</span><span class="p">,</span> <span class="n">QuantileRegressor</span><span class="p">)</span>
+        <span class="k">assert</span> <span class="n">estimator</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="s2">&quot;solver&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;highs-ds&quot;</span></div>
+
+
+<div class="viewcode-block" id="test_no_predict_fit_estimator"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.test_no_predict_fit_estimator">[docs]</a><span class="k">def</span> <span class="nf">test_no_predict_fit_estimator</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test that estimators with not fit or predict methods raise an error.&quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span>
+        <span class="ne">ValueError</span><span class="p">,</span>
+        <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;.*Invalid estimator.*&quot;</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">mapie_reg</span> <span class="o">=</span> <span class="n">MapieQuantileRegressor</span><span class="p">(</span>
+            <span class="n">estimator</span><span class="o">=</span><span class="n">NotFitPredictEstimator</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="n">mapie_reg</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+            <span class="n">X_train_toy</span><span class="p">,</span>
+            <span class="n">y_train_toy</span><span class="p">,</span>
+            <span class="n">X_calib</span><span class="o">=</span><span class="n">X_calib_toy</span><span class="p">,</span>
+            <span class="n">y_calib</span><span class="o">=</span><span class="n">y_calib_toy</span>
+            <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_no_para_loss_estimator"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.test_no_para_loss_estimator">[docs]</a><span class="k">def</span> <span class="nf">test_no_para_loss_estimator</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test to check when it does not have a valid loss_name.&quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span>
+        <span class="ne">ValueError</span><span class="p">,</span>
+        <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;.*The matching parameter `loss_name`*&quot;</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">mapie_reg</span> <span class="o">=</span> <span class="n">MapieQuantileRegressor</span><span class="p">()</span>
+        <span class="n">mapie_reg</span><span class="o">.</span><span class="n">quantile_estimator_params</span><span class="p">[</span>
+            <span class="s2">&quot;NoLossPamameterEstimator&quot;</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;loss_name&quot;</span><span class="p">:</span> <span class="s2">&quot;noloss&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;alpha_name&quot;</span><span class="p">:</span> <span class="s2">&quot;alpha&quot;</span>
+        <span class="p">}</span>
+        <span class="n">mapie_reg</span><span class="o">.</span><span class="n">estimator</span> <span class="o">=</span> <span class="n">NoLossPamameterEstimator</span><span class="p">(</span>
+            <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span>
+            <span class="p">)</span>
+        <span class="n">mapie_reg</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+            <span class="n">X_train_toy</span><span class="p">,</span>
+            <span class="n">y_train_toy</span><span class="p">,</span>
+            <span class="n">X_calib</span><span class="o">=</span><span class="n">X_calib_toy</span><span class="p">,</span>
+            <span class="n">y_calib</span><span class="o">=</span><span class="n">y_calib_toy</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_no_para_alpha_estimator"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.test_no_para_alpha_estimator">[docs]</a><span class="k">def</span> <span class="nf">test_no_para_alpha_estimator</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test to check when it does not have a valid alpha parameter name&quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span>
+        <span class="ne">ValueError</span><span class="p">,</span>
+        <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;.*The matching parameter `alpha_name`*&quot;</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">mapie_reg</span> <span class="o">=</span> <span class="n">MapieQuantileRegressor</span><span class="p">()</span>
+        <span class="n">mapie_reg</span><span class="o">.</span><span class="n">quantile_estimator_params</span><span class="p">[</span>
+            <span class="s2">&quot;NoAlphaPamameterEstimator&quot;</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;loss_name&quot;</span><span class="p">:</span> <span class="s2">&quot;loss&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;alpha_name&quot;</span><span class="p">:</span> <span class="s2">&quot;noalpha&quot;</span>
+        <span class="p">}</span>
+        <span class="n">mapie_reg</span><span class="o">.</span><span class="n">estimator</span> <span class="o">=</span> <span class="n">NoAlphaPamameterEstimator</span><span class="p">(</span>
+            <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>
+            <span class="n">loss</span><span class="o">=</span><span class="s2">&quot;quantile&quot;</span>
+            <span class="p">)</span>
+        <span class="n">mapie_reg</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+            <span class="n">X_train_toy</span><span class="p">,</span>
+            <span class="n">y_train_toy</span><span class="p">,</span>
+            <span class="n">X_calib</span><span class="o">=</span><span class="n">X_calib_toy</span><span class="p">,</span>
+            <span class="n">y_calib</span><span class="o">=</span><span class="n">y_calib_toy</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_valid_method"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.test_valid_method">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;strategy&quot;</span><span class="p">,</span> <span class="p">[</span><span class="o">*</span><span class="n">STRATEGIES</span><span class="p">])</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;estimator&quot;</span><span class="p">,</span> <span class="n">ESTIMATOR</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">test_valid_method</span><span class="p">(</span><span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">estimator</span><span class="p">:</span> <span class="n">RegressorMixin</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test that valid strategies and estimators raise no error&quot;&quot;&quot;</span>
+    <span class="n">mapie_reg</span> <span class="o">=</span> <span class="n">MapieQuantileRegressor</span><span class="p">(</span>
+        <span class="n">estimator</span><span class="o">=</span><span class="n">estimator</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">STRATEGIES</span><span class="p">[</span><span class="n">strategy</span><span class="p">]</span>
+        <span class="p">)</span>
+    <span class="n">mapie_reg</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+        <span class="n">X_train_toy</span><span class="p">,</span>
+        <span class="n">y_train_toy</span><span class="p">,</span>
+        <span class="n">X_calib</span><span class="o">=</span><span class="n">X_calib_toy</span><span class="p">,</span>
+        <span class="n">y_calib</span><span class="o">=</span><span class="n">y_calib_toy</span>
+    <span class="p">)</span>
+    <span class="n">check_is_fitted</span><span class="p">(</span><span class="n">mapie_reg</span><span class="p">,</span> <span class="n">mapie_reg</span><span class="o">.</span><span class="n">fit_attributes</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">mapie_reg</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="s2">&quot;method&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;quantile&quot;</span></div>
+
+
+<div class="viewcode-block" id="test_predict_output_shape"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.test_predict_output_shape">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;strategy&quot;</span><span class="p">,</span> <span class="p">[</span><span class="o">*</span><span class="n">STRATEGIES</span><span class="p">])</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;estimator&quot;</span><span class="p">,</span> <span class="n">ESTIMATOR</span><span class="p">)</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;dataset&quot;</span><span class="p">,</span> <span class="p">[</span>
+        <span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">X_calib</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">y_calib</span><span class="p">),</span>
+        <span class="p">(</span><span class="n">X_train_toy</span><span class="p">,</span> <span class="n">X_calib_toy</span><span class="p">,</span> <span class="n">y_train_toy</span><span class="p">,</span> <span class="n">y_calib_toy</span><span class="p">)</span>
+    <span class="p">]</span>
+<span class="p">)</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;symmetry&quot;</span><span class="p">,</span> <span class="n">SYMMETRY</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">test_predict_output_shape</span><span class="p">(</span>
+    <span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">estimator</span><span class="p">:</span> <span class="n">RegressorMixin</span><span class="p">,</span>
+    <span class="n">dataset</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">NDArray</span><span class="p">,</span> <span class="n">NDArray</span><span class="p">,</span> <span class="n">NDArray</span><span class="p">,</span> <span class="n">NDArray</span><span class="p">],</span>
+    <span class="n">symmetry</span><span class="p">:</span> <span class="nb">bool</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test predict output shape.&quot;&quot;&quot;</span>
+    <span class="n">mapie_reg</span> <span class="o">=</span> <span class="n">MapieQuantileRegressor</span><span class="p">(</span>
+        <span class="n">estimator</span><span class="o">=</span><span class="n">estimator</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">STRATEGIES</span><span class="p">[</span><span class="n">strategy</span><span class="p">]</span>
+        <span class="p">)</span>
+    <span class="p">(</span><span class="n">X_t</span><span class="p">,</span> <span class="n">X_c</span><span class="p">,</span> <span class="n">y_t</span><span class="p">,</span> <span class="n">y_c</span><span class="p">)</span> <span class="o">=</span> <span class="n">dataset</span>
+    <span class="n">mapie_reg</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_t</span><span class="p">,</span> <span class="n">y_t</span><span class="p">,</span> <span class="n">X_calib</span><span class="o">=</span><span class="n">X_c</span><span class="p">,</span> <span class="n">y_calib</span><span class="o">=</span><span class="n">y_c</span><span class="p">)</span>
+    <span class="n">y_pred</span><span class="p">,</span> <span class="n">y_pis</span> <span class="o">=</span> <span class="n">mapie_reg</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_t</span><span class="p">,</span> <span class="n">symmetry</span><span class="o">=</span><span class="n">symmetry</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">y_pred</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">X_t</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],)</span>
+    <span class="k">assert</span> <span class="n">y_pis</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">X_t</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],)</span>
+    <span class="k">assert</span> <span class="n">y_pis</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">X_t</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],)</span></div>
+
+
+<div class="viewcode-block" id="test_results_with_constant_sample_weights"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.test_results_with_constant_sample_weights">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;strategy&quot;</span><span class="p">,</span> <span class="p">[</span><span class="o">*</span><span class="n">STRATEGIES</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">test_results_with_constant_sample_weights</span><span class="p">(</span>
+    <span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Test predictions when sample weights are None</span>
+<span class="sd">    or constant with different values.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">n_samples</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">X_train</span><span class="p">)</span>
+    <span class="n">mapie0</span> <span class="o">=</span> <span class="n">MapieQuantileRegressor</span><span class="p">(</span>
+        <span class="n">estimator</span><span class="o">=</span><span class="n">qt</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">STRATEGIES</span><span class="p">[</span><span class="n">strategy</span><span class="p">]</span>
+        <span class="p">)</span>
+    <span class="n">mapie1</span> <span class="o">=</span> <span class="n">MapieQuantileRegressor</span><span class="p">(</span>
+        <span class="n">estimator</span><span class="o">=</span><span class="n">qt</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">STRATEGIES</span><span class="p">[</span><span class="n">strategy</span><span class="p">]</span>
+        <span class="p">)</span>
+    <span class="n">mapie2</span> <span class="o">=</span> <span class="n">MapieQuantileRegressor</span><span class="p">(</span>
+        <span class="n">estimator</span><span class="o">=</span><span class="n">qt</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">STRATEGIES</span><span class="p">[</span><span class="n">strategy</span><span class="p">]</span>
+        <span class="p">)</span>
+    <span class="n">mapie0</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+        <span class="n">X_train</span><span class="p">,</span>
+        <span class="n">y_train</span><span class="p">,</span>
+        <span class="n">X_calib</span><span class="o">=</span><span class="n">X_calib</span><span class="p">,</span>
+        <span class="n">y_calib</span><span class="o">=</span><span class="n">y_calib</span><span class="p">,</span>
+        <span class="n">sample_weight</span><span class="o">=</span><span class="kc">None</span>
+        <span class="p">)</span>
+    <span class="n">mapie1</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+        <span class="n">X_train</span><span class="p">,</span>
+        <span class="n">y_train</span><span class="p">,</span>
+        <span class="n">X_calib</span><span class="o">=</span><span class="n">X_calib</span><span class="p">,</span>
+        <span class="n">y_calib</span><span class="o">=</span><span class="n">y_calib</span><span class="p">,</span>
+        <span class="n">sample_weight</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="n">n_samples</span><span class="p">)</span>
+        <span class="p">)</span>
+    <span class="n">mapie2</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+        <span class="n">X_train</span><span class="p">,</span>
+        <span class="n">y_train</span><span class="p">,</span>
+        <span class="n">X_calib</span><span class="o">=</span><span class="n">X_calib</span><span class="p">,</span>
+        <span class="n">y_calib</span><span class="o">=</span><span class="n">y_calib</span><span class="p">,</span>
+        <span class="n">sample_weight</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="n">n_samples</span><span class="p">)</span> <span class="o">*</span> <span class="mi">5</span>
+        <span class="p">)</span>
+
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span>
+        <span class="n">mapie0</span><span class="o">.</span><span class="n">conformity_scores_</span><span class="p">,</span>
+        <span class="n">mapie1</span><span class="o">.</span><span class="n">conformity_scores_</span>
+    <span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span>
+        <span class="n">mapie0</span><span class="o">.</span><span class="n">conformity_scores_</span><span class="p">,</span>
+        <span class="n">mapie2</span><span class="o">.</span><span class="n">conformity_scores_</span>
+    <span class="p">)</span>
+
+    <span class="n">y_pred0</span><span class="p">,</span> <span class="n">y_pis0</span> <span class="o">=</span> <span class="n">mapie0</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+    <span class="n">y_pred1</span><span class="p">,</span> <span class="n">y_pis1</span> <span class="o">=</span> <span class="n">mapie1</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+    <span class="n">y_pred2</span><span class="p">,</span> <span class="n">y_pis2</span> <span class="o">=</span> <span class="n">mapie2</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">y_pred0</span><span class="p">,</span> <span class="n">y_pred1</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">y_pred1</span><span class="p">,</span> <span class="n">y_pred2</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">y_pis0</span><span class="p">,</span> <span class="n">y_pis1</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">y_pis1</span><span class="p">,</span> <span class="n">y_pis2</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_results_for_same_alpha"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.test_results_for_same_alpha">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;estimator&quot;</span><span class="p">,</span> <span class="n">ESTIMATOR</span><span class="p">)</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;symmetry&quot;</span><span class="p">,</span> <span class="n">SYMMETRY</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">test_results_for_same_alpha</span><span class="p">(</span>
+    <span class="n">estimator</span><span class="p">:</span> <span class="n">RegressorMixin</span><span class="p">,</span>
+    <span class="n">symmetry</span><span class="p">:</span> <span class="nb">bool</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Test that predictions and intervals</span>
+<span class="sd">    are similar with two equal values of alpha.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">mapie_reg</span> <span class="o">=</span> <span class="n">MapieQuantileRegressor</span><span class="p">(</span>
+        <span class="n">estimator</span><span class="o">=</span><span class="n">estimator</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span>
+    <span class="p">)</span>
+    <span class="n">mapie_reg_clone</span> <span class="o">=</span> <span class="n">clone</span><span class="p">(</span><span class="n">mapie_reg</span><span class="p">)</span>
+    <span class="n">mapie_reg</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">X_calib</span><span class="o">=</span><span class="n">X_calib</span><span class="p">,</span> <span class="n">y_calib</span><span class="o">=</span><span class="n">y_calib</span><span class="p">)</span>
+    <span class="n">mapie_reg_clone</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">X_calib</span><span class="o">=</span><span class="n">X_calib</span><span class="p">,</span> <span class="n">y_calib</span><span class="o">=</span><span class="n">y_calib</span><span class="p">)</span>
+    <span class="n">y_pred</span><span class="p">,</span> <span class="n">y_pis</span> <span class="o">=</span> <span class="n">mapie_reg</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">symmetry</span><span class="o">=</span><span class="n">symmetry</span><span class="p">)</span>
+    <span class="n">y_pred_clone</span><span class="p">,</span> <span class="n">y_pis_clone</span> <span class="o">=</span> <span class="n">mapie_reg_clone</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">symmetry</span><span class="o">=</span><span class="n">symmetry</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">y_pred</span><span class="p">,</span> <span class="n">y_pred_clone</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">y_pis</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">y_pis_clone</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">y_pis</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">y_pis_clone</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="test_wrong_alphas_types"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.test_wrong_alphas_types">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;alphas&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;hello&quot;</span><span class="p">,</span> <span class="n">MapieQuantileRegressor</span><span class="p">,</span> <span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="mi">1</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">test_wrong_alphas_types</span><span class="p">(</span><span class="n">alphas</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Checking for wrong type of alphas&quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span>
+        <span class="ne">ValueError</span><span class="p">,</span>
+        <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;.*Invalid alpha. Allowed values are float.*&quot;</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">mapie_reg</span> <span class="o">=</span> <span class="n">MapieQuantileRegressor</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="n">alphas</span><span class="p">)</span>
+        <span class="n">mapie_reg</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">X_calib</span><span class="o">=</span><span class="n">X_calib</span><span class="p">,</span> <span class="n">y_calib</span><span class="o">=</span><span class="n">y_calib</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_wrong_alphas"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.test_wrong_alphas">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;alphas&quot;</span><span class="p">,</span> <span class="p">[</span><span class="mf">1.0</span><span class="p">,</span> <span class="mf">1.6</span><span class="p">,</span> <span class="mf">1.95</span><span class="p">,</span> <span class="mf">5.0</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.001</span><span class="p">,</span> <span class="o">-</span><span class="mf">10.0</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">test_wrong_alphas</span><span class="p">(</span><span class="n">alphas</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Checking for alphas values that are too big according to all value.&quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span>
+        <span class="ne">ValueError</span><span class="p">,</span>
+        <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;.*Invalid alpha. Allowed values are between .*&quot;</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">mapie_reg</span> <span class="o">=</span> <span class="n">MapieQuantileRegressor</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="n">alphas</span><span class="p">)</span>
+        <span class="n">mapie_reg</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">X_calib</span><span class="o">=</span><span class="n">X_calib</span><span class="p">,</span> <span class="n">y_calib</span><span class="o">=</span><span class="n">y_calib</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_estimators_quantile_function"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.test_estimators_quantile_function">[docs]</a><span class="k">def</span> <span class="nf">test_estimators_quantile_function</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Checking for badly set estimator parameters.&quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span>
+        <span class="ne">ValueError</span><span class="p">,</span>
+        <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;.*You need to set the loss/objective*&quot;</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">mapie_reg</span> <span class="o">=</span> <span class="n">MapieQuantileRegressor</span><span class="p">(</span>
+            <span class="n">estimator</span><span class="o">=</span><span class="n">GradientBoostingRegressor</span><span class="p">()</span>
+            <span class="p">)</span>
+        <span class="n">mapie_reg</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">X_calib</span><span class="o">=</span><span class="n">X_calib</span><span class="p">,</span> <span class="n">y_calib</span><span class="o">=</span><span class="n">y_calib</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_invalid_cv"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.test_invalid_cv">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;cv&quot;</span><span class="p">,</span> <span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">KFold</span><span class="p">(),</span> <span class="n">LeaveOneOut</span><span class="p">()])</span>
+<span class="k">def</span> <span class="nf">test_invalid_cv</span><span class="p">(</span><span class="n">cv</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test that valid cv raise errors.&quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span>
+        <span class="ne">ValueError</span><span class="p">,</span>
+        <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;.*Invalid cv method.*&quot;</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">mapie</span> <span class="o">=</span> <span class="n">MapieQuantileRegressor</span><span class="p">(</span><span class="n">cv</span><span class="o">=</span><span class="n">cv</span><span class="p">)</span>
+        <span class="n">mapie</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+            <span class="n">X_train_toy</span><span class="p">,</span>
+            <span class="n">y_train_toy</span><span class="p">,</span>
+            <span class="n">X_calib</span><span class="o">=</span><span class="n">X_calib_toy</span><span class="p">,</span>
+            <span class="n">y_calib</span><span class="o">=</span><span class="n">y_calib_toy</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_valid_cv"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.test_valid_cv">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;cv&quot;</span><span class="p">,</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;split&quot;</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">test_valid_cv</span><span class="p">(</span><span class="n">cv</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test that valid cv raise no errors.&quot;&quot;&quot;</span>
+    <span class="n">mapie</span> <span class="o">=</span> <span class="n">MapieQuantileRegressor</span><span class="p">(</span><span class="n">cv</span><span class="o">=</span><span class="n">cv</span><span class="p">)</span>
+    <span class="n">mapie</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+        <span class="n">X_train_toy</span><span class="p">,</span>
+        <span class="n">y_train_toy</span><span class="p">,</span>
+        <span class="n">X_calib</span><span class="o">=</span><span class="n">X_calib_toy</span><span class="p">,</span>
+        <span class="n">y_calib</span><span class="o">=</span><span class="n">y_calib_toy</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_calib_dataset_is_none"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.test_calib_dataset_is_none">[docs]</a><span class="k">def</span> <span class="nf">test_calib_dataset_is_none</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test that the fit method works when X_calib or y_calib is None.&quot;&quot;&quot;</span>
+    <span class="n">mapie</span> <span class="o">=</span> <span class="n">MapieQuantileRegressor</span><span class="p">()</span>
+    <span class="n">mapie</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">calib_size</span><span class="o">=</span><span class="mf">0.5</span><span class="p">)</span>
+    <span class="n">mapie</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_calib_dataset_is_none_with_sample_weight"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.test_calib_dataset_is_none_with_sample_weight">[docs]</a><span class="k">def</span> <span class="nf">test_calib_dataset_is_none_with_sample_weight</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Test that the fit method works with calib dataset defined is None</span>
+<span class="sd">    with sample weights.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">mapie</span> <span class="o">=</span> <span class="n">MapieQuantileRegressor</span><span class="p">()</span>
+    <span class="n">mapie</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">calib_size</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">sample_weight</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+    <span class="n">mapie</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_calib_dataset_is_none_vs_defined"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.test_calib_dataset_is_none_vs_defined">[docs]</a><span class="k">def</span> <span class="nf">test_calib_dataset_is_none_vs_defined</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Test that for the same results whether you split before</span>
+<span class="sd">    or in the fit method.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">mapie</span> <span class="o">=</span> <span class="n">MapieQuantileRegressor</span><span class="p">()</span>
+    <span class="n">mapie_defined</span> <span class="o">=</span> <span class="n">clone</span><span class="p">(</span><span class="n">mapie</span><span class="p">)</span>
+    <span class="n">mapie</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">calib_size</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">)</span>
+    <span class="n">mapie_defined</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">X_calib</span><span class="o">=</span><span class="n">X_calib</span><span class="p">,</span> <span class="n">y_calib</span><span class="o">=</span><span class="n">y_calib</span><span class="p">)</span>
+    <span class="n">y_pred</span><span class="p">,</span> <span class="n">y_pis</span> <span class="o">=</span> <span class="n">mapie</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+    <span class="n">y_pred_defined</span><span class="p">,</span> <span class="n">y_pis_defined</span> <span class="o">=</span> <span class="n">mapie_defined</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">y_pred</span><span class="p">,</span> <span class="n">y_pred_defined</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">y_pis</span><span class="p">,</span> <span class="n">y_pis_defined</span><span class="p">,</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_estimators_not_in_list"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.test_estimators_not_in_list">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;est&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">RandomForestClassifier</span><span class="p">(),</span> <span class="n">LinearRegression</span><span class="p">()])</span>
+<span class="k">def</span> <span class="nf">test_estimators_not_in_list</span><span class="p">(</span><span class="n">est</span><span class="p">:</span> <span class="n">RegressorMixin</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Test for estimators that are not in the list, hence not accepted</span>
+<span class="sd">    estimators</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span>
+        <span class="ne">ValueError</span><span class="p">,</span>
+        <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;.*The base model does not seem to be accepted by.*&quot;</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">mapie_reg</span> <span class="o">=</span> <span class="n">MapieQuantileRegressor</span><span class="p">(</span><span class="n">estimator</span><span class="o">=</span><span class="n">est</span><span class="p">)</span>
+        <span class="n">mapie_reg</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+            <span class="n">X_train_toy</span><span class="p">,</span>
+            <span class="n">y_train_toy</span><span class="p">,</span>
+            <span class="n">X_calib</span><span class="o">=</span><span class="n">X_calib_toy</span><span class="p">,</span>
+            <span class="n">y_calib</span><span class="o">=</span><span class="n">y_calib_toy</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_for_small_dataset"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.test_for_small_dataset">[docs]</a><span class="k">def</span> <span class="nf">test_for_small_dataset</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test for when we have calibration datasets that are too small.&quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span>
+        <span class="ne">ValueError</span><span class="p">,</span>
+        <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;.*Number of samples of the score is too low*&quot;</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">mapie_reg</span> <span class="o">=</span> <span class="n">MapieQuantileRegressor</span><span class="p">(</span>
+            <span class="n">estimator</span><span class="o">=</span><span class="n">qt</span><span class="p">,</span>
+            <span class="n">alpha</span><span class="o">=</span><span class="mf">0.1</span>
+        <span class="p">)</span>
+        <span class="n">mapie_reg</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]),</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">2</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">]),</span>
+            <span class="n">X_calib</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">3</span><span class="p">,</span> <span class="mi">5</span><span class="p">]),</span>
+            <span class="n">y_calib</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">])</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_conformity_len"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.test_conformity_len">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;strategy&quot;</span><span class="p">,</span> <span class="p">[</span><span class="o">*</span><span class="n">STRATEGIES</span><span class="p">])</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;estimator&quot;</span><span class="p">,</span> <span class="n">ESTIMATOR</span><span class="p">)</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;dataset&quot;</span><span class="p">,</span> <span class="p">[</span>
+    <span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">X_calib</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">y_calib</span><span class="p">),</span>
+    <span class="p">(</span><span class="n">X_train_toy</span><span class="p">,</span> <span class="n">X_calib_toy</span><span class="p">,</span> <span class="n">y_train_toy</span><span class="p">,</span> <span class="n">y_calib_toy</span><span class="p">)</span>
+<span class="p">])</span>
+<span class="k">def</span> <span class="nf">test_conformity_len</span><span class="p">(</span>
+    <span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">estimator</span><span class="p">:</span> <span class="n">RegressorMixin</span><span class="p">,</span>
+    <span class="n">dataset</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">NDArray</span><span class="p">,</span> <span class="n">NDArray</span><span class="p">,</span> <span class="n">NDArray</span><span class="p">,</span> <span class="n">NDArray</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test conformity scores output shape.&quot;&quot;&quot;</span>
+    <span class="p">(</span><span class="n">X_t</span><span class="p">,</span> <span class="n">X_c</span><span class="p">,</span> <span class="n">y_t</span><span class="p">,</span> <span class="n">y_c</span><span class="p">)</span> <span class="o">=</span> <span class="n">dataset</span>
+    <span class="n">n_samples</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">X_c</span><span class="p">))</span>
+    <span class="n">mapie_regressor</span> <span class="o">=</span> <span class="n">MapieQuantileRegressor</span><span class="p">(</span>
+        <span class="n">estimator</span><span class="o">=</span><span class="n">estimator</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">STRATEGIES</span><span class="p">[</span><span class="n">strategy</span><span class="p">]</span>
+        <span class="p">)</span>
+    <span class="n">mapie_regressor</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_t</span><span class="p">,</span> <span class="n">y_t</span><span class="p">,</span> <span class="n">X_calib</span><span class="o">=</span><span class="n">X_c</span><span class="p">,</span> <span class="n">y_calib</span><span class="o">=</span><span class="n">y_c</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">mapie_regressor</span><span class="o">.</span><span class="n">conformity_scores_</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">n_samples</span></div>
+
+
+<span class="c1"># Working but want to add both symmetry and different estimators</span>
+<div class="viewcode-block" id="test_linear_regression_results"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.test_linear_regression_results">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;strategy&quot;</span><span class="p">,</span> <span class="p">[</span><span class="o">*</span><span class="n">STRATEGIES</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">test_linear_regression_results</span><span class="p">(</span><span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Test expected prediction intervals for</span>
+<span class="sd">    a different strategies.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">mapie</span> <span class="o">=</span> <span class="n">MapieQuantileRegressor</span><span class="p">(</span><span class="o">**</span><span class="n">STRATEGIES</span><span class="p">[</span><span class="n">strategy</span><span class="p">])</span>
+    <span class="n">mapie</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">X_calib</span><span class="o">=</span><span class="n">X_calib</span><span class="p">,</span> <span class="n">y_calib</span><span class="o">=</span><span class="n">y_calib</span><span class="p">)</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">y_pis</span> <span class="o">=</span> <span class="n">mapie</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+    <span class="n">y_pred_low</span><span class="p">,</span> <span class="n">y_pred_up</span> <span class="o">=</span> <span class="n">y_pis</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">y_pis</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">]</span>
+    <span class="n">width_mean</span> <span class="o">=</span> <span class="p">(</span><span class="n">y_pred_up</span> <span class="o">-</span> <span class="n">y_pred_low</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+    <span class="n">coverage</span> <span class="o">=</span> <span class="n">regression_coverage_score</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">y_pred_low</span><span class="p">,</span> <span class="n">y_pred_up</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">width_mean</span><span class="p">,</span> <span class="n">WIDTHS</span><span class="p">[</span><span class="n">strategy</span><span class="p">],</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">coverage</span><span class="p">,</span> <span class="n">COVERAGES</span><span class="p">[</span><span class="n">strategy</span><span class="p">],</span> <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_quantile_prefit_three_estimators"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.test_quantile_prefit_three_estimators">[docs]</a><span class="k">def</span> <span class="nf">test_quantile_prefit_three_estimators</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Test that there is a list with three estimators provided for</span>
+<span class="sd">    cv=&quot;prefit&quot;.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span>
+        <span class="ne">ValueError</span><span class="p">,</span>
+        <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;.*You need to have provided 3 different estimators, th*&quot;</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">gb_trained1</span><span class="p">,</span> <span class="n">gb_trained2</span> <span class="o">=</span> <span class="n">clone</span><span class="p">(</span><span class="n">gb</span><span class="p">),</span> <span class="n">clone</span><span class="p">(</span><span class="n">gb</span><span class="p">)</span>
+        <span class="n">gb_trained1</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+        <span class="n">gb_trained2</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+        <span class="n">list_estimators</span> <span class="o">=</span> <span class="p">[</span><span class="n">gb_trained1</span><span class="p">,</span> <span class="n">gb_trained2</span><span class="p">]</span>
+        <span class="n">mapie_reg</span> <span class="o">=</span> <span class="n">MapieQuantileRegressor</span><span class="p">(</span>
+            <span class="n">estimator</span><span class="o">=</span><span class="n">list_estimators</span><span class="p">,</span>
+            <span class="n">cv</span><span class="o">=</span><span class="s2">&quot;prefit&quot;</span>
+        <span class="p">)</span>
+        <span class="n">mapie_reg</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+            <span class="n">X_calib</span><span class="p">,</span>
+            <span class="n">y_calib</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_prefit_no_fit_predict"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.test_prefit_no_fit_predict">[docs]</a><span class="k">def</span> <span class="nf">test_prefit_no_fit_predict</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check that the estimators given have a prefit and fit attribute.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span>
+        <span class="ne">ValueError</span><span class="p">,</span>
+        <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;Invalid estimator. Please provide a regressor with fit and*&quot;</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">gb_trained1</span><span class="p">,</span> <span class="n">gb_trained2</span> <span class="o">=</span> <span class="n">clone</span><span class="p">(</span><span class="n">gb</span><span class="p">),</span> <span class="n">clone</span><span class="p">(</span><span class="n">gb</span><span class="p">)</span>
+        <span class="n">gb_trained1</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+        <span class="n">gb_trained2</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+        <span class="n">gb_trained3</span> <span class="o">=</span> <span class="mi">3</span>
+        <span class="n">list_estimators</span> <span class="o">=</span> <span class="p">[</span><span class="n">gb_trained1</span><span class="p">,</span> <span class="n">gb_trained2</span><span class="p">,</span> <span class="n">gb_trained3</span><span class="p">]</span>
+        <span class="n">mapie_reg</span> <span class="o">=</span> <span class="n">MapieQuantileRegressor</span><span class="p">(</span>
+            <span class="n">estimator</span><span class="o">=</span><span class="n">list_estimators</span><span class="p">,</span>
+            <span class="n">cv</span><span class="o">=</span><span class="s2">&quot;prefit&quot;</span><span class="p">,</span>
+            <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span>
+        <span class="p">)</span>
+        <span class="n">mapie_reg</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+            <span class="n">X_calib</span><span class="p">,</span>
+            <span class="n">y_calib</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_non_trained_estimator"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.test_non_trained_estimator">[docs]</a><span class="k">def</span> <span class="nf">test_non_trained_estimator</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check that the estimators are all already trained when used in prefit.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span>
+        <span class="ne">ValueError</span><span class="p">,</span>
+        <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;.*instance is not fitted yet. Call &#39;fit&#39; with appropriate*&quot;</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="n">gb_trained1</span><span class="p">,</span> <span class="n">gb_trained2</span><span class="p">,</span> <span class="n">gb_trained3</span> <span class="o">=</span> <span class="n">clone</span><span class="p">(</span><span class="n">gb</span><span class="p">),</span> <span class="n">clone</span><span class="p">(</span><span class="n">gb</span><span class="p">),</span> <span class="n">clone</span><span class="p">(</span><span class="n">gb</span><span class="p">)</span>
+        <span class="n">gb_trained1</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+        <span class="n">gb_trained2</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+        <span class="n">list_estimators</span> <span class="o">=</span> <span class="p">[</span><span class="n">gb_trained1</span><span class="p">,</span> <span class="n">gb_trained2</span><span class="p">,</span> <span class="n">gb_trained3</span><span class="p">]</span>
+        <span class="n">mapie_reg</span> <span class="o">=</span> <span class="n">MapieQuantileRegressor</span><span class="p">(</span>
+            <span class="n">estimator</span><span class="o">=</span><span class="n">list_estimators</span><span class="p">,</span>
+            <span class="n">cv</span><span class="o">=</span><span class="s2">&quot;prefit&quot;</span><span class="p">,</span>
+            <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span>
+        <span class="p">)</span>
+        <span class="n">mapie_reg</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+            <span class="n">X_calib</span><span class="p">,</span>
+            <span class="n">y_calib</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_warning_alpha_prefit"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.test_warning_alpha_prefit">[docs]</a><span class="k">def</span> <span class="nf">test_warning_alpha_prefit</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check that the user is warned that the alphas need to be correctly set.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">warns</span><span class="p">(</span>
+        <span class="ne">UserWarning</span><span class="p">,</span>
+        <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;.*WARNING: The alpha that is set needs to be the same*&quot;</span>
+    <span class="p">):</span>
+        <span class="n">gb_trained1</span><span class="p">,</span> <span class="n">gb_trained2</span><span class="p">,</span> <span class="n">gb_trained3</span> <span class="o">=</span> <span class="n">clone</span><span class="p">(</span><span class="n">gb</span><span class="p">),</span> <span class="n">clone</span><span class="p">(</span><span class="n">gb</span><span class="p">),</span> <span class="n">clone</span><span class="p">(</span><span class="n">gb</span><span class="p">)</span>
+        <span class="n">gb_trained1</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+        <span class="n">gb_trained2</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+        <span class="n">gb_trained3</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+        <span class="n">list_estimators</span> <span class="o">=</span> <span class="p">[</span><span class="n">gb_trained1</span><span class="p">,</span> <span class="n">gb_trained2</span><span class="p">,</span> <span class="n">gb_trained3</span><span class="p">]</span>
+        <span class="n">mapie_reg</span> <span class="o">=</span> <span class="n">MapieQuantileRegressor</span><span class="p">(</span>
+            <span class="n">estimator</span><span class="o">=</span><span class="n">list_estimators</span><span class="p">,</span>
+            <span class="n">cv</span><span class="o">=</span><span class="s2">&quot;prefit&quot;</span><span class="p">,</span>
+            <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span>
+        <span class="p">)</span>
+        <span class="n">mapie_reg</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+            <span class="n">X_calib</span><span class="p">,</span>
+            <span class="n">y_calib</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_prefit_and_non_prefit_equal"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.test_prefit_and_non_prefit_equal">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;alpha&quot;</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">test_prefit_and_non_prefit_equal</span><span class="p">(</span><span class="n">alpha</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check that when using prefit and not prefit, the same values</span>
+<span class="sd">    are found.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">list_estimators</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">alphas_</span> <span class="o">=</span> <span class="p">[</span><span class="n">alpha</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="o">-</span><span class="p">(</span><span class="n">alpha</span><span class="o">/</span><span class="mi">2</span><span class="p">),</span> <span class="mf">0.5</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">alpha_</span> <span class="ow">in</span> <span class="n">alphas_</span><span class="p">:</span>
+        <span class="n">est</span> <span class="o">=</span> <span class="n">clone</span><span class="p">(</span><span class="n">qt</span><span class="p">)</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;quantile&quot;</span><span class="p">:</span> <span class="n">alpha_</span><span class="p">}</span>
+        <span class="n">est</span><span class="o">.</span><span class="n">set_params</span><span class="p">(</span><span class="o">**</span><span class="n">params</span><span class="p">)</span>
+        <span class="n">est</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+        <span class="n">list_estimators</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">est</span><span class="p">)</span>
+    <span class="n">mapie_reg_prefit</span> <span class="o">=</span> <span class="n">MapieQuantileRegressor</span><span class="p">(</span>
+        <span class="n">estimator</span><span class="o">=</span><span class="n">list_estimators</span><span class="p">,</span>
+        <span class="n">cv</span><span class="o">=</span><span class="s2">&quot;prefit&quot;</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span>
+    <span class="p">)</span>
+    <span class="n">mapie_reg_prefit</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_calib</span><span class="p">,</span> <span class="n">y_calib</span><span class="p">)</span>
+    <span class="n">y_pred_prefit</span><span class="p">,</span> <span class="n">y_pis_prefit</span> <span class="o">=</span> <span class="n">mapie_reg_prefit</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+
+    <span class="n">mapie_reg</span> <span class="o">=</span> <span class="n">MapieQuantileRegressor</span><span class="p">(</span>
+        <span class="n">estimator</span><span class="o">=</span><span class="n">qt</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span>
+    <span class="p">)</span>
+    <span class="n">mapie_reg</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">X_calib</span><span class="o">=</span><span class="n">X_calib</span><span class="p">,</span> <span class="n">y_calib</span><span class="o">=</span><span class="n">y_calib</span><span class="p">)</span>
+    <span class="n">y_pred</span><span class="p">,</span> <span class="n">y_pis</span> <span class="o">=</span> <span class="n">mapie_reg</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">y_pred_prefit</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">y_pis_prefit</span><span class="p">,</span> <span class="n">y_pis</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_prefit_different_type_list_tuple_array"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.test_prefit_different_type_list_tuple_array">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;alpha&quot;</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">test_prefit_different_type_list_tuple_array</span><span class="p">(</span><span class="n">alpha</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Check that the type of Iterable (list, np.array, tuple) to</span>
+<span class="sd">    estimators gives similar results.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">list_estimators</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">alphas_</span> <span class="o">=</span> <span class="p">[</span><span class="n">alpha</span><span class="o">/</span><span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="o">-</span><span class="p">(</span><span class="n">alpha</span><span class="o">/</span><span class="mi">2</span><span class="p">),</span> <span class="mf">0.5</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">alpha_</span> <span class="ow">in</span> <span class="n">alphas_</span><span class="p">:</span>
+        <span class="n">est</span> <span class="o">=</span> <span class="n">clone</span><span class="p">(</span><span class="n">qt</span><span class="p">)</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;quantile&quot;</span><span class="p">:</span> <span class="n">alpha_</span><span class="p">}</span>
+        <span class="n">est</span><span class="o">.</span><span class="n">set_params</span><span class="p">(</span><span class="o">**</span><span class="n">params</span><span class="p">)</span>
+        <span class="n">est</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+        <span class="n">list_estimators</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">est</span><span class="p">)</span>
+
+    <span class="n">mapie_reg_prefit_list</span> <span class="o">=</span> <span class="n">MapieQuantileRegressor</span><span class="p">(</span>
+        <span class="n">estimator</span><span class="o">=</span><span class="n">list_estimators</span><span class="p">,</span>
+        <span class="n">cv</span><span class="o">=</span><span class="s2">&quot;prefit&quot;</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span>
+    <span class="p">)</span>
+    <span class="n">mapie_reg_prefit_list</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_calib</span><span class="p">,</span> <span class="n">y_calib</span><span class="p">)</span>
+    <span class="n">y_pred_prefit_list</span><span class="p">,</span> <span class="n">y_pis_prefit_list</span> <span class="o">=</span> <span class="n">mapie_reg_prefit_list</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+
+    <span class="n">mapie_reg_prefit_tuple</span> <span class="o">=</span> <span class="n">MapieQuantileRegressor</span><span class="p">(</span>
+        <span class="n">estimator</span><span class="o">=</span><span class="nb">tuple</span><span class="p">(</span><span class="n">list_estimators</span><span class="p">),</span>
+        <span class="n">cv</span><span class="o">=</span><span class="s2">&quot;prefit&quot;</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span>
+    <span class="p">)</span>
+    <span class="n">mapie_reg_prefit_tuple</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_calib</span><span class="p">,</span> <span class="n">y_calib</span><span class="p">)</span>
+    <span class="n">y_pred_prefit_tuple</span><span class="p">,</span> <span class="n">y_pis_prefit_tuple</span> <span class="o">=</span> <span class="n">mapie_reg_prefit_tuple</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+
+    <span class="n">mapie_reg_prefit_array</span> <span class="o">=</span> <span class="n">MapieQuantileRegressor</span><span class="p">(</span>
+        <span class="n">estimator</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">list_estimators</span><span class="p">),</span>
+        <span class="n">cv</span><span class="o">=</span><span class="s2">&quot;prefit&quot;</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span>
+    <span class="p">)</span>
+    <span class="n">mapie_reg_prefit_array</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_calib</span><span class="p">,</span> <span class="n">y_calib</span><span class="p">)</span>
+    <span class="n">y_pred_prefit_array</span><span class="p">,</span> <span class="n">y_pis_prefit_array</span> <span class="o">=</span> <span class="n">mapie_reg_prefit_array</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">y_pred_prefit_list</span><span class="p">,</span> <span class="n">y_pred_prefit_tuple</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">y_pis_prefit_list</span><span class="p">,</span> <span class="n">y_pis_prefit_tuple</span><span class="p">)</span>
+
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">y_pred_prefit_list</span><span class="p">,</span> <span class="n">y_pred_prefit_array</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">y_pis_prefit_list</span><span class="p">,</span> <span class="n">y_pis_prefit_array</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_pipeline_compatibility"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.test_pipeline_compatibility">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;estimator&quot;</span><span class="p">,</span> <span class="n">ESTIMATOR</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">test_pipeline_compatibility</span><span class="p">(</span><span class="n">estimator</span><span class="p">:</span> <span class="n">RegressorMixin</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Check that MAPIE works on pipeline based on pandas dataframes&quot;&quot;&quot;</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;x_cat&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">],</span>
+            <span class="s2">&quot;x_num&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="mi">5</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="mi">3</span><span class="p">],</span>
+            <span class="s2">&quot;y&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">8</span><span class="p">]</span>
+        <span class="p">}</span>
+    <span class="p">)</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">5</span><span class="p">])</span>
+    <span class="n">X_train_toy</span><span class="p">,</span> <span class="n">X_calib_toy</span><span class="p">,</span> <span class="n">y_train_toy</span><span class="p">,</span> <span class="n">y_calib_toy</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span>
+        <span class="n">X</span><span class="p">,</span>
+        <span class="n">y</span><span class="p">,</span>
+        <span class="n">test_size</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span>
+    <span class="p">)</span>
+    <span class="n">numeric_preprocessor</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">(</span>
+        <span class="p">[</span>
+            <span class="p">(</span><span class="s2">&quot;imputer&quot;</span><span class="p">,</span> <span class="n">SimpleImputer</span><span class="p">(</span><span class="n">strategy</span><span class="o">=</span><span class="s2">&quot;mean&quot;</span><span class="p">)),</span>
+        <span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">categorical_preprocessor</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">(</span>
+        <span class="n">steps</span><span class="o">=</span><span class="p">[</span>
+            <span class="p">(</span><span class="s2">&quot;encoding&quot;</span><span class="p">,</span> <span class="n">OneHotEncoder</span><span class="p">(</span><span class="n">handle_unknown</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">))</span>
+        <span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">preprocessor</span> <span class="o">=</span> <span class="n">ColumnTransformer</span><span class="p">(</span>
+        <span class="p">[</span>
+            <span class="p">(</span><span class="s2">&quot;cat&quot;</span><span class="p">,</span> <span class="n">categorical_preprocessor</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;x_cat&quot;</span><span class="p">]),</span>
+            <span class="p">(</span><span class="s2">&quot;num&quot;</span><span class="p">,</span> <span class="n">numeric_preprocessor</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;x_num&quot;</span><span class="p">])</span>
+        <span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">pipe</span> <span class="o">=</span> <span class="n">make_pipeline</span><span class="p">(</span><span class="n">preprocessor</span><span class="p">,</span> <span class="n">estimator</span><span class="p">)</span>
+    <span class="n">mapie</span> <span class="o">=</span> <span class="n">MapieQuantileRegressor</span><span class="p">(</span><span class="n">pipe</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.4</span><span class="p">)</span>
+    <span class="n">mapie</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+        <span class="n">X_train_toy</span><span class="p">,</span>
+        <span class="n">y_train_toy</span><span class="p">,</span>
+        <span class="n">X_calib</span><span class="o">=</span><span class="n">X_calib_toy</span><span class="p">,</span>
+        <span class="n">y_calib</span><span class="o">=</span><span class="n">y_calib_toy</span>
+    <span class="p">)</span>
+    <span class="n">mapie</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_deprecated_path_warning"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.test_deprecated_path_warning">[docs]</a><span class="k">def</span> <span class="nf">test_deprecated_path_warning</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Test that a warning is raised if import with deprecated path.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">warns</span><span class="p">(</span>
+        <span class="ne">FutureWarning</span><span class="p">,</span>
+        <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;.*WARNING: Deprecated path*&quot;</span>
+    <span class="p">):</span>
+        <span class="kn">from</span> <span class="nn">mapie.quantile_regression</span> <span class="kn">import</span> <span class="n">MapieQuantileRegressor</span>
+        <span class="n">_</span> <span class="o">=</span> <span class="n">MapieQuantileRegressor</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="test_consistent_class"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.test_consistent_class">[docs]</a><span class="k">def</span> <span class="nf">test_consistent_class</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Test that importing a class with a new or obsolete path</span>
+<span class="sd">    produces the same results.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">mapie.quantile_regression</span> <span class="kn">import</span> <span class="n">MapieQuantileRegressor</span> <span class="k">as</span> <span class="n">C1</span>
+    <span class="kn">from</span> <span class="nn">mapie.regression</span> <span class="kn">import</span> <span class="n">MapieQuantileRegressor</span> <span class="k">as</span> <span class="n">C2</span>
+
+    <span class="n">mapie_c1</span> <span class="o">=</span> <span class="n">C1</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">)</span>
+    <span class="n">mapie_c2</span> <span class="o">=</span> <span class="n">C2</span><span class="p">(</span><span class="n">alpha</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">)</span>
+
+    <span class="n">y_pred_1</span><span class="p">,</span> <span class="n">y_pis_1</span> <span class="o">=</span> <span class="n">mapie_c1</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+    <span class="n">y_pred_2</span><span class="p">,</span> <span class="n">y_pis_2</span> <span class="o">=</span> <span class="n">mapie_c2</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.1</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">y_pis_1</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">y_pis_2</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">y_pis_1</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">y_pis_2</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">y_pred_1</span><span class="p">,</span> <span class="n">y_pred_2</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_fit_parameters_passing"><a class="viewcode-back" href="../../../prom_mapie/mapie.tests.html#mapie.tests.test_quantile_regression.test_fit_parameters_passing">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;strategy&quot;</span><span class="p">,</span> <span class="p">[</span><span class="o">*</span><span class="n">STRATEGIES</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">test_fit_parameters_passing</span><span class="p">(</span><span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Test passing fit parameters, here early stopping at iteration 3.</span>
+<span class="sd">    Checks that underlying GradientBoosting estimators have used 3 iterations</span>
+<span class="sd">    only during boosting, instead of default value for n_estimators (=100).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">mapie</span> <span class="o">=</span> <span class="n">MapieQuantileRegressor</span><span class="p">(</span><span class="n">estimator</span><span class="o">=</span><span class="n">gb</span><span class="p">,</span> <span class="o">**</span><span class="n">STRATEGIES</span><span class="p">[</span><span class="n">strategy</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">early_stopping_monitor</span><span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">est</span><span class="p">,</span> <span class="nb">locals</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Returns True on the 3rd iteration.&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">True</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="n">mapie</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+        <span class="n">X_train</span><span class="p">,</span>
+        <span class="n">y_train</span><span class="p">,</span>
+        <span class="n">X_calib</span><span class="o">=</span><span class="n">X_calib</span><span class="p">,</span>
+        <span class="n">y_calib</span><span class="o">=</span><span class="n">y_calib</span><span class="p">,</span>
+        <span class="n">sample_weight</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="n">monitor</span><span class="o">=</span><span class="n">early_stopping_monitor</span>
+    <span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">estimator</span> <span class="ow">in</span> <span class="n">mapie</span><span class="o">.</span><span class="n">estimators_</span><span class="p">:</span>
+        <span class="k">assert</span> <span class="n">estimator</span><span class="o">.</span><span class="n">estimators_</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">3</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, _.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

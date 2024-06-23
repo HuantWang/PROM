@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mapie.multi_label_classification &mdash; Prom v0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="author" title="About these documents" href="../../about.html" />
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../index.html" class="icon icon-home">
+            Prom
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../faq.html">Frequently Asked Questions</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Python API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../src/prom.html">prom module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../src/util.html">util module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Python API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../prom_mapie/mapie.conformity_scores.html">mapie.conformity_scores package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../prom_mapie/mapie.control_risk.html">mapie.control_risk package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../prom_mapie/mapie.estimator.html">mapie.estimator package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../prom_mapie/mapie.regression.html">mapie.regression package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../prom_mapie/mapie.tests.html">mapie.tests package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../prom_mapie/modules.html">thirdpackage</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">Prom</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">mapie.multi_label_classification</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for mapie.multi_label_classification</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">from</span> <span class="nn">itertools</span> <span class="kn">import</span> <span class="n">chain</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">cast</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">sklearn.base</span> <span class="kn">import</span> <span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">ClassifierMixin</span>
+<span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">LogisticRegression</span>
+<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">train_test_split</span>
+<span class="kn">from</span> <span class="nn">sklearn.multioutput</span> <span class="kn">import</span> <span class="n">MultiOutputClassifier</span>
+<span class="kn">from</span> <span class="nn">sklearn.pipeline</span> <span class="kn">import</span> <span class="n">Pipeline</span>
+<span class="kn">from</span> <span class="nn">sklearn.utils</span> <span class="kn">import</span> <span class="n">check_random_state</span>
+<span class="kn">from</span> <span class="nn">sklearn.utils.validation</span> <span class="kn">import</span> <span class="p">(</span><span class="n">_check_y</span><span class="p">,</span> <span class="n">_num_samples</span><span class="p">,</span> <span class="n">check_is_fitted</span><span class="p">,</span>
+                                      <span class="n">indexable</span><span class="p">)</span>
+
+<span class="kn">from</span> <span class="nn">._typing</span> <span class="kn">import</span> <span class="n">ArrayLike</span><span class="p">,</span> <span class="n">NDArray</span>
+<span class="kn">from</span> <span class="nn">.control_risk.crc_rcps</span> <span class="kn">import</span> <span class="n">find_lambda_star</span><span class="p">,</span> <span class="n">get_r_hat_plus</span>
+<span class="kn">from</span> <span class="nn">.control_risk.ltt</span> <span class="kn">import</span> <span class="n">find_lambda_control_star</span><span class="p">,</span> <span class="n">ltt_procedure</span>
+<span class="kn">from</span> <span class="nn">.control_risk.risks</span> <span class="kn">import</span> <span class="n">compute_risk_precision</span><span class="p">,</span> <span class="n">compute_risk_recall</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">check_alpha</span><span class="p">,</span> <span class="n">check_n_jobs</span><span class="p">,</span> <span class="n">check_verbose</span>
+
+
+<div class="viewcode-block" id="MapieMultiLabelClassifier"><a class="viewcode-back" href="../../prom_mapie/mapie.html#mapie.multi_label_classification.MapieMultiLabelClassifier">[docs]</a><span class="k">class</span> <span class="nc">MapieMultiLabelClassifier</span><span class="p">(</span><span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">ClassifierMixin</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Prediction sets for multilabel-classification.</span>
+
+<span class="sd">    This class implements two conformal prediction methods for</span>
+<span class="sd">    estimating prediction sets for multilabel-classification.</span>
+<span class="sd">    It guarantees (under the hypothesis of exchangeability) that</span>
+<span class="sd">    a risk is at least 1 - alpha (alpha is a user-specified parameter).</span>
+<span class="sd">    For now, we consider the recall as risk.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    estimator : Optional[ClassifierMixin]</span>
+<span class="sd">        Any fitted multi-label classifier with scikit-learn API</span>
+<span class="sd">        (i.e. with fit, predict, and predict_proba methods).</span>
+<span class="sd">        If ``None``, estimator by default is a sklearn LogisticRegression</span>
+<span class="sd">        instance.</span>
+
+<span class="sd">         by default ``None``</span>
+
+<span class="sd">    n_jobs: Optional[int]</span>
+<span class="sd">        Number of jobs for parallel processing using joblib</span>
+<span class="sd">        via the &quot;locky&quot; backend.</span>
+<span class="sd">        For this moment, parallel processing is disabled.</span>
+<span class="sd">        If ``-1`` all CPUs are used.</span>
+<span class="sd">        If ``1`` is given, no parallel computing code is used at all,</span>
+<span class="sd">        which is useful for debugging.</span>
+<span class="sd">        For n_jobs below ``-1``, ``(n_cpus + 1 + n_jobs)`` are used.</span>
+<span class="sd">        &quot;None&quot; is a marker for `unset` that will be interpreted as ``n_jobs=1``</span>
+<span class="sd">        (sequential execution).</span>
+
+<span class="sd">        By default ``None``.</span>
+
+<span class="sd">    random_state: Optional[Union[int, RandomState]]</span>
+<span class="sd">        Pseudo random number generator state used for random uniform sampling</span>
+<span class="sd">        to evaluate quantiles and prediction sets.</span>
+<span class="sd">        Pass an int for reproducible output across multiple function calls.</span>
+
+<span class="sd">        By default ``1``.</span>
+
+<span class="sd">    verbose : int, optional</span>
+<span class="sd">        The verbosity level, used with joblib for parallel processing.</span>
+<span class="sd">        For the moment, parallel processing is disabled.</span>
+<span class="sd">        The frequency of the messages increases with the verbosity level.</span>
+<span class="sd">        If it more than ``10``, all iterations are reported.</span>
+<span class="sd">        Above ``50``, the output is sent to stdout.</span>
+
+<span class="sd">        By default ``0``.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    valid_methods: List[str]</span>
+<span class="sd">        List of all valid methods. Either CRC or RCPS</span>
+<span class="sd">    valid_methods: List[Union[str, ``None``]]</span>
+<span class="sd">        List of all valid bounds computation for RCPS only.</span>
+<span class="sd">    single_estimator_ : sklearn.ClassifierMixin</span>
+<span class="sd">        Estimator fitted on the whole training set.</span>
+
+<span class="sd">    n_lambdas: int</span>
+<span class="sd">        Number of thresholds on which we compute the risk.</span>
+
+<span class="sd">    lambdas: NDArray</span>
+<span class="sd">        Array with all the values of lambda.</span>
+
+<span class="sd">    risks : ArrayLike of shape (n_samples_cal, n_lambdas)</span>
+<span class="sd">        The risk for each observation for each threshold</span>
+
+<span class="sd">    r_hat : ArrayLike of shape (n_lambdas)</span>
+<span class="sd">        Average risk for each lambda</span>
+
+<span class="sd">    r_hat_plus: ArrayLike of shape (n_lambdas)</span>
+<span class="sd">        Upper confidence bound for each lambda, computed</span>
+<span class="sd">        with different bounds (see predict). Only relevant when</span>
+<span class="sd">        method=&quot;rcps&quot;.</span>
+
+<span class="sd">    lambdas_star: ArrayLike of shape (n_lambdas)</span>
+<span class="sd">        Optimal threshold for a given alpha.</span>
+
+<span class="sd">    valid_index: List[List[Any]]</span>
+<span class="sd">        List of list of all index that satisfy fwer controlling.</span>
+<span class="sd">        This attribute is computed when the user wants to</span>
+<span class="sd">        control precision score.</span>
+<span class="sd">        Only relevant when metric_control=&quot;precision&quot; as it uses</span>
+<span class="sd">        learn then test (ltt) procedure.</span>
+<span class="sd">        Contains n_alpha lists (see predict).</span>
+
+<span class="sd">     sigma_init : Optional[float]</span>
+<span class="sd">        First variance in the sigma_hat array. The default</span>
+<span class="sd">        value is the same as in the paper implementation [1].</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    [1] Lihua Lei Jitendra Malik Stephen Bates, Anastasios Angelopoulos</span>
+<span class="sd">    and Michael I. Jordan. Distribution-free, risk-controlling prediction</span>
+<span class="sd">    sets. CoRR, abs/2101.02703, 2021.</span>
+<span class="sd">    URL https://arxiv.org/abs/2101.02703.39</span>
+
+<span class="sd">    [2] Angelopoulos, Anastasios N., Stephen, Bates, Adam, Fisch, Lihua,</span>
+<span class="sd">    Lei, and Tal, Schuster. &quot;Conformal Risk Control.&quot; (2022).</span>
+
+<span class="sd">    [3] Angelopoulos, A. N., Bates, S., Candès, E. J., Jordan,</span>
+<span class="sd">    M. I., &amp; Lei, L. (2021). Learn then test:</span>
+<span class="sd">    &quot;Calibrating predictive algorithms to achieve risk control&quot;.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">    &gt;&gt;&gt; from sklearn.multioutput import MultiOutputClassifier</span>
+<span class="sd">    &gt;&gt;&gt; from sklearn.linear_model import LogisticRegression</span>
+<span class="sd">    &gt;&gt;&gt; from mapie.multi_label_classification import MapieMultiLabelClassifier</span>
+<span class="sd">    &gt;&gt;&gt; X_toy = np.arange(4).reshape(-1, 1)</span>
+<span class="sd">    &gt;&gt;&gt; y_toy = np.stack([[1, 0, 1], [1, 0, 0], [0, 1, 1], [0, 1, 0]])</span>
+<span class="sd">    &gt;&gt;&gt; clf = MultiOutputClassifier(LogisticRegression()).fit(X_toy, y_toy)</span>
+<span class="sd">    &gt;&gt;&gt; mapie = MapieMultiLabelClassifier(estimator=clf).fit(X_toy, y_toy)</span>
+<span class="sd">    &gt;&gt;&gt; _, y_pi_mapie = mapie.predict(X_toy, alpha=0.3)</span>
+<span class="sd">    &gt;&gt;&gt; print(y_pi_mapie[:, :, 0])</span>
+<span class="sd">    [[ True False  True]</span>
+<span class="sd">     [ True False  True]</span>
+<span class="sd">     [False  True False]</span>
+<span class="sd">     [False  True False]]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">valid_methods_by_metric_</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;precision&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;ltt&quot;</span><span class="p">],</span>
+        <span class="s2">&quot;recall&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;rcps&quot;</span><span class="p">,</span> <span class="s2">&quot;crc&quot;</span><span class="p">]</span>
+    <span class="p">}</span>
+    <span class="n">valid_methods</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">chain</span><span class="p">(</span><span class="o">*</span><span class="n">valid_methods_by_metric_</span><span class="o">.</span><span class="n">values</span><span class="p">()))</span>
+    <span class="n">valid_metric_</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">valid_methods_by_metric_</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+    <span class="n">valid_bounds_</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;hoeffding&quot;</span><span class="p">,</span> <span class="s2">&quot;bernstein&quot;</span><span class="p">,</span> <span class="s2">&quot;wsr&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span>
+    <span class="n">lambdas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">)</span>
+    <span class="n">n_lambdas</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">lambdas</span><span class="p">)</span>
+    <span class="n">fit_attributes</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;single_estimator_&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;risks&quot;</span>
+    <span class="p">]</span>
+    <span class="n">sigma_init</span> <span class="o">=</span> <span class="mf">0.25</span>  <span class="c1"># Value given in the paper [1]</span>
+    <span class="n">cal_size</span> <span class="o">=</span> <span class="mf">.3</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">estimator</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ClassifierMixin</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">metric_control</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;recall&#39;</span><span class="p">,</span>
+        <span class="n">method</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">n_jobs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">RandomState</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">estimator</span> <span class="o">=</span> <span class="n">estimator</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metric_control</span> <span class="o">=</span> <span class="n">metric_control</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="n">method</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_jobs</span> <span class="o">=</span> <span class="n">n_jobs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">random_state</span> <span class="o">=</span> <span class="n">random_state</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="n">verbose</span>
+
+    <span class="k">def</span> <span class="nf">_check_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check n_jobs, verbose and random_states.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            If parameters are not valid.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">check_n_jobs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_jobs</span><span class="p">)</span>
+        <span class="n">check_verbose</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">)</span>
+        <span class="n">check_random_state</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">random_state</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_check_method</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check that the specified method is valid</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            Raise error if the name of the method is not</span>
+<span class="sd">            in self.valid_methods_</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">metric_control</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="nb">str</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">metric_control</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_methods_by_metric_</span><span class="p">[</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">metric_control</span>
+        <span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Invalid method for metric: &quot;</span>
+                <span class="o">+</span> <span class="s2">&quot;You are controlling &quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">metric_control</span>
+                <span class="o">+</span> <span class="s2">&quot; and you are using invalid method: &quot;</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span>
+                <span class="o">+</span> <span class="s2">&quot;. Use instead: &quot;</span> <span class="o">+</span> <span class="s2">&quot;&quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">valid_methods_by_metric_</span><span class="p">[</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">metric_control</span><span class="p">]</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_check_all_labelled</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check that all observations have at least</span>
+<span class="sd">        one label</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        y : NDArray of shape (n_samples, n_labels)</span>
+<span class="sd">            Labels of the observations.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            Raise error if at least one observation</span>
+<span class="sd">            has no label.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Invalid y. &quot;</span>
+                <span class="s2">&quot;All observations should contain at &quot;</span>
+                <span class="s2">&quot;least one label.&quot;</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_check_delta</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">delta</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check that delta is not ``None`` when the</span>
+<span class="sd">        method is RCPS and that it is between 0 and 1.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        delta : float</span>
+<span class="sd">            Probability with which we control the risk. The higher</span>
+<span class="sd">            the probability, the more conservative the algorithm will be.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            If delta is ``None`` and method is RCSP or</span>
+<span class="sd">            if delta is not in [0, 1] and method</span>
+<span class="sd">            is RCPS.</span>
+<span class="sd">        Warning</span>
+<span class="sd">            If delta is not ``None`` and method is CRC</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">delta</span><span class="p">,</span> <span class="nb">float</span><span class="p">))</span> <span class="ow">and</span> <span class="p">(</span><span class="n">delta</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Invalid delta. &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;delta must be a float, not a </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">delta</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;rcps&quot;</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;ltt&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">delta</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;Invalid delta. &quot;</span>
+                    <span class="s2">&quot;delta cannot be ``None`` when controlling &quot;</span>
+                    <span class="s2">&quot;Recall with RCPS or Precision with LTT&quot;</span>
+                <span class="p">)</span>
+            <span class="k">elif</span> <span class="p">((</span><span class="n">delta</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">delta</span> <span class="o">&gt;=</span> <span class="mi">1</span><span class="p">)):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;Invalid delta. &quot;</span>
+                    <span class="s2">&quot;delta must be in ]0, 1[&quot;</span>
+                <span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;crc&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">delta</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="s2">&quot;WARNING: you are using crc method, hence &quot;</span>
+                <span class="o">+</span> <span class="s2">&quot;even if the delta is not ``None``, it won&#39;t be&quot;</span>
+                <span class="o">+</span> <span class="s2">&quot;taken into account&quot;</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_check_valid_index</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">alpha</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check if the valid index is empty.</span>
+<span class="sd">        If it is, we should warn the user that for the alpha value</span>
+<span class="sd">        and delta level chosen, LTT will return no results.</span>
+<span class="sd">        The user must be less inclined to take risks or</span>
+<span class="sd">        must choose a higher alpha value.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">valid_index</span><span class="p">)):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_index</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="p">[]:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                    <span class="s2">&quot;Warning: LTT method has returned an empty sequence&quot;</span>
+                    <span class="o">+</span> <span class="s2">&quot; for alpha=&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">alpha</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+                <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_check_estimator</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">X</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
+        <span class="n">y</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
+        <span class="n">estimator</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ClassifierMixin</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">_refit</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ClassifierMixin</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check the estimator value. If it is ``None``,</span>
+<span class="sd">        it returns a multi-output ``LogisticRegression``</span>
+<span class="sd">        instance if necessary.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        X : ArrayLike of shape (n_samples, n_features)</span>
+<span class="sd">            Training data.</span>
+
+<span class="sd">        y : ArrayLike of shape (n_samples,)</span>
+<span class="sd">            Training labels.</span>
+
+<span class="sd">        estimator : Optional[ClassifierMixin], optional</span>
+<span class="sd">            Estimator to check, by default ``None``</span>
+
+<span class="sd">        _refit : Optional[bool]</span>
+<span class="sd">            Whether or not the user is using fit (True) or</span>
+<span class="sd">            partial_fit (False).</span>
+
+<span class="sd">            By default False</span>
+
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ClassifierMixin</span>
+<span class="sd">            The estimator itself or a default multi-output</span>
+<span class="sd">            ``LogisticRegression`` instance.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            If the estimator is not ``None``</span>
+<span class="sd">            and has no fit, predict, nor predict_proba methods.</span>
+
+<span class="sd">        NotFittedError</span>
+<span class="sd">            If the estimator is not fitted.</span>
+
+<span class="sd">        Warning</span>
+<span class="sd">            If estimator is then to warn about the split of the</span>
+<span class="sd">            data between train and calibration</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">estimator</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="n">_refit</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Invalid estimator with partial_fit. &quot;</span>
+                <span class="s2">&quot;If the estimator is ``None`` you can not &quot;</span>
+                <span class="s2">&quot;use partial_fit.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">estimator</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="n">_refit</span><span class="p">):</span>
+            <span class="n">estimator</span> <span class="o">=</span> <span class="n">MultiOutputClassifier</span><span class="p">(</span>
+                <span class="n">LogisticRegression</span><span class="p">(</span><span class="n">multi_class</span><span class="o">=</span><span class="s2">&quot;multinomial&quot;</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">X_train</span><span class="p">,</span> <span class="n">X_calib</span><span class="p">,</span> <span class="n">y_train</span><span class="p">,</span> <span class="n">y_calib</span> <span class="o">=</span> <span class="n">train_test_split</span><span class="p">(</span>
+                    <span class="n">X</span><span class="p">,</span>
+                    <span class="n">y</span><span class="p">,</span>
+                    <span class="n">test_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">calib_size</span><span class="p">,</span>
+                    <span class="n">random_state</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">random_state</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="n">estimator</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">)</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="s2">&quot;WARNING: To avoid overffiting, X has been splitted&quot;</span>
+                <span class="o">+</span> <span class="s2">&quot;into X_train and X_calib. The calibraiton will only&quot;</span>
+                <span class="o">+</span> <span class="s2">&quot;be done on X_calib&quot;</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">estimator</span><span class="p">,</span> <span class="n">X_calib</span><span class="p">,</span> <span class="n">y_calib</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">estimator</span><span class="p">,</span> <span class="n">Pipeline</span><span class="p">):</span>
+            <span class="n">est</span> <span class="o">=</span> <span class="n">estimator</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">est</span> <span class="o">=</span> <span class="n">estimator</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">est</span><span class="p">,</span> <span class="s2">&quot;fit&quot;</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">est</span><span class="p">,</span> <span class="s2">&quot;predict&quot;</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">est</span><span class="p">,</span> <span class="s2">&quot;predict_proba&quot;</span><span class="p">)</span>
+        <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Invalid estimator. &quot;</span>
+                <span class="s2">&quot;Please provide a classifier with fit,&quot;</span>
+                <span class="s2">&quot;predict, and predict_proba methods.&quot;</span>
+            <span class="p">)</span>
+        <span class="n">check_is_fitted</span><span class="p">(</span><span class="n">est</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">estimator</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span>
+
+    <span class="k">def</span> <span class="nf">_check_partial_fit_first_call</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check that this is the first time partial_fit</span>
+<span class="sd">        or fit is called.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        bool</span>
+<span class="sd">            True if it is the first time, else False.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;risks&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_check_bound</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">bound</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check the value of the bound.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        bound : Optional[str]</span>
+<span class="sd">            Bound defined in the predict.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        AttributeError</span>
+<span class="sd">            If bound is not in [&quot;hoeffding&quot;, &quot;bernstein&quot;, &quot;wsr&quot;, ``None``]</span>
+
+<span class="sd">        Warning</span>
+<span class="sd">            If bound is not ``None``and method is CRC</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">bound</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_bounds_</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;bound must be in [&#39;hoeffding&#39;, &#39;bernstein&#39;, &#39;wsr&#39;, ``None``]&quot;</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="n">bound</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;crc&quot;</span><span class="p">):</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="s2">&quot;WARNING: you are using crc method, hence &quot;</span>
+                <span class="o">+</span> <span class="s2">&quot;even if the bound is not ``None``, it won&#39;t be&quot;</span>
+                <span class="o">+</span> <span class="s2">&quot;taken into account.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="n">bound</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;ltt&quot;</span><span class="p">):</span>
+            <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                <span class="s2">&quot;WARNING: you are using ltt method hence &quot;</span>
+                <span class="o">+</span> <span class="s2">&quot;even if bound is not ``None``, it won&#39;t be&quot;</span>
+                <span class="o">+</span> <span class="s2">&quot;taken into account.&quot;</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_check_metric_control</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check that the metrics to control are valid</span>
+<span class="sd">        (can be a string or list of string.)</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">metric_control</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_metric_</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Invalid metric. &quot;</span>
+                <span class="s2">&quot;Allowed scores must be in the following list &quot;</span>
+                <span class="o">+</span> <span class="s2">&quot;, &quot;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">valid_metric_</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">metric_control</span> <span class="o">==</span> <span class="s2">&quot;recall&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="s2">&quot;crc&quot;</span>
+            <span class="k">else</span><span class="p">:</span>  <span class="c1"># self.metric_control == &quot;precision&quot;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="s2">&quot;ltt&quot;</span>
+
+    <span class="k">def</span> <span class="nf">_transform_pred_proba</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">y_pred_proba</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="n">NDArray</span><span class="p">],</span> <span class="n">NDArray</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;If the output of the predict_proba is a list of arrays (output of</span>
+<span class="sd">        the ``predict_proba`` of ``MultiOutputClassifier``) we transform it</span>
+<span class="sd">        into an array of shape (n_samples, n_classes, 1), otherwise, we add</span>
+<span class="sd">        one dimension at the end.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        y_pred_proba : Union[List, NDArray]</span>
+<span class="sd">            Output of the multi-label classifier.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        NDArray of shape (n_samples, n_classe, 1)</span>
+<span class="sd">            Output of the model ready for risk computation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y_pred_proba</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+            <span class="n">y_pred_proba_array</span> <span class="o">=</span> <span class="n">y_pred_proba</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">y_pred_proba_stacked</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span>
+                <span class="n">y_pred_proba</span><span class="p">,</span>  <span class="c1"># type: ignore</span>
+                <span class="n">axis</span><span class="o">=</span><span class="mi">0</span>
+            <span class="p">)[:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">]</span>
+            <span class="n">y_pred_proba_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">moveaxis</span><span class="p">(</span><span class="n">y_pred_proba_stacked</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">y_pred_proba_array</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MapieMultiLabelClassifier.partial_fit"><a class="viewcode-back" href="../../prom_mapie/mapie.html#mapie.multi_label_classification.MapieMultiLabelClassifier.partial_fit">[docs]</a>    <span class="k">def</span> <span class="nf">partial_fit</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">X</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
+        <span class="n">y</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
+        <span class="n">_refit</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Fit the base estimator or use the fitted base estimator on</span>
+<span class="sd">        batch data. All the computed risks will be concatenated each</span>
+<span class="sd">        time the partial_fit method is called.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        X : ArrayLike of shape (n_samples, n_features)</span>
+<span class="sd">            Training data.</span>
+
+<span class="sd">        y : NDArray of shape (n_samples, n_classes)</span>
+<span class="sd">            Training labels.</span>
+
+<span class="sd">        _refit: bool</span>
+<span class="sd">            Whether or not refit from scratch.</span>
+
+<span class="sd">            By default False</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        MapieMultiLabelClassifier</span>
+<span class="sd">            The model itself.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Checks</span>
+        <span class="n">first_call</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_partial_fit_first_call</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_parameters</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_metric_control</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_method</span><span class="p">()</span>
+
+        <span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">indexable</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="n">_check_y</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">multi_output</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+        <span class="n">estimator</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_estimator</span><span class="p">(</span>
+            <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">estimator</span><span class="p">,</span>
+            <span class="n">_refit</span>
+        <span class="p">)</span>
+
+        <span class="n">y</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">NDArray</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">NDArray</span><span class="p">,</span> <span class="n">X</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_all_labelled</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_samples_</span> <span class="o">=</span> <span class="n">_num_samples</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+
+        <span class="c1"># Work</span>
+        <span class="k">if</span> <span class="n">first_call</span> <span class="ow">or</span> <span class="n">_refit</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">single_estimator_</span> <span class="o">=</span> <span class="n">estimator</span>
+            <span class="n">y_pred_proba</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">single_estimator_</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+            <span class="n">y_pred_proba_array</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transform_pred_proba</span><span class="p">(</span><span class="n">y_pred_proba</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">theta_</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">metric_control</span> <span class="o">==</span> <span class="s2">&quot;recall&quot;</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">risks</span> <span class="o">=</span> <span class="n">compute_risk_recall</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">lambdas</span><span class="p">,</span> <span class="n">y_pred_proba_array</span><span class="p">,</span> <span class="n">y</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>  <span class="c1"># self.metric_control == &quot;precision&quot;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">risks</span> <span class="o">=</span> <span class="n">compute_risk_precision</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">lambdas</span><span class="p">,</span> <span class="n">y_pred_proba_array</span><span class="p">,</span> <span class="n">y</span>
+                <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_</span><span class="p">:</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="s2">&quot;Number of features </span><span class="si">%d</span><span class="s2"> does not match previous data </span><span class="si">%d</span><span class="s2">.&quot;</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="n">msg</span> <span class="o">%</span> <span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">theta_</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">single_estimator_</span> <span class="o">=</span> <span class="n">estimator</span>
+            <span class="n">y_pred_proba</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">single_estimator_</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+            <span class="n">y_pred_proba_array</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transform_pred_proba</span><span class="p">(</span><span class="n">y_pred_proba</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">metric_control</span> <span class="o">==</span> <span class="s2">&quot;recall&quot;</span><span class="p">:</span>
+                <span class="n">partial_risk</span> <span class="o">=</span> <span class="n">compute_risk_recall</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">lambdas</span><span class="p">,</span>
+                    <span class="n">y_pred_proba_array</span><span class="p">,</span>
+                    <span class="n">y</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>  <span class="c1"># self.metric_control == &quot;precision&quot;</span>
+                <span class="n">partial_risk</span> <span class="o">=</span> <span class="n">compute_risk_precision</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">lambdas</span><span class="p">,</span>
+                    <span class="n">y_pred_proba_array</span><span class="p">,</span>
+                    <span class="n">y</span>
+                <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">risks</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="bp">self</span><span class="o">.</span><span class="n">risks</span><span class="p">,</span> <span class="n">partial_risk</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+<div class="viewcode-block" id="MapieMultiLabelClassifier.fit"><a class="viewcode-back" href="../../prom_mapie/mapie.html#mapie.multi_label_classification.MapieMultiLabelClassifier.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">X</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
+        <span class="n">y</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
+        <span class="n">calib_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="mf">.3</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Fit the base estimator or use the fitted base estimator.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        X: ArrayLike of shape (n_samples, n_features)</span>
+<span class="sd">            Training data.</span>
+
+<span class="sd">        y: NDArray of shape (n_samples, n_classes)</span>
+<span class="sd">            Training labels.</span>
+
+<span class="sd">        calib_size: Optional[float]</span>
+<span class="sd">            Size of the calibration dataset with respect to X if the</span>
+<span class="sd">            given model is ``None`` need to fit a LogisticRegression.</span>
+
+<span class="sd">            By default .3</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        MapieMultiLabelClassifier</span>
+<span class="sd">            The model itself.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">calib_size</span> <span class="o">=</span> <span class="n">calib_size</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">partial_fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">_refit</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MapieMultiLabelClassifier.predict"><a class="viewcode-back" href="../../prom_mapie/mapie.html#mapie.multi_label_classification.MapieMultiLabelClassifier.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">X</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">float</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">delta</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">bound</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">NDArray</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">NDArray</span><span class="p">,</span> <span class="n">NDArray</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Prediction sets on new samples based on target confidence</span>
+<span class="sd">        interval.</span>
+<span class="sd">        Prediction sets for a given ``alpha`` are deduced from the computed</span>
+<span class="sd">        risks.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        X: ArrayLike of shape (n_samples, n_features)</span>
+
+<span class="sd">        alpha : Optional[Union[float, Iterable[float]]]</span>
+<span class="sd">            Can be a float, a list of floats, or a ``ArrayLike`` of floats.</span>
+<span class="sd">            Between 0 and 1, represent the uncertainty of the confidence</span>
+<span class="sd">            interval.</span>
+<span class="sd">            Lower ``alpha`` produce larger (more conservative) prediction</span>
+<span class="sd">            sets.</span>
+<span class="sd">            ``alpha`` is the complement of the target coverage level.</span>
+<span class="sd">            By default ``None``.</span>
+
+<span class="sd">        delta : Optional[float]</span>
+<span class="sd">            Can be a float, or ``None``. If using method=&quot;rcps&quot;, then it</span>
+<span class="sd">            can not be set to ``None``.</span>
+<span class="sd">            Between 0 and 1, the level of certainty at which we compute</span>
+<span class="sd">            the Upper Confidence Bound of the average risk.</span>
+<span class="sd">            Lower ``delta`` produce larger (more conservative) prediction</span>
+<span class="sd">            sets.</span>
+<span class="sd">            By default ``None``.</span>
+
+<span class="sd">        bound : Optional[Union[str, ``None``]]</span>
+<span class="sd">            Method used to compute the Upper Confidence Bound of the</span>
+<span class="sd">            average risk. Only necessary with the RCPS method.</span>
+<span class="sd">            By default ``None``.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Union[NDArray, Tuple[NDArray, NDArray]]</span>
+
+<span class="sd">        - NDArray of shape (n_samples,) if alpha is ``None``.</span>
+
+<span class="sd">        - Tuple[NDArray, NDArray] of shapes</span>
+<span class="sd">        (n_samples, n_classes) and (n_samples, n_classes, n_alpha)</span>
+<span class="sd">        if alpha is not ``None``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_delta</span><span class="p">(</span><span class="n">delta</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_bound</span><span class="p">(</span><span class="n">bound</span><span class="p">)</span>
+        <span class="n">alpha</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">Optional</span><span class="p">[</span><span class="n">NDArray</span><span class="p">],</span> <span class="n">check_alpha</span><span class="p">(</span><span class="n">alpha</span><span class="p">))</span>
+        <span class="n">check_is_fitted</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit_attributes</span><span class="p">)</span>
+
+        <span class="c1"># Estimate prediction sets</span>
+        <span class="n">y_pred</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">single_estimator_</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">alpha</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y_pred</span><span class="p">)</span>
+
+        <span class="n">alpha_np</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">NDArray</span><span class="p">,</span> <span class="n">alpha</span><span class="p">)</span>
+
+        <span class="n">y_pred_proba</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">single_estimator_</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+
+        <span class="n">y_pred_proba_array</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_transform_pred_proba</span><span class="p">(</span><span class="n">y_pred_proba</span><span class="p">)</span>
+        <span class="n">y_pred_proba_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span>
+            <span class="n">y_pred_proba_array</span><span class="p">,</span>
+            <span class="nb">len</span><span class="p">(</span><span class="n">alpha_np</span><span class="p">),</span>
+            <span class="n">axis</span><span class="o">=</span><span class="mi">2</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">metric_control</span> <span class="o">==</span> <span class="s1">&#39;precision&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">n_obs</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">risks</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">r_hat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">risks</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">valid_index</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">p_values</span> <span class="o">=</span> <span class="n">ltt_procedure</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">r_hat</span><span class="p">,</span> <span class="n">alpha_np</span><span class="p">,</span> <span class="n">delta</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">n_obs</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_check_valid_index</span><span class="p">(</span><span class="n">alpha_np</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lambdas_star</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">r_star</span> <span class="o">=</span> <span class="n">find_lambda_control_star</span><span class="p">(</span>
+               <span class="bp">self</span><span class="o">.</span><span class="n">r_hat</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_index</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lambdas</span>
+            <span class="p">)</span>
+            <span class="n">y_pred_proba_array</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">y_pred_proba_array</span> <span class="o">&gt;</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">lambdas_star</span><span class="p">)[</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="p">:]</span>
+            <span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">r_hat</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">r_hat_plus</span> <span class="o">=</span> <span class="n">get_r_hat_plus</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">risks</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">lambdas</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">,</span>
+                <span class="n">bound</span><span class="p">,</span> <span class="n">delta</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">sigma_init</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">lambdas_star</span> <span class="o">=</span> <span class="n">find_lambda_star</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">lambdas</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">r_hat_plus</span><span class="p">,</span> <span class="n">alpha_np</span>
+            <span class="p">)</span>
+            <span class="n">y_pred_proba_array</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">y_pred_proba_array</span> <span class="o">&gt;</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">lambdas_star</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="p">:]</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">y_pred_proba_array</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, _.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

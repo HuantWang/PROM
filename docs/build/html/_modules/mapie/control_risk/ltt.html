@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>mapie.control_risk.ltt &mdash; Prom v0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="author" title="About these documents" href="../../../about.html" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Prom
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../faq.html">Frequently Asked Questions</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Python API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../src/prom.html">prom module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../src/util.html">util module</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Python API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../prom_mapie/mapie.conformity_scores.html">mapie.conformity_scores package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../prom_mapie/mapie.control_risk.html">mapie.control_risk package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../prom_mapie/mapie.estimator.html">mapie.estimator package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../prom_mapie/mapie.regression.html">mapie.regression package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../prom_mapie/mapie.tests.html">mapie.tests package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../prom_mapie/modules.html">thirdpackage</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Prom</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">mapie.control_risk.ltt</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for mapie.control_risk.ltt</h1><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">warnings</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">List</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+
+<span class="kn">from</span> <span class="nn">mapie._typing</span> <span class="kn">import</span> <span class="n">ArrayLike</span><span class="p">,</span> <span class="n">NDArray</span>
+
+<span class="kn">from</span> <span class="nn">.p_values</span> <span class="kn">import</span> <span class="n">compute_hoeffdding_bentkus_p_value</span>
+
+
+<div class="viewcode-block" id="ltt_procedure"><a class="viewcode-back" href="../../../prom_mapie/mapie.control_risk.html#mapie.control_risk.ltt.ltt_procedure">[docs]</a><span class="k">def</span> <span class="nf">ltt_procedure</span><span class="p">(</span>
+    <span class="n">r_hat</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">,</span>
+    <span class="n">alpha_np</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">,</span>
+    <span class="n">delta</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">float</span><span class="p">],</span>
+    <span class="n">n_obs</span><span class="p">:</span> <span class="nb">int</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]],</span> <span class="n">NDArray</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Apply the Learn-Then-Test procedure for risk control.</span>
+<span class="sd">    Note that we will do a multiple test for ``r_hat`` that are</span>
+<span class="sd">    less than level ``alpha_np``.</span>
+<span class="sd">    The procedure follows the instructions in [1]:</span>
+<span class="sd">        - Calculate p-values for each lambdas descretized</span>
+<span class="sd">        - Apply a family wise error rate algorithm,</span>
+<span class="sd">        here Bonferonni correction</span>
+<span class="sd">        - Return the index lambdas that give you the control</span>
+<span class="sd">        at alpha level</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    r_hat: NDArray of shape (n_lambdas, ).</span>
+<span class="sd">        Empirical risk with respect</span>
+<span class="sd">        to the lambdas.</span>
+<span class="sd">        Here lambdas are thresholds that impact decision making,</span>
+<span class="sd">        therefore empirical risk.</span>
+
+<span class="sd">    alpha_np: NDArray of shape (n_alpha, ).</span>
+<span class="sd">        Contains the different alphas control level.</span>
+<span class="sd">        The empirical risk should be less than alpha with</span>
+<span class="sd">        probability 1-delta.</span>
+
+<span class="sd">    delta: float.</span>
+<span class="sd">        Probability of not controlling empirical risk.</span>
+<span class="sd">        Correspond to proportion of failure we don&#39;t</span>
+<span class="sd">        want to exceed.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    valid_index: List[List[Any]].</span>
+<span class="sd">        Contain the valid index that satisfy fwer control</span>
+<span class="sd">        for each alpha (length aren&#39;t the same for each alpha).</span>
+
+<span class="sd">    p_values: NDArray of shape (n_lambda, n_alpha).</span>
+<span class="sd">        Contains the values of p_value for different alpha.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    [1] Angelopoulos, A. N., Bates, S., Candès, E. J., Jordan,</span>
+<span class="sd">    M. I., &amp; Lei, L. (2021). Learn then test:</span>
+<span class="sd">    &quot;Calibrating predictive algorithms to achieve risk control&quot;.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">delta</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;Invalid delta: delta cannot be None while&quot;</span>
+            <span class="o">+</span> <span class="s2">&quot; controlling precision with LTT. &quot;</span>
+        <span class="p">)</span>
+    <span class="n">p_values</span> <span class="o">=</span> <span class="n">compute_hoeffdding_bentkus_p_value</span><span class="p">(</span><span class="n">r_hat</span><span class="p">,</span> <span class="n">n_obs</span><span class="p">,</span> <span class="n">alpha_np</span><span class="p">)</span>
+    <span class="n">N</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">p_values</span><span class="p">)</span>
+    <span class="n">valid_index</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">alpha_np</span><span class="p">)):</span>
+        <span class="n">l_index</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">p_values</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">delta</span><span class="o">/</span><span class="n">N</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="n">valid_index</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">l_index</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">valid_index</span><span class="p">,</span> <span class="n">p_values</span></div>
+
+
+<div class="viewcode-block" id="find_lambda_control_star"><a class="viewcode-back" href="../../../prom_mapie/mapie.control_risk.html#mapie.control_risk.ltt.find_lambda_control_star">[docs]</a><span class="k">def</span> <span class="nf">find_lambda_control_star</span><span class="p">(</span>
+    <span class="n">r_hat</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">,</span>
+    <span class="n">valid_index</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]],</span>
+    <span class="n">lambdas</span><span class="p">:</span> <span class="n">NDArray</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">ArrayLike</span><span class="p">,</span> <span class="n">ArrayLike</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Return the lambda that give the minimum precision along</span>
+<span class="sd">    the lambdas that satisfy FWER control.</span>
+<span class="sd">    Note: When a list in valid_index is empty, we can assume that</span>
+<span class="sd">    lambda is equal to 1, as no lambda can verify the FWER control.</span>
+<span class="sd">    And so to make our statement clear we also assume that the risk is</span>
+<span class="sd">    high.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    r_hat: NDArray of shape (n_lambdas, n_alpha)</span>
+<span class="sd">        Empirical risk with respect</span>
+<span class="sd">        to the lambdas and to the alphas.</span>
+<span class="sd">        Here, lambdas are thresholds that impact decision-making</span>
+<span class="sd">        and therefore the empirical risk.</span>
+<span class="sd">        Alphas are levels of empirical risk control such that</span>
+<span class="sd">        the empirical risk is less than alpha.</span>
+
+<span class="sd">    valid_index: List[List[Any]].</span>
+<span class="sd">        Contain the valid index that satisfy fwer control</span>
+<span class="sd">        for each alpha (length aren&#39;t the same for each alpha).</span>
+
+<span class="sd">    lambdas: NDArray of shape (n_lambda, )</span>
+<span class="sd">        Discretize parameters use for ltt procedure.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    l_lambda_star: ArrayLike of shape (n_alpha, ).</span>
+<span class="sd">        The lambda that give the highest precision</span>
+<span class="sd">        for a given alpha.</span>
+
+<span class="sd">    r_star: ArrayLike of shape (n_alpha, ).</span>
+<span class="sd">        The value of lowest risk for a given alpha.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="p">[]</span> <span class="ow">in</span> <span class="n">valid_index</span><span class="p">:</span>
+        <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+            <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">            Warning: At least one sequence is empty!</span>
+<span class="sd">            &quot;&quot;&quot;</span>
+        <span class="p">)</span>
+    <span class="n">l_lambda_star</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># type: List[Any]</span>
+    <span class="n">l_r_star</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># type: List[Any]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">valid_index</span><span class="p">)):</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">valid_index</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">l_lambda_star</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">l_r_star</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">valid_index</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">l_lambda_star</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">lambdas</span><span class="p">[</span><span class="n">valid_index</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">idx</span><span class="p">]])</span>
+            <span class="n">l_r_star</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">r_hat</span><span class="p">[</span><span class="n">valid_index</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">idx</span><span class="p">]])</span>
+
+    <span class="k">return</span> <span class="n">l_lambda_star</span><span class="p">,</span> <span class="n">l_r_star</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, _.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
