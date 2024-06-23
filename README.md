@@ -40,7 +40,7 @@ See [INSTALL.md](INSTALL.md) for further details.
 ## Usage
 
 See [usage.md](./usage.md) for a step-by-step demo of Prom.
-More detailed documents for Prom are available at the [website](./docs/build/html/index.html).
+More detailed documents for Prom are available at our [website](./docs/build/html/index.html).
 
 ## Data
 
