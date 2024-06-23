@@ -39,12 +39,13 @@ See [INSTALL.md](INSTALL.md) for further details.
 
 ## Usage
 
-See [usage.md](./usage.md) for a step-by-step demo of Prom.
-More detailed documents for Prom are available at our [website](./docs/build/html/index.html).
+See [usage](./usage.md) for a step-by-step demo of Prom.
+
+More detailed documents for using Prom can be checked on our [website](./docs/build/html/index.html).
 
 ## Data
 
-Data are available at [here](./data/README.md).
+Data are available at [here](./data).
 
 ## Contributing
 
