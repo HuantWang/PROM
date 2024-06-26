@@ -9,7 +9,7 @@ from torch import nn
 from torch import optim
 import argparse
 import sys
-from tlp_eval import eval_model
+
 # sys.path.append('/home/huanting/PROM/src')
 import src.util as util
 
@@ -18,6 +18,135 @@ sys.path.append('/home/huanting/PROM/thirdpackage')
 from sklearn.neural_network import MLPRegressor
 from mapie.regression import MapieQuantileRegressor, MapieRegressor
 from mapie.metrics import regression_coverage_score
+
+def pred_a_dataset(datas, task_pred_dict, model):
+
+    datas_new = []
+    for data_idx, data in enumerate([datas]):
+        file, file_idx, workloadkey_idx, workloadkey, workload_args, flop_ct, line_vecs = data
+        datas_new.extend(line_vecs)
+
+    if isinstance(model, BertModule):
+        test_loader = BertSegmentDataLoader(datas_new, 128, False)
+    elif isinstance(model, GPTModule):
+        test_loader = GPTSegmentDataLoader(datas_new, 128, False)
+    else:
+        test_loader = SegmentDataLoader(datas_new, 128, False)
+    assert test_loader.min_latency.min() == test_loader.min_latency.max()
+
+    preds_all = []
+    labels_all = []
+
+    for batch_datas_steps, batch_labels in test_loader:
+        batch_datas_steps = batch_datas_steps.to("cpu")
+        preds = model(batch_datas_steps)
+        if isinstance(preds, list) and len(preds) > 1:
+            preds = preds[0]
+        preds_all.append(preds.detach().cpu())
+        labels_all.append(batch_labels.detach().cpu())
+
+    preds_all = torch.cat(preds_all, dim=0)
+    labels_all = torch.cat(labels_all, dim=0)
+    task_pred_dict[workloadkey] = (preds_all.detach().cpu().numpy(
+    ), test_loader.min_latency.min().numpy(), labels_all.numpy())
+
+
+def eval_model(model_file='',test_datasets=''):
+    top_ks = [1, 5, 10, 20]
+    with open(model_file, 'rb') as f:
+        model = pickle.load(f)
+    model.eval()
+    task_pred_dict = {}
+
+    pred_a_dataset_dict = {}
+    for data_idx, data in enumerate(test_datasets):
+        file, file_idx, workloadkey_idx, workloadkey, workload_args, flop_ct, line_vecs = data
+        pred_a_dataset_dict[workloadkey] = data
+
+    folder_path = '/home/huanting/PROM/benchmark/TensorT/network_info'  # 替换成你的文件夹路径
+    # 获取文件夹中所有文件名
+    file_names = os.listdir(folder_path)
+    # 筛选出满足条件的文件名
+    files = [os.path.join(folder_path, file_name) for file_name in file_names if file_name.endswith(',llvm).task.pkl')]
+    top_1_total = []
+    top_5_total = []
+    top_10_total = []
+    top_20_total = []
+    best_latency_total_list = []
+    best_latency_total = 0
+    top1_total = 0
+    top5_total = 0
+    top10_total = 0
+    top20_total = 0
+
+    for file in files:
+        tasks, task_weights = pickle.load(open(file, "rb"))
+        latencies = [0] * len(top_ks)
+        best_latency = 0
+        for task, weight in zip(tasks, task_weights):
+            if task.workload_key not in pred_a_dataset_dict:
+                # print('error task.workload_key not in pred_a_dataset_dict')
+                continue
+
+            pred_a_dataset(
+                pred_a_dataset_dict[task.workload_key], task_pred_dict, model)
+            preds, min_latency, labels = task_pred_dict[task.workload_key]
+            real_values = labels[np.argsort(-preds)]
+            real_latency = min_latency / np.maximum(real_values, 1e-5)
+
+            for i, top_k in enumerate(top_ks):
+                latencies[i] += np.min(real_latency[:top_k]) * weight #预测
+            best_latency += min_latency * weight
+        try:
+            top_1_total.append(best_latency/latencies[0])
+            # print(f"top 1 score: {best_latency / latencies[0]}")
+        except:
+            top_1_total.append(0)
+            # print(f"top 1 score: {0}")
+
+        try:
+            top_5_total.append(best_latency / latencies[1])
+            # print(f"top 5 score: {best_latency / latencies[1]}")
+        except:
+            top_5_total.append(0)
+            # print(f"top 5 score: {0}")
+
+
+        best_latency_total_list.append(best_latency)
+        best_latency_total += best_latency
+        top1_total += latencies[0]
+        top5_total += latencies[1]
+        top10_total += latencies[2]
+        top20_total += latencies[3]
+
+    if top1_total == 0:
+        print(f"average top 1 score is {0}")
+        top_1_total.append(0)
+    else:
+        print(f"average top 1 score is {best_latency_total / top1_total}")
+        top_1_total.append(best_latency_total / top1_total)
+
+    if top5_total == 0:
+        print(f"average top 5 score is {0}")
+        top_5_total.append(0)
+    else:
+        print(f"average top 5 score is {best_latency_total / top5_total}")
+        top_5_total.append(best_latency_total / top5_total)
+
+    if top10_total == 0:
+        print(f"average top 10 score is {0}")
+        top_10_total.append(0)
+    else:
+        print(f"average top 10 score is {best_latency_total / top10_total}")
+        top_10_total.append(best_latency_total / top10_total)
+
+    if top20_total == 0:
+        print(f"average top 20 score is {0}")
+        top_20_total.append(0)
+    else:
+        print(f"average top 20 score is {best_latency_total / top20_total}")
+        top_20_total.append(best_latency_total / top20_total)
+
 
 def get_cosine_schedule_with_warmup(
 	optimizer: optim.Optimizer,
@@ -881,10 +1010,11 @@ def conformal_prediction(datas, task_pred_dict, model,mapie,task_drift_dict,task
 
         # 计算 F1 分数
         f1_score = 2 * (precision * recall) / (precision + recall)
-        print("f1_score",f1_score)
-        print("accuracy", accuracy)
-        print("precision", precision)
-        print("recall", recall)
+        print("The alpha is:",pvalue)
+        print(f"Detection f1_score is: {f1_score:.2%}, "
+              f"accuracy is: {accuracy:.2%}, "
+              f"precision is: {precision:.2%}, recall is: {recall:.2%}")
+
 
     task_after_dict[workloadkey] = (preds_all[indices_detec].detach().cpu().numpy(),
                                     test_loader.min_latency[indices_detec].min().numpy(),
@@ -915,7 +1045,7 @@ def cp(train_loader, val_dataloader, test_datasets, underlying_path,file_pattern
     y_valid = torch.cat(y_valid, dim=0)
     """CP"""
     import numpy as np
-    print("start cp trained")
+    print("Train the anamoly detection model...")
     # alphas = np.arange(0.1, 1, 0.1)
     # for batch_datas_steps, batch_labels in val_dataloader:
     est_mlp = net
@@ -926,7 +1056,7 @@ def cp(train_loader, val_dataloader, test_datasets, underlying_path,file_pattern
     """test data"""
     net.eval()
     pred_a_dataset_dict = {}
-    print("start test data")
+    print("Use the anamoly detection model to detect drifting data...")
     for data_idx, data in enumerate(test_datasets):
         file, file_idx, workloadkey_idx, workloadkey, workload_args, flop_ct, line_vecs = data
         pred_a_dataset_dict[workloadkey] = data
@@ -950,144 +1080,143 @@ def cp(train_loader, val_dataloader, test_datasets, underlying_path,file_pattern
     # files = [os.path.join(folder_path, file_name) for file_name in file_names if file_name.endswith(',llvm).task.pkl')]
 
     top_ks = [1, 5]
-    for num_set in range(len(np.arange(0.1, 1, 0.1))):
-        task_pred_dict = {}
-        task_drift_dict = {}
-        task_after_dict = {}
-        top_1_total = []
-        top_5_total = []
-        top_1_total_drift = []
-        top_5_total_drift = []
-        top_1_total_after = []
-        top_5_total_after = []
-        top_10_total = []
-        top_20_total = []
-        best_latency_total_list = []
-        best_latency_total = 0
-        best_latency_total_drift = 0
-        best_latency_total_after = 0
-        top1_total = 0
-        top5_total = 0
-        top1_total_drift = 0
-        top5_total_drift = 0
-        top1_total_after = 0
-        top5_total_after = 0
-        top10_total = 0
-        top20_total = 0
-        # try:
-        print("_________________________________________________")
-        print("value = ", num_set)
-        for file in files:
-            tasks, task_weights = pickle.load(open(file, "rb"))
-            latencies = [0] * len(top_ks)
-            latencies_drift = [0] * len(top_ks)
-            latencies_after = [0] * len(top_ks)
-            best_latency = 0
-            best_latency_drift = 0
-            best_latency_after = 0
-            for task, weight in zip(tasks, task_weights):
-                if task.workload_key not in pred_a_dataset_dict:
-                    # print('error task.workload_key not in pred_a_dataset_dict')
-                    continue
-                conformal_prediction(
-                    pred_a_dataset_dict[task.workload_key], task_pred_dict,
-                    net,mapie,task_drift_dict,task_after_dict,num_set)
-
-                preds, min_latency, labels = task_pred_dict[task.workload_key]
-                real_values = labels[np.argsort(-preds)]
-                real_latency = min_latency / np.maximum(real_values, 1e-5)
-                for i, top_k in enumerate(top_ks):
-                    latencies[i] += np.min(real_latency[:top_k]) * weight
-                best_latency += min_latency * weight
-                #drift
-                preds_drift, min_latency_drift, labels_drift = task_drift_dict[task.workload_key]
-                real_values_drift = labels_drift[np.argsort(-preds_drift)]
-                real_latency_drift = min_latency_drift / np.maximum(real_values_drift, 1e-5)
-                for i, top_k in enumerate(top_ks):
-                    latencies_drift[i] += np.min(real_latency_drift[:top_k]) * weight
-                best_latency_drift += min_latency_drift * weight
-                # after
-                preds_after, min_latency_after, labels_after = task_after_dict[task.workload_key]
-                real_values_after = labels_after[np.argsort(-preds_after)]
-                real_latency_after = min_latency_after / np.maximum(real_values_after, 1e-5)
-                for i, top_k in enumerate(top_ks):
-                    latencies_after[i] += np.min(real_latency_after[:top_k]) * weight
-                best_latency_after += min_latency_after * weight
-            try:
-                top_1_total.append(best_latency/latencies[0])
-                top_1_total_drift.append(best_latency_drift / latencies_drift[0])
-                top_1_total_after.append(best_latency_after / latencies_after[0])
-                # print(f"top 1 score: {best_latency / latencies[0]}")
-            except:
-                top_1_total.append(0)
-                top_1_total_drift.append(0)
-                top_1_total_after.append(0)
-            try:
-                top_5_total.append(best_latency / latencies[1])
-                top_5_total_drift.append(best_latency_drift / latencies_drift[1])
-                top_5_total_after.append(best_latency_after / latencies_after[1])
-                # print(f"top 5 score: {best_latency / latencies[1]}")
-            except:
-                top_5_total.append(0)
-                top_5_total_drift.append(0)
-                top_5_total_after.append(0)
-
-            best_latency_total += best_latency
-            top1_total += latencies[0]
-
-            top5_total += latencies[1]
-            #
-            best_latency_total_drift += best_latency_drift
-            top1_total_drift += latencies_drift[0]
-            top5_total_drift += latencies_drift[1]
-            #
-            best_latency_total_after += best_latency_after
-            top1_total_after += latencies_after[0]
-            top5_total_after += latencies_after[1]
-            # top10_total += latencies[2]
-            # top20_total += latencies[3]
-        data=top_1_total
-        if top1_total == 0:
-            print(f"average top 1 score is {0}")
+    # for num_set in range(len(np.arange(0.1, 1, 0.1))):
+    task_pred_dict = {}
+    task_drift_dict = {}
+    task_after_dict = {}
+    top_1_total = []
+    top_5_total = []
+    top_1_total_drift = []
+    top_5_total_drift = []
+    top_1_total_after = []
+    top_5_total_after = []
+    top_10_total = []
+    top_20_total = []
+    best_latency_total_list = []
+    best_latency_total = 0
+    best_latency_total_drift = 0
+    best_latency_total_after = 0
+    top1_total = 0
+    top5_total = 0
+    top1_total_drift = 0
+    top5_total_drift = 0
+    top1_total_after = 0
+    top5_total_after = 0
+    top10_total = 0
+    top20_total = 0
+    # try:
+    print("_________________________________________________")
+    # print("value = ", num_set)
+    for file in files:
+        tasks, task_weights = pickle.load(open(file, "rb"))
+        latencies = [0] * len(top_ks)
+        latencies_drift = [0] * len(top_ks)
+        latencies_after = [0] * len(top_ks)
+        best_latency = 0
+        best_latency_drift = 0
+        best_latency_after = 0
+        for task, weight in zip(tasks, task_weights):
+            if task.workload_key not in pred_a_dataset_dict:
+                # print('error task.workload_key not in pred_a_dataset_dict')
+                continue
+            conformal_prediction(
+                pred_a_dataset_dict[task.workload_key], task_pred_dict,
+                net,mapie,task_drift_dict,task_after_dict)
+            # p-value 10
+            preds, min_latency, labels = task_pred_dict[task.workload_key]
+            real_values = labels[np.argsort(-preds)]
+            real_latency = min_latency / np.maximum(real_values, 1e-5)
+            for i, top_k in enumerate(top_ks):
+                latencies[i] += np.min(real_latency[:top_k]) * weight
+            best_latency += min_latency * weight
+            #drift
+            preds_drift, min_latency_drift, labels_drift = task_drift_dict[task.workload_key]
+            real_values_drift = labels_drift[np.argsort(-preds_drift)]
+            real_latency_drift = min_latency_drift / np.maximum(real_values_drift, 1e-5)
+            for i, top_k in enumerate(top_ks):
+                latencies_drift[i] += np.min(real_latency_drift[:top_k]) * weight
+            best_latency_drift += min_latency_drift * weight
+            # after
+            preds_after, min_latency_after, labels_after = task_after_dict[task.workload_key]
+            real_values_after = labels_after[np.argsort(-preds_after)]
+            real_latency_after = min_latency_after / np.maximum(real_values_after, 1e-5)
+            for i, top_k in enumerate(top_ks):
+                latencies_after[i] += np.min(real_latency_after[:top_k]) * weight
+            best_latency_after += min_latency_after * weight
+        try:
+            top_1_total.append(best_latency/latencies[0])
+            top_1_total_drift.append(best_latency_drift / latencies_drift[0])
+            top_1_total_after.append(best_latency_after / latencies_after[0])
+            # print(f"top 1 score: {best_latency / latencies[0]}")
+        except:
             top_1_total.append(0)
-        else:
-            print(f"average top 1 score is {best_latency_total / top1_total}")
-            top_1_total.append(best_latency_total / top1_total)
-
-        if top5_total == 0:
-            print(f"average top 5 score is {0}")
-            top_5_total.append(0)
-        else:
-            print(f"average top 5 score is {best_latency_total / top5_total}")
-            top_5_total.append(best_latency_total / top5_total)
-        ################
-        if top1_total_drift == 0:
-            print(f"find drift average top 1 score is {0}")
             top_1_total_drift.append(0)
-        else:
-            print(f"find drift average top 1 score is {best_latency_total_drift / top1_total_drift}")
-            top_1_total_drift.append(best_latency_total_drift / top1_total_drift)
-
-        if top5_total_drift == 0:
-            print(f"find drift average top 5 score is {0}")
-            top_5_total_drift.append(0)
-        else:
-            print(f"find drift average top 5 score is {best_latency_total_drift / top5_total_drift}")
-            top_5_total_drift.append(best_latency_total_drift / top5_total_drift)
-        ###############
-        if top1_total_after == 0:
-            print(f"after average top 1 score is {0}")
             top_1_total_after.append(0)
-        else:
-            print(f"after average top 1 score is {best_latency_total_after / top1_total_after}")
-            top_1_total_after.append(best_latency_total_after / top1_total_after)
-
-        if top5_total_after == 0:
-            print(f"after average top 5 score is {0}")
+        try:
+            top_5_total.append(best_latency / latencies[1])
+            top_5_total_drift.append(best_latency_drift / latencies_drift[1])
+            top_5_total_after.append(best_latency_after / latencies_after[1])
+            # print(f"top 5 score: {best_latency / latencies[1]}")
+        except:
+            top_5_total.append(0)
+            top_5_total_drift.append(0)
             top_5_total_after.append(0)
-        else:
-            print(f"after average top 5 score is {best_latency_total_after / top5_total_after}")
-            top_5_total_after.append(best_latency_total_after / top5_total_after)
+
+        best_latency_total += best_latency
+        top1_total += latencies[0]
+
+        top5_total += latencies[1]
+        #
+        best_latency_total_drift += best_latency_drift
+        top1_total_drift += latencies_drift[0]
+        top5_total_drift += latencies_drift[1]
+        #
+        best_latency_total_after += best_latency_after
+        top1_total_after += latencies_after[0]
+        top5_total_after += latencies_after[1]
+
+    # data=top_1_total
+    if top1_total == 0:
+        print(f"average top 1 score is {0}")
+        top_1_total.append(0)
+    else:
+        print(f"average top 1 score is {best_latency_total / top1_total}")
+        top_1_total.append(best_latency_total / top1_total)
+
+    if top5_total == 0:
+        print(f"average top 5 score is {0}")
+        top_5_total.append(0)
+    else:
+        print(f"average top 5 score is {best_latency_total / top5_total}")
+        top_5_total.append(best_latency_total / top5_total)
+
+    if top1_total_drift == 0:
+        print(f"find drift average top 1 score is {0}")
+        top_1_total_drift.append(0)
+    else:
+        print(f"find drift average top 1 score is {best_latency_total_drift / top1_total_drift}")
+        top_1_total_drift.append(best_latency_total_drift / top1_total_drift)
+
+    if top5_total_drift == 0:
+        print(f"find drift average top 5 score is {0}")
+        top_5_total_drift.append(0)
+    else:
+        print(f"find drift average top 5 score is {best_latency_total_drift / top5_total_drift}")
+        top_5_total_drift.append(best_latency_total_drift / top5_total_drift)
+    ###############
+    if top1_total_after == 0:
+        print(f"after average top 1 score is {0}")
+        top_1_total_after.append(0)
+    else:
+        print(f"after average top 1 score is {best_latency_total_after / top1_total_after}")
+        top_1_total_after.append(best_latency_total_after / top1_total_after)
+
+    if top5_total_after == 0:
+        print(f"after average top 5 score is {0}")
+        top_5_total_after.append(0)
+    else:
+        print(f"after average top 5 score is {best_latency_total_after / top5_total_after}")
+        top_5_total_after.append(best_latency_total_after / top5_total_after)
         # except:
         #     print("skip this")
         #     continue
