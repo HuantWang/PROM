@@ -203,8 +203,8 @@ class ConformityScore(metaclass=ABCMeta):
             Conformity scores.
         """
         conformity_scores = self.get_signed_conformity_scores(X, y, y_pred)
-        if self.consistency_check:
-            self.check_consistency(X, y, y_pred, conformity_scores)
+        # if self.consistency_check:
+        #     self.check_consistency(X, y, y_pred, conformity_scores)
         if self.sym:
             conformity_scores = np.abs(conformity_scores)
         return conformity_scores
@@ -244,17 +244,32 @@ class ConformityScore(metaclass=ABCMeta):
             The quantile of the conformity scores.
         """
         n_ref = conformity_scores.shape[-1]
-        quantile = np.column_stack([
-            np_nanquantile(
-                conformity_scores.astype(float),
-                _alpha,
-                axis=axis,
-                method=method
-            ) if 0 < _alpha < 1
-            else np.inf * np.ones(n_ref) if method == "higher"
-            else - np.inf * np.ones(n_ref)
-            for _alpha in alpha_np
-        ])
+        try:
+            quantile = np.column_stack([
+                np_nanquantile(
+                    conformity_scores.astype(float),
+                    _alpha,
+                    axis=axis,
+                    method=method
+                ) if 0 < _alpha < 1
+                else np.inf * np.ones(n_ref) if method == "higher"
+                else - np.inf * np.ones(n_ref)
+                for _alpha in alpha_np
+            ])
+        except:
+            conformity_scores=conformity_scores.numpy()
+            quantile = np.column_stack([
+                np_nanquantile(
+                    conformity_scores.astype(float),
+                    _alpha,
+                    axis=axis,
+                    method=method
+                ) if 0 < _alpha < 1
+                else np.inf * np.ones(n_ref) if method == "higher"
+                else - np.inf * np.ones(n_ref)
+                for _alpha in alpha_np
+            ])
+
         return quantile
 
     @staticmethod

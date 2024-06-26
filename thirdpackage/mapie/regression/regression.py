@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import warnings
+warnings.filterwarnings("ignore")
 from typing import Iterable, Optional, Tuple, Union, cast
 
 import numpy as np
@@ -10,7 +11,7 @@ from sklearn.model_selection import BaseCrossValidator
 from sklearn.pipeline import Pipeline
 from sklearn.utils import check_random_state
 from sklearn.utils.validation import _check_y, check_is_fitted, indexable
-
+from scipy.stats import gmean, mode,percentileofscore
 from mapie._typing import ArrayLike, NDArray
 from mapie.conformity_scores import ConformityScore, ResidualNormalisedScore
 from mapie.estimator.estimator import EnsembleRegressor
@@ -18,7 +19,11 @@ from mapie.utils import (check_alpha, check_alpha_and_n_samples,
                          check_conformity_score, check_cv,
                          check_estimator_fit_predict, check_n_features_in,
                          check_n_jobs, check_null_weight, check_verbose)
-
+import pandas as pd
+import torch
+import numpy as np
+from sklearn.cluster import KMeans
+from sklearn.metrics import pairwise_distances
 
 class MapieRegressor(BaseEstimator, RegressorMixin):
     """
@@ -353,11 +358,11 @@ class MapieRegressor(BaseEstimator, RegressorMixin):
             return LinearRegression()
         else:
             check_estimator_fit_predict(estimator)
-            if self.cv == "prefit":
-                if isinstance(estimator, Pipeline):
-                    check_is_fitted(estimator[-1])
-                else:
-                    check_is_fitted(estimator)
+            # if self.cv == "prefit":
+            #     if isinstance(estimator, Pipeline):
+            #         check_is_fitted(estimator[-1])
+            #     else:
+            #         check_is_fitted(estimator)
             return estimator
 
     def _check_ensemble(
@@ -535,14 +540,133 @@ class MapieRegressor(BaseEstimator, RegressorMixin):
 
         # Predict on calibration data
         y_pred = self.estimator_.predict_calib(X, y=y, groups=groups)
-
+        self.cal = X
+        self.cal_y = y
         # Compute the conformity scores (manage jk-ab case)
         self.conformity_scores_ = \
             self.conformity_score_function_.get_conformity_scores(
                 X, y, y_pred
             )
-
+        # give the classes for each calibration sample
+        self.cal_clusters, self.optimal_k, self.gap_df = self.cluster_cal_data()
         return self
+
+    def compute_gap_statistic(self, X, n_refs=10, max_clusters=10):
+
+        gaps = np.zeros(max_clusters - 1)
+        results_list = []
+
+        for k in range(1, max_clusters):
+            # Holder for reference dispersion results
+            ref_disps = np.zeros(n_refs)
+
+            # For n references, generate random sample and perform kmeans getting resulting dispersion of each loop
+            for i in range(n_refs):
+                random_reference = np.random.random_sample(size=X.shape)
+                km = KMeans(n_clusters=k, n_init=10)
+                km.fit(random_reference)
+                ref_disp = km.inertia_
+                ref_disps[i] = ref_disp
+
+            # Fit cluster to original data and create dispersion
+            km = KMeans(n_clusters=k)
+            km.fit(X)
+            orig_disp = km.inertia_
+
+            # Calculate gap statistic
+            gap = np.log(np.mean(ref_disps)) - np.log(orig_disp)
+
+            # Assign this loop's gap statistic to gaps
+            gaps[k - 1] = gap
+
+            results_list.append({'clusterCount': k, 'gap': gap})
+        results_df = pd.DataFrame(results_list)
+        return gaps.argmax() + 1, results_df
+
+    def cluster_cal_data(self):
+        # Reshape cal to 2D array [n_samples, n_features]
+        n_samples = self.cal.size(0)
+        feature_dim1 = self.cal.size(1)
+        feature_dim2 = self.cal.size(2)
+        cal_reshaped = self.cal.view(n_samples, feature_dim1 * feature_dim2).numpy()
+
+        # Determine the optimal number of clusters
+        optimal_k, gap_df = self.compute_gap_statistic(cal_reshaped)
+
+        # Fit KMeans with the optimal number of clusters
+        kmeans = KMeans(n_clusters=optimal_k)
+        kmeans.fit(cal_reshaped)
+
+        # Assign each sample in cal to a cluster
+        cal_clusters = kmeans.labels_
+
+        return cal_clusters, optimal_k, gap_df
+
+    def classify_test_samples(self, X, cal_clusters, k=10):
+        n_cal_samples = self.cal.size(0)
+        n_test_samples = X.size(0)
+        feature_dim1 = self.cal.size(1)
+        feature_dim2 = self.cal.size(2)
+
+        cal_reshaped = self.cal.view(n_cal_samples, feature_dim1 * feature_dim2)
+        X_reshaped = X.view(n_test_samples, feature_dim1 * feature_dim2)
+
+        distances = torch.cdist(X_reshaped, cal_reshaped)
+        nearest_indices = torch.topk(distances, k, largest=False, dim=1).indices
+
+        test_clusters = []
+        for i in range(n_test_samples):
+            nearest_clusters = cal_clusters[nearest_indices[i]]
+            test_cluster = mode(nearest_clusters).mode[0]
+            test_clusters.append(test_cluster)
+
+        return torch.tensor(test_clusters)
+
+    def compute_residuals(self, X, y_pred):
+        n_cal_samples = self.cal.size(0)
+        distances = torch.cdist(X.view(X.size(0), -1), self.cal.view(n_cal_samples, -1))
+        k = min(max(self.cal.size(0) // 10, 1), 100)
+        min_indices = torch.topk(distances, k, largest=False, dim=1).indices
+        scores = self.conformity_scores_[min_indices]
+        geomean_scores = gmean(scores.numpy(), axis=1)
+        true_res = geomean_scores - y_pred.detach().numpy()
+        # true_res: the residuals of the estimated test samples
+        # geomean_scores: the estimated test samples values
+        return true_res,geomean_scores
+
+    def compute_p_values(self, X, cal_clusters,true_res, k=10):
+        # 获取每个测试样本的类别
+        test_clusters = self.classify_test_samples(X, cal_clusters, k=k)
+        # 获取所有类别
+        unique_clusters = np.unique(cal_clusters)
+        # 为每个测试样本计算每个类别上的p-value
+        all_p_values = []
+        predicted_p_values = []
+        for i in range(X.size(0)):
+            p_values = []
+            for cluster in unique_clusters:
+                # 找到同类别的校准样本
+                same_class_indices = torch.nonzero(torch.tensor(cal_clusters) == cluster, as_tuple=True)[0]
+                same_class_scores = self.conformity_scores_[same_class_indices]
+
+                # 计算测试样本的分数
+                # distances = torch.cdist(X[i].view(1, -1),
+                #                         self.cal[same_class_indices].view(same_class_indices.size(0), -1))
+                # min_index = torch.argmin(distances).item()
+                # test_score = self.conformity_scores_[same_class_indices[min_index]].item()
+                test_score = true_res[i]
+                # 计算p-value
+                p_value = percentileofscore(same_class_scores.numpy(), test_score, kind='mean') / 100.0
+                p_values.append(p_value)
+
+            all_p_values.append(p_values)
+
+            # 获取预测类别上的p-value
+            predicted_cluster = test_clusters[i].item()
+            predicted_p_value = p_values[unique_clusters.tolist().index(predicted_cluster)]
+            predicted_p_values.append(predicted_p_value)
+
+        return all_p_values, predicted_p_values
 
     def predict(
         self,
@@ -631,6 +755,7 @@ class MapieRegressor(BaseEstimator, RegressorMixin):
                 n = len(self.conformity_scores_)
                 check_alpha_and_n_samples(alpha_np, n)
 
+
             y_pred, y_pred_low, y_pred_up = \
                 self.conformity_score_function_.get_bounds(
                     X,
@@ -641,4 +766,53 @@ class MapieRegressor(BaseEstimator, RegressorMixin):
                     method=self.method,
                     optimize_beta=optimize_beta
                 )
-            return np.array(y_pred), np.stack([y_pred_low, y_pred_up], axis=1)
+            true_res, geomean_scores = self.compute_residuals(X, y_pred)
+            all_p_values, predicted_p_values = self.compute_p_values(X, self.cal_clusters,true_res,k=10)
+            # compute the p-value and confidence value
+            credibility_scores = predicted_p_values
+            confidence_scores = all_p_values
+
+            #
+            y_pred_low = np.array(y_pred_low)
+            y_pred_up = np.array(y_pred_up)
+
+            # 创建一个三维布尔矩阵来存储结果，形状为 (num_samples, num_confidence_scores, n)
+            num_samples = len(geomean_scores)
+            # num_confidence_scores = max(len(scores) for scores in geomean_scores if isinstance(scores, (list, np.ndarray)))
+
+            n = y_pred_low.shape[1]
+
+            confidence_result = np.zeros((num_samples, n), dtype=bool)
+
+            for i in range(num_samples):
+                sample_confidence = geomean_scores[i]
+                sample_low = y_pred_low[i]
+                sample_up = y_pred_up[i]
+
+                # for j, score in enumerate(sample_confidence):
+                for k in range(n):
+                    confidence_result[i, k] = sample_low[k] <= sample_confidence <= sample_up[k]
+
+            # 将结果转换为 numpy 数组以便于后续操作
+            confidence_result = np.array(confidence_result)
+            # 将 credibility_scores 转换为 NumPy 数组，并变形为 (4000, 1)
+            credibility_scores_np = np.array(credibility_scores).reshape(-1, 1)
+
+            # 对比两个数组，生成布尔标志
+            credibility_result = credibility_scores_np < alpha_np
+            return credibility_result, confidence_result
+            # print("a")
+            # select around samples and compute Kmeans as true prediction
+            # n_cal_samples = self.cal.size(0)
+            # distances = torch.cdist(X.view(X.size(0), -1), self.cal.view(n_cal_samples, -1))  # 展平后计算距离
+            # k = min(max(self.cal.size(0) // 10, 1), 100)  # k 是cal大小的1/10，但不超过100
+            # min_indices = torch.topk(distances, k, largest=False, dim=1).indices  # 获取最近的k个样本索引
+            # scores = self.conformity_scores_[min_indices]  # 根据索引获取分数
+            # geomean_scores = gmean(scores, axis=1)  # 计算几何平均数
+            # # compute the residuals = true - prediction
+            # ture_res = geomean_scores - y_pred.detach().numpy()  # 计算预估残差
+
+
+            # return np.array(y_pred), np.stack([y_pred_low, y_pred_up], axis=1)
+            # test_clusters = self.classify_test_samples(X, self.cal_clusters)
+            true_res = self.compute_residuals(X, y_pred)

@@ -6,7 +6,6 @@ from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB
 import sys
 sys.path.append('/home/huanting/PROM/thirdpackage')
-
 from mapie.prom_classification import MapieClassifier
 from mapie.metrics import (classification_coverage_score,
                            classification_mean_width_score)

@@ -53,6 +53,7 @@ def load_magni_args():
     # deeptune_model = DeepTune()
     # deeptune_model.init(args)
     return args
+
 if __name__=='__main__':
     # load args
     prom_thread=ThreadCoarsening(model=Magni())
