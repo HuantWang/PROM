@@ -5,7 +5,7 @@ Code Analysis and Optimization: Artifacts Evaluation Instructions
 
 This interactive Jupyter notebook provides a small-scale demo for showcasing task definition, client RL search, client RL parameter tuning, and evaluation of case studies reported in the paper.
 
-The main results of our CGO 2024 paper apply Prom to 5 case studies to detect their misprediction samples. The evaluation presented in our paper ran on a much larger dataset and for longer. This notebook contains minimal working examples designed to be evaluated in a reasonable amount of time (approximately 20 minutes).
+The main results of our CGO 2025 paper apply Prom to 5 case studies to detect their misprediction samples. The evaluation presented in our paper ran on a much larger dataset and for longer. This notebook contains minimal working examples designed to be evaluated in a reasonable amount of time (approximately 20 minutes).
 
 ## Instructions for Experimental Workflow:
 
