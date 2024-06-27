@@ -1,15 +1,13 @@
 Getting Started
 ===============
 
-
-SuperSonic, a new open-source framework to allow compiler developers to integrate
-RL into compilers easily, regardless of their RL expertise. SuperSonic supports
-customizable RL architecture compositions to target a wide range of optimization
-tasks. A key feature of SuperSonic is the use of deep RL and multi-task learning
-techniques to develop a meta-optimizer to automatically find and tune the right RL
-architecture from training benchmarks. It uses the `CompilerGym <https://compilergym.com/>`_,
-`OpenAI Gym <https://gym.openai.com/>`_, `Ray <https://docs.ray.io/en/latest/>`_
-interfaces to expose reinforcement learning.
+Prom, an open-source Python toolkit designed to enhance the robustness and performance
+of predictive models during deployment against changes such as new CPU architectures or
+code patterns. Prom uses statistical assessments to identify test samples prone to mispredictions
+and utilizes feedback on these samples to improve the deployed model.
+Prom can be applied to various machine learning models and code analysis and optimization tasks.
+It uses the `MAPIE <https://github.com/scikit-learn-contrib/MAPIE/tree/master>`_,
+to expose conformal prediction.
 
 .. contents:: Topics covered:
     :local:
@@ -17,35 +15,32 @@ interfaces to expose reinforcement learning.
 Key Concepts
 ------------
 
-Supersonic enables developers to express the optimization space. It automatically
-searches for the optimal RL policy, and provides an automated RL servicing
-environment.
+Prom helps in addressing data drift during deployment,
+ensuring the reliability of machine learning models in the face of changes,
+and supports continuous improvements in the end-user environment.
+
 
 .. image:: /_static/img/overview.png
 
-The ingredients for reinforcement learning that SuperSonic provides are:
+The key features and capabilities of Prom include:
 
 * **Task Definition**:
-SuperSonic provides a task definition API to define
+Prom provides a task definition API to define the code analysis and optimization tasks.
 
-* **Client RL search**:
-Given a client RL search space, the SuperSonic meta-optimizer automatically finds a suitable client RL architecture (i.e.,
-<state function, transition function, reward function, RL
-algorithm> and potentially a value function) from training benchmarks
-using up to 𝑛 trial runs.
+* **Predictive Model Robustness**:
+Prom automatically identifies samples that are likely to be mispredicted due to data drift
+and utilizes incremental learning to retrain the model with these samples, thus maintaining
+the model's performance.
 
-* **Client RL Deployment**:
-SuperSonic provides APIs to load and reuse the stored objects
-to optimize any new program. To apply amtuned RL, SuperSonic
-creates a session to apply a standard
-RL loop to optimize the input program by using the chosen
-RL exploration algorithms to select an action for a given
-state. For example, the state could be a vector recording the
-last 𝑛 compiler options added into the compiler flags or a
-DNN.
+* **Deployment Time Performance**:
+Prom provides APIs to load and reuse the updated models for optimizing new code.
+It creates a session to apply a standard predictive model loop to optimize the input
+program by using statistical assessments to select an action for a given state.
 
-Our goal is to allow compiler developers to integrate RL
-into compilers easily, regardless of their RL expertise.
+Our goal is to improve the robustness and reliability of machine learning models
+during deployment, ensuring they perform as expected even with changes in application
+workloads and hardware.
+
 
 Installing SuperSonic
 ----------
@@ -55,3 +50,12 @@ Install the latest CompilerGym release: See `INSTALL.md
 <https://github.com/HuantWang/SUPERSONIC/blob/master/INSTALL.md>`_ for alternative installation methods.
 
 If you would like to quickly try out SuperSonic or run some demo and tutorials, you can checkout install from Docker.
+
+Checkout to `install Prom from source <https://github.com/anonymous/Prom>`_.
+Installing from source gives you the maximum flexibility to configure the build effectively
+from the official source releases.
+Install the latest release: See `INSTALL.md <https://github.com/anonymous/Prom/blob/master/INSTALL.md>`_
+for alternative installation methods.
+
+If you would like to quickly try out Prom or run some demo and tutorials,
+you can check out the installation from Docker.

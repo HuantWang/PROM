@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>prom.tests.test_conformity_scores &mdash; Prom v0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="author" title="About these documents" href="../../../about.html" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Prom
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../faq.html">Frequently Asked Questions</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Python API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../src/prom.html">prom module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../src/util.html">util module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../src/prom.conformity_scores.html">prom.conformity_scores package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../src/prom.control_risk.html">prom.control_risk package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../src/prom.estimator.html">prom.estimator package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../src/prom.regression.html">prom.regression package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../src/prom.tests.html">prom.tests package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Prom</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">prom.tests.test_conformity_scores</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for prom.tests.test_conformity_scores</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pytest</span>
+<span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">LinearRegression</span>
+<span class="kn">from</span> <span class="nn">sklearn.pipeline</span> <span class="kn">import</span> <span class="n">Pipeline</span>
+<span class="kn">from</span> <span class="nn">sklearn.preprocessing</span> <span class="kn">import</span> <span class="n">PolynomialFeatures</span>
+
+<span class="kn">from</span> <span class="nn">mapie._typing</span> <span class="kn">import</span> <span class="n">ArrayLike</span><span class="p">,</span> <span class="n">NDArray</span>
+<span class="kn">from</span> <span class="nn">mapie.conformity_scores</span> <span class="kn">import</span> <span class="p">(</span><span class="n">AbsoluteConformityScore</span><span class="p">,</span> <span class="n">ConformityScore</span><span class="p">,</span>
+                                     <span class="n">GammaConformityScore</span><span class="p">,</span>
+                                     <span class="n">ResidualNormalisedScore</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">mapie.regression</span> <span class="kn">import</span> <span class="n">MapieRegressor</span>
+
+<span class="n">X_toy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">5</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">y_toy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">5</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">15</span><span class="p">])</span>
+<span class="n">y_pred_list</span> <span class="o">=</span> <span class="p">[</span><span class="mi">4</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">12</span><span class="p">]</span>
+<span class="n">conf_scores_list</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
+<span class="n">conf_scores_gamma_list</span> <span class="o">=</span> <span class="p">[</span><span class="mi">1</span> <span class="o">/</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span> <span class="o">/</span> <span class="mi">10</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span> <span class="o">/</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">3</span> <span class="o">/</span> <span class="mi">12</span><span class="p">]</span>
+<span class="n">conf_scores_residual_norm_list</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.11111111</span><span class="p">,</span> <span class="mf">0.09090909</span><span class="p">,</span> <span class="mf">0.</span><span class="p">,</span> <span class="mf">0.2</span><span class="p">]</span>
+<span class="n">random_state</span> <span class="o">=</span> <span class="mi">42</span>
+
+
+<div class="viewcode-block" id="DummyConformityScore"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_conformity_scores.DummyConformityScore">[docs]</a><span class="k">class</span> <span class="nc">DummyConformityScore</span><span class="p">(</span><span class="n">ConformityScore</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">sym</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">consistency_check</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+
+<div class="viewcode-block" id="DummyConformityScore.get_signed_conformity_scores"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_conformity_scores.DummyConformityScore.get_signed_conformity_scores">[docs]</a>    <span class="k">def</span> <span class="nf">get_signed_conformity_scores</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="DummyConformityScore.get_estimation_distribution"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_conformity_scores.DummyConformityScore.get_estimation_distribution">[docs]</a>    <span class="k">def</span> <span class="nf">get_estimation_distribution</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span> <span class="n">conformity_scores</span><span class="p">:</span> <span class="n">ArrayLike</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        A positive constant is added to the sum between predictions and</span>
+<span class="sd">        conformity scores to make the estimated distribution inconsistent</span>
+<span class="sd">        with the conformity score.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">y_pred</span><span class="p">,</span> <span class="n">conformity_scores</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span></div></div>
+
+
+<div class="viewcode-block" id="test_error_mother_class_initialization"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_conformity_scores.test_error_mother_class_initialization">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;sym&quot;</span><span class="p">,</span> <span class="p">[</span><span class="kc">False</span><span class="p">,</span> <span class="kc">True</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">test_error_mother_class_initialization</span><span class="p">(</span><span class="n">sym</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">TypeError</span><span class="p">):</span>
+        <span class="n">ConformityScore</span><span class="p">(</span><span class="n">sym</span><span class="p">)</span>  <span class="c1"># type: ignore</span></div>
+
+
+<div class="viewcode-block" id="test_absolute_conformity_score_get_conformity_scores"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_conformity_scores.test_absolute_conformity_score_get_conformity_scores">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;y_pred&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y_pred_list</span><span class="p">),</span> <span class="n">y_pred_list</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">test_absolute_conformity_score_get_conformity_scores</span><span class="p">(</span>
+    <span class="n">y_pred</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test conformity score computation for AbsoluteConformityScore.&quot;&quot;&quot;</span>
+    <span class="n">abs_conf_score</span> <span class="o">=</span> <span class="n">AbsoluteConformityScore</span><span class="p">()</span>
+    <span class="n">signed_conf_scores</span> <span class="o">=</span> <span class="n">abs_conf_score</span><span class="o">.</span><span class="n">get_signed_conformity_scores</span><span class="p">(</span>
+        <span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">,</span> <span class="n">y_pred</span>
+    <span class="p">)</span>
+    <span class="n">conf_scores</span> <span class="o">=</span> <span class="n">abs_conf_score</span><span class="o">.</span><span class="n">get_conformity_scores</span><span class="p">(</span>
+        <span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">,</span> <span class="n">y_pred</span>
+    <span class="p">)</span>
+    <span class="n">expected_signed_conf_scores</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">conf_scores_list</span><span class="p">)</span>
+    <span class="n">expected_conf_scores</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">expected_signed_conf_scores</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">signed_conf_scores</span><span class="p">,</span> <span class="n">expected_signed_conf_scores</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">conf_scores</span><span class="p">,</span> <span class="n">expected_conf_scores</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_absolute_conformity_score_get_estimation_distribution"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_conformity_scores.test_absolute_conformity_score_get_estimation_distribution">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;y_pred&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y_pred_list</span><span class="p">),</span> <span class="n">y_pred_list</span><span class="p">])</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span>
+    <span class="s2">&quot;conf_scores&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">conf_scores_list</span><span class="p">),</span> <span class="n">conf_scores_list</span><span class="p">]</span>
+<span class="p">)</span>
+<span class="k">def</span> <span class="nf">test_absolute_conformity_score_get_estimation_distribution</span><span class="p">(</span>
+    <span class="n">y_pred</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">,</span> <span class="n">conf_scores</span><span class="p">:</span> <span class="n">NDArray</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test conformity observed value computation for AbsoluteConformityScore.&quot;&quot;&quot;</span>  <span class="c1"># noqa: E501</span>
+    <span class="n">abs_conf_score</span> <span class="o">=</span> <span class="n">AbsoluteConformityScore</span><span class="p">()</span>
+    <span class="n">y_obs</span> <span class="o">=</span> <span class="n">abs_conf_score</span><span class="o">.</span><span class="n">get_estimation_distribution</span><span class="p">(</span>
+        <span class="n">X_toy</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">conf_scores</span>
+    <span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">y_obs</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_absolute_conformity_score_consistency"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_conformity_scores.test_absolute_conformity_score_consistency">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;y_pred&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y_pred_list</span><span class="p">),</span> <span class="n">y_pred_list</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">test_absolute_conformity_score_consistency</span><span class="p">(</span><span class="n">y_pred</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test methods consistency for AbsoluteConformityScore.&quot;&quot;&quot;</span>
+    <span class="n">abs_conf_score</span> <span class="o">=</span> <span class="n">AbsoluteConformityScore</span><span class="p">()</span>
+    <span class="n">signed_conf_scores</span> <span class="o">=</span> <span class="n">abs_conf_score</span><span class="o">.</span><span class="n">get_signed_conformity_scores</span><span class="p">(</span>
+        <span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">,</span> <span class="n">y_pred</span>
+    <span class="p">)</span>
+    <span class="n">y_obs</span> <span class="o">=</span> <span class="n">abs_conf_score</span><span class="o">.</span><span class="n">get_estimation_distribution</span><span class="p">(</span>
+        <span class="n">X_toy</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">signed_conf_scores</span>
+    <span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">y_obs</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_gamma_conformity_score_get_conformity_scores"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_conformity_scores.test_gamma_conformity_score_get_conformity_scores">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;y_pred&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y_pred_list</span><span class="p">),</span> <span class="n">y_pred_list</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">test_gamma_conformity_score_get_conformity_scores</span><span class="p">(</span>
+    <span class="n">y_pred</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test conformity score computation for GammaConformityScore.&quot;&quot;&quot;</span>
+    <span class="n">gamma_conf_score</span> <span class="o">=</span> <span class="n">GammaConformityScore</span><span class="p">()</span>
+    <span class="n">conf_scores</span> <span class="o">=</span> <span class="n">gamma_conf_score</span><span class="o">.</span><span class="n">get_conformity_scores</span><span class="p">(</span>
+        <span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">,</span> <span class="n">y_pred</span>
+    <span class="p">)</span>
+    <span class="n">expected_signed_conf_scores</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">conf_scores_gamma_list</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">conf_scores</span><span class="p">,</span> <span class="n">expected_signed_conf_scores</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_gamma_conformity_score_get_estimation_distribution"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_conformity_scores.test_gamma_conformity_score_get_estimation_distribution">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;y_pred&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y_pred_list</span><span class="p">),</span> <span class="n">y_pred_list</span><span class="p">])</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span>
+    <span class="s2">&quot;conf_scores&quot;</span><span class="p">,</span>
+    <span class="p">[</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">conf_scores_gamma_list</span><span class="p">),</span>
+        <span class="n">conf_scores_gamma_list</span><span class="p">,</span>
+    <span class="p">],</span>
+<span class="p">)</span>
+<span class="k">def</span> <span class="nf">test_gamma_conformity_score_get_estimation_distribution</span><span class="p">(</span>
+    <span class="n">y_pred</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">,</span> <span class="n">conf_scores</span><span class="p">:</span> <span class="n">NDArray</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test conformity observed value computation for GammaConformityScore.&quot;&quot;&quot;</span>  <span class="c1"># noqa: E501</span>
+    <span class="n">gamma_conf_score</span> <span class="o">=</span> <span class="n">GammaConformityScore</span><span class="p">()</span>
+    <span class="n">y_obs</span> <span class="o">=</span> <span class="n">gamma_conf_score</span><span class="o">.</span><span class="n">get_estimation_distribution</span><span class="p">(</span>
+        <span class="n">X_toy</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">conf_scores</span>
+    <span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">y_obs</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_gamma_conformity_score_consistency"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_conformity_scores.test_gamma_conformity_score_consistency">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;y_pred&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y_pred_list</span><span class="p">),</span> <span class="n">y_pred_list</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">test_gamma_conformity_score_consistency</span><span class="p">(</span><span class="n">y_pred</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test methods consistency for GammaConformityScore.&quot;&quot;&quot;</span>
+    <span class="n">gamma_conf_score</span> <span class="o">=</span> <span class="n">GammaConformityScore</span><span class="p">()</span>
+    <span class="n">signed_conf_scores</span> <span class="o">=</span> <span class="n">gamma_conf_score</span><span class="o">.</span><span class="n">get_signed_conformity_scores</span><span class="p">(</span>
+        <span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">,</span> <span class="n">y_pred</span>
+    <span class="p">)</span>
+    <span class="n">y_obs</span> <span class="o">=</span> <span class="n">gamma_conf_score</span><span class="o">.</span><span class="n">get_estimation_distribution</span><span class="p">(</span>
+        <span class="n">X_toy</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">signed_conf_scores</span>
+    <span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">y_obs</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_gamma_conformity_score_check_oberved_value"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_conformity_scores.test_gamma_conformity_score_check_oberved_value">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;y_pred&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y_pred_list</span><span class="p">),</span> <span class="n">y_pred_list</span><span class="p">])</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span>
+    <span class="s2">&quot;y_toy&quot;</span><span class="p">,</span>
+    <span class="p">[</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">15</span><span class="p">]),</span>
+        <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">15</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">7</span><span class="p">,</span> <span class="mi">9</span><span class="p">,</span> <span class="mi">11</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">15</span><span class="p">],</span>
+    <span class="p">],</span>
+<span class="p">)</span>
+<span class="k">def</span> <span class="nf">test_gamma_conformity_score_check_oberved_value</span><span class="p">(</span>
+    <span class="n">y_pred</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">:</span> <span class="n">NDArray</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test methods consistency for GammaConformityScore.&quot;&quot;&quot;</span>
+    <span class="n">gamma_conf_score</span> <span class="o">=</span> <span class="n">GammaConformityScore</span><span class="p">()</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+        <span class="n">gamma_conf_score</span><span class="o">.</span><span class="n">get_signed_conformity_scores</span><span class="p">(</span>
+            <span class="p">[],</span> <span class="n">y_toy</span><span class="p">,</span> <span class="n">y_pred</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_gamma_conformity_score_check_predicted_value"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_conformity_scores.test_gamma_conformity_score_check_predicted_value">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span>
+    <span class="s2">&quot;y_pred&quot;</span><span class="p">,</span>
+    <span class="p">[</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">12</span><span class="p">]),</span>
+        <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">12</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">7</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">12</span><span class="p">],</span>
+    <span class="p">],</span>
+<span class="p">)</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span>
+    <span class="s2">&quot;X_toy&quot;</span><span class="p">,</span>
+    <span class="p">[</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="o">-</span><span class="mi">7</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">12</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">7</span><span class="p">,</span> <span class="o">-</span><span class="mi">10</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="o">-</span><span class="mi">12</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">12</span><span class="p">,</span> <span class="o">-</span><span class="mi">7</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">12</span><span class="p">,</span> <span class="mi">13</span><span class="p">,</span> <span class="mi">2</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span>
+    <span class="p">],</span>
+<span class="p">)</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span>
+    <span class="s2">&quot;conf_scores&quot;</span><span class="p">,</span>
+    <span class="p">[</span>
+        <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">conf_scores_gamma_list</span><span class="p">),</span>
+        <span class="n">conf_scores_gamma_list</span><span class="p">,</span>
+    <span class="p">],</span>
+<span class="p">)</span>
+<span class="k">def</span> <span class="nf">test_gamma_conformity_score_check_predicted_value</span><span class="p">(</span>
+    <span class="n">y_pred</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">,</span> <span class="n">conf_scores</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">,</span> <span class="n">X_toy</span><span class="p">:</span> <span class="n">NDArray</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test methods consistency for GammaConformityScore.&quot;&quot;&quot;</span>
+    <span class="n">gamma_conf_score</span> <span class="o">=</span> <span class="n">GammaConformityScore</span><span class="p">()</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span>
+        <span class="ne">ValueError</span><span class="p">,</span>
+        <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;.*At least one of the predicted target is negative.*&quot;</span>
+    <span class="p">):</span>
+        <span class="n">gamma_conf_score</span><span class="o">.</span><span class="n">get_signed_conformity_scores</span><span class="p">(</span>
+            <span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">,</span> <span class="n">y_pred</span>
+        <span class="p">)</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span>
+        <span class="ne">ValueError</span><span class="p">,</span>
+        <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;.*At least one of the predicted target is negative.*&quot;</span>
+    <span class="p">):</span>
+        <span class="n">gamma_conf_score</span><span class="o">.</span><span class="n">get_estimation_distribution</span><span class="p">(</span>
+            <span class="n">X_toy</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">,</span> <span class="n">conf_scores</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_check_consistency"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_conformity_scores.test_check_consistency">[docs]</a><span class="k">def</span> <span class="nf">test_check_consistency</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Test that a dummy ConformityScore class that gives inconsistent scores</span>
+<span class="sd">    and distributions raises an error.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">dummy_conf_score</span> <span class="o">=</span> <span class="n">DummyConformityScore</span><span class="p">()</span>
+    <span class="n">conformity_scores</span> <span class="o">=</span> <span class="n">dummy_conf_score</span><span class="o">.</span><span class="n">get_signed_conformity_scores</span><span class="p">(</span>
+        <span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">,</span> <span class="n">y_pred_list</span>
+    <span class="p">)</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span>
+        <span class="ne">ValueError</span><span class="p">,</span>
+        <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;.*The two functions get_conformity_scores.*&quot;</span>
+    <span class="p">):</span>
+        <span class="n">dummy_conf_score</span><span class="o">.</span><span class="n">check_consistency</span><span class="p">(</span>
+            <span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">,</span> <span class="n">y_pred_list</span><span class="p">,</span> <span class="n">conformity_scores</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_residual_normalised_prefit_conformity_score_get_conformity_scores"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_conformity_scores.test_residual_normalised_prefit_conformity_score_get_conformity_scores">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;y_pred&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y_pred_list</span><span class="p">),</span> <span class="n">y_pred_list</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">test_residual_normalised_prefit_conformity_score_get_conformity_scores</span><span class="p">(</span>
+    <span class="n">y_pred</span><span class="p">:</span> <span class="n">NDArray</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Test conformity score computation for ResidualNormalisedScore</span>
+<span class="sd">    when prefit is True.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">residual_estimator</span> <span class="o">=</span> <span class="n">LinearRegression</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span>
+    <span class="n">residual_norm_conf_score</span> <span class="o">=</span> <span class="n">ResidualNormalisedScore</span><span class="p">(</span>
+        <span class="n">residual_estimator</span><span class="o">=</span><span class="n">residual_estimator</span><span class="p">,</span>
+        <span class="n">prefit</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span>
+    <span class="p">)</span>
+    <span class="n">conf_scores</span> <span class="o">=</span> <span class="n">residual_norm_conf_score</span><span class="o">.</span><span class="n">get_conformity_scores</span><span class="p">(</span>
+        <span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">,</span> <span class="n">y_pred</span>
+    <span class="p">)</span>
+    <span class="n">expected_signed_conf_scores</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">conf_scores_residual_norm_list</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">conf_scores</span><span class="p">,</span> <span class="n">expected_signed_conf_scores</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_residual_normalised_conformity_score_get_conformity_scores"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_conformity_scores.test_residual_normalised_conformity_score_get_conformity_scores">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;y_pred&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y_pred_list</span><span class="p">),</span> <span class="n">y_pred_list</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">test_residual_normalised_conformity_score_get_conformity_scores</span><span class="p">(</span>
+    <span class="n">y_pred</span><span class="p">:</span> <span class="n">NDArray</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Test conformity score computation for ResidualNormalisedScore</span>
+<span class="sd">    when prefit is False.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">residual_norm_score</span> <span class="o">=</span> <span class="n">ResidualNormalisedScore</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">)</span>
+    <span class="n">conf_scores</span> <span class="o">=</span> <span class="n">residual_norm_score</span><span class="o">.</span><span class="n">get_conformity_scores</span><span class="p">(</span>
+        <span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">,</span> <span class="n">y_pred</span>
+    <span class="p">)</span>
+    <span class="n">expected_signed_conf_scores</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="mf">1.e+08</span><span class="p">,</span> <span class="mf">1.e+08</span><span class="p">,</span> <span class="mf">0.e+00</span><span class="p">,</span> <span class="mf">3.e+08</span><span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">conf_scores</span><span class="p">,</span> <span class="n">expected_signed_conf_scores</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_residual_normalised_score_prefit_with_notfitted_estim"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_conformity_scores.test_residual_normalised_score_prefit_with_notfitted_estim">[docs]</a><span class="k">def</span> <span class="nf">test_residual_normalised_score_prefit_with_notfitted_estim</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test that a not fitted estimator and prefit=True raises an error.&quot;&quot;&quot;</span>
+    <span class="n">residual_norm_conf_score</span> <span class="o">=</span> <span class="n">ResidualNormalisedScore</span><span class="p">(</span>
+        <span class="n">residual_estimator</span><span class="o">=</span><span class="n">LinearRegression</span><span class="p">(),</span> <span class="n">prefit</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+        <span class="n">residual_norm_conf_score</span><span class="o">.</span><span class="n">get_conformity_scores</span><span class="p">(</span>
+            <span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">,</span> <span class="n">y_pred_list</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_residual_normalised_score_with_default_params"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_conformity_scores.test_residual_normalised_score_with_default_params">[docs]</a><span class="k">def</span> <span class="nf">test_residual_normalised_score_with_default_params</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test that no error is raised with default parameters.&quot;&quot;&quot;</span>
+    <span class="n">residual_norm_score</span> <span class="o">=</span> <span class="n">ResidualNormalisedScore</span><span class="p">()</span>
+    <span class="n">conf_scores</span> <span class="o">=</span> <span class="n">residual_norm_score</span><span class="o">.</span><span class="n">get_conformity_scores</span><span class="p">(</span>
+        <span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">,</span> <span class="n">y_pred_list</span>
+    <span class="p">)</span>
+    <span class="n">residual_norm_score</span><span class="o">.</span><span class="n">get_estimation_distribution</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">,</span> <span class="n">conf_scores</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_invalid_estimator"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_conformity_scores.test_invalid_estimator">[docs]</a><span class="k">def</span> <span class="nf">test_invalid_estimator</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test that an estimator without predict method raises an error.&quot;&quot;&quot;</span>
+    <span class="k">class</span> <span class="nc">DumbEstimator</span><span class="p">:</span>
+        <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+            <span class="k">pass</span>
+
+    <span class="n">residual_norm_conf_score</span> <span class="o">=</span> <span class="n">ResidualNormalisedScore</span><span class="p">(</span>
+        <span class="n">residual_estimator</span><span class="o">=</span><span class="n">DumbEstimator</span><span class="p">()</span>
+    <span class="p">)</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+        <span class="n">residual_norm_conf_score</span><span class="o">.</span><span class="n">get_conformity_scores</span><span class="p">(</span>
+            <span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">,</span> <span class="n">y_pred_list</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_cross_residual_normalised"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_conformity_scores.test_cross_residual_normalised">[docs]</a><span class="k">def</span> <span class="nf">test_cross_residual_normalised</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Test that residual normalised score with cross method raises an error.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">):</span>
+        <span class="n">MapieRegressor</span><span class="p">(</span><span class="n">conformity_score</span><span class="o">=</span><span class="n">ResidualNormalisedScore</span><span class="p">())</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+            <span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_residual_normalised_score_pipe"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_conformity_scores.test_residual_normalised_score_pipe">[docs]</a><span class="k">def</span> <span class="nf">test_residual_normalised_score_pipe</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Test that residual normalised score function raises no error</span>
+<span class="sd">    with a pipeline estimator.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">pipe</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">([</span>
+            <span class="p">(</span><span class="s2">&quot;poly&quot;</span><span class="p">,</span> <span class="n">PolynomialFeatures</span><span class="p">(</span><span class="n">degree</span><span class="o">=</span><span class="mi">2</span><span class="p">)),</span>
+            <span class="p">(</span><span class="s2">&quot;linear&quot;</span><span class="p">,</span> <span class="n">LinearRegression</span><span class="p">())</span>
+        <span class="p">])</span>
+    <span class="n">mapie_reg</span> <span class="o">=</span> <span class="n">MapieRegressor</span><span class="p">(</span>
+        <span class="n">conformity_score</span><span class="o">=</span><span class="n">ResidualNormalisedScore</span><span class="p">(</span>
+            <span class="n">residual_estimator</span><span class="o">=</span><span class="n">pipe</span><span class="p">,</span> <span class="n">split_size</span><span class="o">=</span><span class="mf">0.2</span>
+        <span class="p">),</span>
+        <span class="n">cv</span><span class="o">=</span><span class="s2">&quot;split&quot;</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span>
+    <span class="p">)</span>
+    <span class="n">mapie_reg</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">X_toy</span><span class="p">)),</span>
+                  <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">y_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)))</span></div>
+
+
+<div class="viewcode-block" id="test_residual_normalised_score_pipe_prefit"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_conformity_scores.test_residual_normalised_score_pipe_prefit">[docs]</a><span class="k">def</span> <span class="nf">test_residual_normalised_score_pipe_prefit</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Test that residual normalised score function raises no error with a</span>
+<span class="sd">    pipeline estimator prefitted.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">pipe</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">([</span>
+            <span class="p">(</span><span class="s2">&quot;poly&quot;</span><span class="p">,</span> <span class="n">PolynomialFeatures</span><span class="p">(</span><span class="n">degree</span><span class="o">=</span><span class="mi">2</span><span class="p">)),</span>
+            <span class="p">(</span><span class="s2">&quot;linear&quot;</span><span class="p">,</span> <span class="n">LinearRegression</span><span class="p">())</span>
+        <span class="p">])</span>
+    <span class="n">pipe</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span>
+    <span class="n">mapie_reg</span> <span class="o">=</span> <span class="n">MapieRegressor</span><span class="p">(</span>
+        <span class="n">conformity_score</span><span class="o">=</span><span class="n">ResidualNormalisedScore</span><span class="p">(</span>
+            <span class="n">residual_estimator</span><span class="o">=</span><span class="n">pipe</span><span class="p">,</span> <span class="n">split_size</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span> <span class="n">prefit</span><span class="o">=</span><span class="kc">True</span>
+        <span class="p">),</span>
+        <span class="n">cv</span><span class="o">=</span><span class="s2">&quot;split&quot;</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span>
+    <span class="p">)</span>
+    <span class="n">mapie_reg</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_residual_normalised_prefit_estimator_with_neg_values"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_conformity_scores.test_residual_normalised_prefit_estimator_with_neg_values">[docs]</a><span class="k">def</span> <span class="nf">test_residual_normalised_prefit_estimator_with_neg_values</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Test that a prefit estimator for the residual estimator of the residual</span>
+<span class="sd">    normalised score that predicts negative values raises a warning.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">class</span> <span class="nc">NegativeRegresssor</span><span class="p">(</span><span class="n">LinearRegression</span><span class="p">):</span>
+        <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">fill_value</span><span class="o">=-</span><span class="mf">1.</span><span class="p">)</span>
+    <span class="n">estim</span> <span class="o">=</span> <span class="n">NegativeRegresssor</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span>
+    <span class="n">residual_norm_conf_score</span> <span class="o">=</span> <span class="n">ResidualNormalisedScore</span><span class="p">(</span>
+        <span class="n">residual_estimator</span><span class="o">=</span><span class="n">estim</span><span class="p">,</span> <span class="n">prefit</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">warns</span><span class="p">(</span><span class="ne">UserWarning</span><span class="p">):</span>
+        <span class="n">residual_norm_conf_score</span><span class="o">.</span><span class="n">get_conformity_scores</span><span class="p">(</span>
+            <span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">,</span> <span class="n">y_pred_list</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_residual_normalised_prefit_get_estimation_distribution"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_conformity_scores.test_residual_normalised_prefit_get_estimation_distribution">[docs]</a><span class="k">def</span> <span class="nf">test_residual_normalised_prefit_get_estimation_distribution</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Test that get_estimation_distribution with prefitted estimator in residual</span>
+<span class="sd">    normalised score raises no error.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">estim</span> <span class="o">=</span> <span class="n">LinearRegression</span><span class="p">()</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span>
+    <span class="n">residual_normalised_conf_score</span> <span class="o">=</span> <span class="n">ResidualNormalisedScore</span><span class="p">(</span>
+        <span class="n">residual_estimator</span><span class="o">=</span><span class="n">estim</span><span class="p">,</span> <span class="n">prefit</span><span class="o">=</span><span class="kc">True</span>
+    <span class="p">)</span>
+    <span class="n">conf_scores</span> <span class="o">=</span> <span class="n">residual_normalised_conf_score</span><span class="o">.</span><span class="n">get_conformity_scores</span><span class="p">(</span>
+        <span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">,</span> <span class="n">y_pred_list</span>
+    <span class="p">)</span>
+    <span class="n">residual_normalised_conf_score</span><span class="o">.</span><span class="n">get_estimation_distribution</span><span class="p">(</span>
+        <span class="n">X_toy</span><span class="p">,</span> <span class="n">y_pred_list</span><span class="p">,</span> <span class="n">conf_scores</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_intervals_shape_with_every_score"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_conformity_scores.test_intervals_shape_with_every_score">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;score&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">AbsoluteConformityScore</span><span class="p">(),</span>
+                                   <span class="n">GammaConformityScore</span><span class="p">(),</span>
+                                   <span class="n">ResidualNormalisedScore</span><span class="p">()])</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;alpha&quot;</span><span class="p">,</span> <span class="p">[[</span><span class="mf">0.3</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.5</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">]])</span>
+<span class="k">def</span> <span class="nf">test_intervals_shape_with_every_score</span><span class="p">(</span>
+    <span class="n">score</span><span class="p">:</span> <span class="n">ConformityScore</span><span class="p">,</span>
+    <span class="n">alpha</span><span class="p">:</span> <span class="n">Any</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">mapie_reg</span> <span class="o">=</span> <span class="n">MapieRegressor</span><span class="p">(</span>
+        <span class="n">method</span><span class="o">=</span><span class="s2">&quot;base&quot;</span><span class="p">,</span> <span class="n">cv</span><span class="o">=</span><span class="s2">&quot;split&quot;</span><span class="p">,</span> <span class="n">conformity_score</span><span class="o">=</span><span class="n">score</span>
+    <span class="p">)</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">X_toy</span><span class="p">))</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">((</span><span class="n">y_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">))</span>
+    <span class="n">mapie_reg</span> <span class="o">=</span> <span class="n">mapie_reg</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+    <span class="n">y_pred</span><span class="p">,</span> <span class="n">intervals</span> <span class="o">=</span> <span class="n">mapie_reg</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">)</span>
+    <span class="n">n_samples</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">assert</span> <span class="n">y_pred</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">n_samples</span>
+    <span class="k">assert</span> <span class="n">intervals</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">n_samples</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">alpha</span><span class="p">))</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, _.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

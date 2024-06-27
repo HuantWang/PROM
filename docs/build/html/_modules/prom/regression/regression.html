@@ -1,0 +1,935 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>prom.regression.regression &mdash; Prom v0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="author" title="About these documents" href="../../../about.html" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Prom
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../faq.html">Frequently Asked Questions</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Python API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../src/prom.html">prom module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../src/util.html">util module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../src/prom.conformity_scores.html">prom.conformity_scores package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../src/prom.control_risk.html">prom.control_risk package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../src/prom.estimator.html">prom.estimator package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../src/prom.regression.html">prom.regression package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../src/prom.tests.html">prom.tests package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Prom</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">prom.regression.regression</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for prom.regression.regression</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span> <span class="nn">warnings</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">cast</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">sklearn.base</span> <span class="kn">import</span> <span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">RegressorMixin</span>
+<span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">LinearRegression</span>
+<span class="kn">from</span> <span class="nn">sklearn.model_selection</span> <span class="kn">import</span> <span class="n">BaseCrossValidator</span>
+<span class="kn">from</span> <span class="nn">sklearn.pipeline</span> <span class="kn">import</span> <span class="n">Pipeline</span>
+<span class="kn">from</span> <span class="nn">sklearn.utils</span> <span class="kn">import</span> <span class="n">check_random_state</span>
+<span class="kn">from</span> <span class="nn">sklearn.utils.validation</span> <span class="kn">import</span> <span class="n">_check_y</span><span class="p">,</span> <span class="n">check_is_fitted</span><span class="p">,</span> <span class="n">indexable</span>
+<span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">gmean</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span><span class="n">percentileofscore</span>
+<span class="kn">from</span> <span class="nn">mapie._typing</span> <span class="kn">import</span> <span class="n">ArrayLike</span><span class="p">,</span> <span class="n">NDArray</span>
+<span class="kn">from</span> <span class="nn">mapie.conformity_scores</span> <span class="kn">import</span> <span class="n">ConformityScore</span><span class="p">,</span> <span class="n">ResidualNormalisedScore</span>
+<span class="kn">from</span> <span class="nn">mapie.estimator.estimator</span> <span class="kn">import</span> <span class="n">EnsembleRegressor</span>
+<span class="kn">from</span> <span class="nn">mapie.utils</span> <span class="kn">import</span> <span class="p">(</span><span class="n">check_alpha</span><span class="p">,</span> <span class="n">check_alpha_and_n_samples</span><span class="p">,</span>
+                         <span class="n">check_conformity_score</span><span class="p">,</span> <span class="n">check_cv</span><span class="p">,</span>
+                         <span class="n">check_estimator_fit_predict</span><span class="p">,</span> <span class="n">check_n_features_in</span><span class="p">,</span>
+                         <span class="n">check_n_jobs</span><span class="p">,</span> <span class="n">check_null_weight</span><span class="p">,</span> <span class="n">check_verbose</span><span class="p">)</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">sklearn.cluster</span> <span class="kn">import</span> <span class="n">KMeans</span>
+<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">pairwise_distances</span>
+
+<div class="viewcode-block" id="MapieRegressor"><a class="viewcode-back" href="../../../src/prom.regression.html#prom.regression.regression.MapieRegressor">[docs]</a><span class="k">class</span> <span class="nc">MapieRegressor</span><span class="p">(</span><span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">RegressorMixin</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Prediction interval with out-of-fold conformity scores.</span>
+
+<span class="sd">    This class implements the jackknife+ strategy and its variations</span>
+<span class="sd">    for estimating prediction intervals on single-output data. The</span>
+<span class="sd">    idea is to evaluate out-of-fold conformity scores (signed residuals,</span>
+<span class="sd">    absolute residuals, residuals normalized by the predicted mean...)</span>
+<span class="sd">    on hold-out validation sets and to deduce valid confidence intervals</span>
+<span class="sd">    with strong theoretical guarantees.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    estimator: Optional[RegressorMixin]</span>
+<span class="sd">        Any regressor with scikit-learn API</span>
+<span class="sd">        (i.e. with ``fit`` and ``predict`` methods).</span>
+<span class="sd">        If ``None``, estimator defaults to a ``LinearRegression`` instance.</span>
+
+<span class="sd">        By default ``None``.</span>
+
+<span class="sd">    method: str</span>
+<span class="sd">        Method to choose for prediction interval estimates.</span>
+<span class="sd">        Choose among:</span>
+
+<span class="sd">        - ``&quot;naive&quot;``, based on training set conformity scores,</span>
+<span class="sd">        - ``&quot;base&quot;``, based on validation sets conformity scores,</span>
+<span class="sd">        - ``&quot;plus&quot;``, based on validation conformity scores and</span>
+<span class="sd">          testing predictions,</span>
+<span class="sd">        - ``&quot;minmax&quot;``, based on validation conformity scores and</span>
+<span class="sd">          testing predictions (min/max among cross-validation clones).</span>
+
+<span class="sd">        By default ``&quot;plus&quot;``.</span>
+
+<span class="sd">    cv: Optional[Union[int, str, BaseCrossValidator]]</span>
+<span class="sd">        The cross-validation strategy for computing conformity scores.</span>
+<span class="sd">        It directly drives the distinction between jackknife and cv variants.</span>
+<span class="sd">        Choose among:</span>
+
+<span class="sd">        - ``None``, to use the default 5-fold cross-validation</span>
+<span class="sd">        - integer, to specify the number of folds.</span>
+<span class="sd">          If equal to ``-1``, equivalent to</span>
+<span class="sd">          ``sklearn.model_selection.LeaveOneOut()``.</span>
+<span class="sd">        - CV splitter: any ``sklearn.model_selection.BaseCrossValidator``</span>
+<span class="sd">          Main variants are:</span>
+<span class="sd">            - ``sklearn.model_selection.LeaveOneOut`` (jackknife),</span>
+<span class="sd">            - ``sklearn.model_selection.KFold`` (cross-validation),</span>
+<span class="sd">            - ``subsample.Subsample`` object (bootstrap).</span>
+<span class="sd">        - ``&quot;split&quot;``, does not involve cross-validation but a division</span>
+<span class="sd">          of the data into training and calibration subsets. The splitter</span>
+<span class="sd">          used is the following: ``sklearn.model_selection.ShuffleSplit``.</span>
+<span class="sd">          ``method`` parameter is set to ``&quot;base&quot;``.</span>
+<span class="sd">        - ``&quot;prefit&quot;``, assumes that ``estimator`` has been fitted already,</span>
+<span class="sd">          and the ``method`` parameter is set to ``&quot;base&quot;``.</span>
+<span class="sd">          All data provided in the ``fit`` method is then used</span>
+<span class="sd">          for computing conformity scores only.</span>
+<span class="sd">          At prediction time, quantiles of these conformity scores are used</span>
+<span class="sd">          to provide a prediction interval with fixed width.</span>
+<span class="sd">          The user has to take care manually that data for model fitting and</span>
+<span class="sd">          conformity scores estimate are disjoint.</span>
+
+<span class="sd">        By default ``None``.</span>
+
+<span class="sd">    test_size: Optional[Union[int, float]]</span>
+<span class="sd">        If ``float``, should be between ``0.0`` and ``1.0`` and represent the</span>
+<span class="sd">        proportion of the dataset to include in the test split. If ``int``,</span>
+<span class="sd">        represents the absolute number of test samples. If ``None``,</span>
+<span class="sd">        it will be set to ``0.1``.</span>
+
+<span class="sd">        If cv is not ``&quot;split&quot;``, ``test_size`` is ignored.</span>
+
+<span class="sd">        By default ``None``.</span>
+
+<span class="sd">    n_jobs: Optional[int]</span>
+<span class="sd">        Number of jobs for parallel processing using joblib</span>
+<span class="sd">        via the &quot;locky&quot; backend.</span>
+<span class="sd">        If ``-1`` all CPUs are used.</span>
+<span class="sd">        If ``1`` is given, no parallel computing code is used at all,</span>
+<span class="sd">        which is useful for debugging.</span>
+<span class="sd">        For ``n_jobs`` below ``-1``, ``(n_cpus + 1 - n_jobs)`` are used.</span>
+<span class="sd">        ``None`` is a marker for `unset` that will be interpreted as</span>
+<span class="sd">        ``n_jobs=1`` (sequential execution).</span>
+
+<span class="sd">        By default ``None``.</span>
+
+<span class="sd">    agg_function: Optional[str]</span>
+<span class="sd">        Determines how to aggregate predictions from perturbed models, both at</span>
+<span class="sd">        training and prediction time.</span>
+
+<span class="sd">        If ``None``, it is ignored except if ``cv`` class is ``Subsample``,</span>
+<span class="sd">        in which case an error is raised.</span>
+<span class="sd">        If ``&quot;mean&quot;`` or ``&quot;median&quot;``, returns the mean or median of the</span>
+<span class="sd">        predictions computed from the out-of-folds models.</span>
+<span class="sd">        Note: if you plan to set the ``ensemble`` argument to ``True`` in the</span>
+<span class="sd">        ``predict`` method, you have to specify an aggregation function.</span>
+<span class="sd">        Otherwise an error would be raised.</span>
+
+<span class="sd">        The Jackknife+ interval can be interpreted as an interval around the</span>
+<span class="sd">        median prediction, and is guaranteed to lie inside the interval,</span>
+<span class="sd">        unlike the single estimator predictions.</span>
+
+<span class="sd">        When the cross-validation strategy is ``Subsample`` (i.e. for the</span>
+<span class="sd">        Jackknife+-after-Bootstrap method), this function is also used to</span>
+<span class="sd">        aggregate the training set in-sample predictions.</span>
+
+<span class="sd">        If ``cv`` is ``&quot;prefit&quot;`` or ``&quot;split&quot;``, ``agg_function`` is ignored.</span>
+
+<span class="sd">        By default ``&quot;mean&quot;``.</span>
+
+<span class="sd">    verbose: int</span>
+<span class="sd">        The verbosity level, used with joblib for multiprocessing.</span>
+<span class="sd">        The frequency of the messages increases with the verbosity level.</span>
+<span class="sd">        If it more than ``10``, all iterations are reported.</span>
+<span class="sd">        Above ``50``, the output is sent to stdout.</span>
+
+<span class="sd">        By default ``0``.</span>
+
+<span class="sd">    conformity_score: Optional[ConformityScore]</span>
+<span class="sd">        ConformityScore instance.</span>
+<span class="sd">        It defines the link between the observed values, the predicted ones</span>
+<span class="sd">        and the conformity scores. For instance, the default ``None`` value</span>
+<span class="sd">        correspondonds to a conformity score which assumes</span>
+<span class="sd">        y_obs = y_pred + conformity_score.</span>
+
+<span class="sd">        - ``None``, to use the default ``AbsoluteConformityScore`` conformity</span>
+<span class="sd">          score</span>
+<span class="sd">        - ConformityScore: any ``ConformityScore`` class</span>
+
+<span class="sd">        By default ``None``.</span>
+
+<span class="sd">    random_state: Optional[Union[int, RandomState]]</span>
+<span class="sd">        Pseudo random number generator state used for random sampling.</span>
+<span class="sd">        Pass an int for reproducible output across multiple function calls.</span>
+
+<span class="sd">        By default ``None``.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    valid_methods_: List[str]</span>
+<span class="sd">        List of all valid methods.</span>
+
+<span class="sd">    estimator_: EnsembleRegressor</span>
+<span class="sd">        Sklearn estimator that handle all that is related to the estimator.</span>
+
+<span class="sd">    conformity_scores_: ArrayLike of shape (n_samples_train,)</span>
+<span class="sd">        Conformity scores between ``y_train`` and ``y_pred``.</span>
+
+<span class="sd">    n_features_in_: int</span>
+<span class="sd">        Number of features passed to the ``fit`` method.</span>
+
+<span class="sd">    References</span>
+<span class="sd">    ----------</span>
+<span class="sd">    Rina Foygel Barber, Emmanuel J. Candès,</span>
+<span class="sd">    Aaditya Ramdas, and Ryan J. Tibshirani.</span>
+<span class="sd">    &quot;Predictive inference with the jackknife+.&quot;</span>
+<span class="sd">    Ann. Statist., 49(1):486-507, February 2021.</span>
+
+<span class="sd">    Byol Kim, Chen Xu, and Rina Foygel Barber.</span>
+<span class="sd">    &quot;Predictive Inference Is Free with the Jackknife+-after-Bootstrap.&quot;</span>
+<span class="sd">    34th Conference on Neural Information Processing Systems (NeurIPS 2020).</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; import numpy as np</span>
+<span class="sd">    &gt;&gt;&gt; from mapie.regression import MapieRegressor</span>
+<span class="sd">    &gt;&gt;&gt; from sklearn.linear_model import LinearRegression</span>
+<span class="sd">    &gt;&gt;&gt; X_toy = np.array([[0], [1], [2], [3], [4], [5]])</span>
+<span class="sd">    &gt;&gt;&gt; y_toy = np.array([5, 7.5, 9.5, 10.5, 12.5, 15])</span>
+<span class="sd">    &gt;&gt;&gt; clf = LinearRegression().fit(X_toy, y_toy)</span>
+<span class="sd">    &gt;&gt;&gt; mapie_reg = MapieRegressor(estimator=clf, cv=&quot;prefit&quot;)</span>
+<span class="sd">    &gt;&gt;&gt; mapie_reg = mapie_reg.fit(X_toy, y_toy)</span>
+<span class="sd">    &gt;&gt;&gt; y_pred, y_pis = mapie_reg.predict(X_toy, alpha=0.5)</span>
+<span class="sd">    &gt;&gt;&gt; print(y_pis[:, :, 0])</span>
+<span class="sd">    [[ 4.95714286  5.61428571]</span>
+<span class="sd">     [ 6.84285714  7.5       ]</span>
+<span class="sd">     [ 8.72857143  9.38571429]</span>
+<span class="sd">     [10.61428571 11.27142857]</span>
+<span class="sd">     [12.5        13.15714286]</span>
+<span class="sd">     [14.38571429 15.04285714]]</span>
+<span class="sd">    &gt;&gt;&gt; print(y_pred)</span>
+<span class="sd">    [ 5.28571429  7.17142857  9.05714286 10.94285714 12.82857143 14.71428571]</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">cv_need_agg_function_</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;Subsample&quot;</span><span class="p">]</span>
+    <span class="n">no_agg_cv_</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;prefit&quot;</span><span class="p">,</span> <span class="s2">&quot;split&quot;</span><span class="p">]</span>
+    <span class="n">valid_methods_</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;naive&quot;</span><span class="p">,</span> <span class="s2">&quot;base&quot;</span><span class="p">,</span> <span class="s2">&quot;plus&quot;</span><span class="p">,</span> <span class="s2">&quot;minmax&quot;</span><span class="p">]</span>
+    <span class="n">no_agg_methods_</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;naive&quot;</span><span class="p">,</span> <span class="s2">&quot;base&quot;</span><span class="p">]</span>
+    <span class="n">valid_agg_functions_</span> <span class="o">=</span> <span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="s2">&quot;median&quot;</span><span class="p">,</span> <span class="s2">&quot;mean&quot;</span><span class="p">]</span>
+    <span class="n">ensemble_agg_functions_</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;median&quot;</span><span class="p">,</span> <span class="s2">&quot;mean&quot;</span><span class="p">]</span>
+    <span class="n">default_sym_</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">fit_attributes</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="s2">&quot;estimator_&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;conformity_scores_&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;conformity_score_function_&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;n_features_in_&quot;</span><span class="p">,</span>
+    <span class="p">]</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">estimator</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">RegressorMixin</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">method</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;plus&quot;</span><span class="p">,</span>
+        <span class="n">cv</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="n">BaseCrossValidator</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">test_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">n_jobs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">agg_function</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;mean&quot;</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">conformity_score</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ConformityScore</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">RandomState</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">estimator</span> <span class="o">=</span> <span class="n">estimator</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="n">method</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cv</span> <span class="o">=</span> <span class="n">cv</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">test_size</span> <span class="o">=</span> <span class="n">test_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_jobs</span> <span class="o">=</span> <span class="n">n_jobs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">agg_function</span> <span class="o">=</span> <span class="n">agg_function</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="n">verbose</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conformity_score</span> <span class="o">=</span> <span class="n">conformity_score</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">random_state</span> <span class="o">=</span> <span class="n">random_state</span>
+
+    <span class="k">def</span> <span class="nf">_check_parameters</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Perform several checks on input parameters.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            If parameters are not valid.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_method</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">)</span>
+        <span class="n">check_n_jobs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">n_jobs</span><span class="p">)</span>
+        <span class="n">check_verbose</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">)</span>
+        <span class="n">check_random_state</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">random_state</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_check_method</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">method</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check if ``method`` is correct.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        method: str</span>
+<span class="sd">            Method&#39;s name to check.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        str</span>
+<span class="sd">            ``method`` itself.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            If ``method`` is not in ``self.valid_methods_``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">method</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_methods_</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Invalid method. Allowed values are </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">valid_methods_</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">method</span>
+
+    <span class="k">def</span> <span class="nf">_check_agg_function</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">agg_function</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check if ``agg_function`` is correct, and consistent with other</span>
+<span class="sd">        arguments.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        agg_function: Optional[str]</span>
+<span class="sd">            Aggregation function&#39;s name to check, by default ``None``.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        str</span>
+<span class="sd">            ``agg_function`` itself or ``&quot;mean&quot;``.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            If ``agg_function`` is not in [``None``, ``&quot;mean&quot;``, ``&quot;median&quot;``],</span>
+<span class="sd">            or is ``None`` while cv class is in ``cv_need_agg_function_``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">agg_function</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">valid_agg_functions_</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Invalid aggregation function. &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;Allowed values are &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">valid_agg_functions_</span><span class="si">}</span><span class="s2">&#39;.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="p">(</span><span class="n">agg_function</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span>
+            <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cv</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cv_need_agg_function_</span>
+        <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;You need to specify an aggregation function when &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;cv&#39;s type is in </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">cv_need_agg_function_</span><span class="si">}</span><span class="s2">.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">elif</span> <span class="n">agg_function</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">agg_function</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="s2">&quot;mean&quot;</span>
+
+    <span class="k">def</span> <span class="nf">_check_estimator</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">estimator</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">RegressorMixin</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RegressorMixin</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check if estimator is ``None``,</span>
+<span class="sd">        and returns a ``LinearRegression`` instance if necessary.</span>
+<span class="sd">        If the ``cv`` attribute is ``&quot;prefit&quot;``,</span>
+<span class="sd">        check if estimator is indeed already fitted.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        estimator: Optional[RegressorMixin]</span>
+<span class="sd">            Estimator to check, by default ``None``.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        RegressorMixin</span>
+<span class="sd">            The estimator itself or a default ``LinearRegression`` instance.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            If the estimator is not ``None``</span>
+<span class="sd">            and has no ``fit`` nor ``predict`` methods.</span>
+
+<span class="sd">        NotFittedError</span>
+<span class="sd">            If the estimator is not fitted</span>
+<span class="sd">            and ``cv`` attribute is ``&quot;prefit&quot;``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">estimator</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">LinearRegression</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">check_estimator_fit_predict</span><span class="p">(</span><span class="n">estimator</span><span class="p">)</span>
+            <span class="c1"># if self.cv == &quot;prefit&quot;:</span>
+            <span class="c1">#     if isinstance(estimator, Pipeline):</span>
+            <span class="c1">#         check_is_fitted(estimator[-1])</span>
+            <span class="c1">#     else:</span>
+            <span class="c1">#         check_is_fitted(estimator)</span>
+            <span class="k">return</span> <span class="n">estimator</span>
+
+    <span class="k">def</span> <span class="nf">_check_ensemble</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">ensemble</span><span class="p">:</span> <span class="nb">bool</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Check if ``ensemble`` is ``False`` and if ``self.agg_function``</span>
+<span class="sd">        is ``None``. Else raise error.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        ensemble: bool</span>
+<span class="sd">            ``ensemble`` argument to check the coherennce with</span>
+<span class="sd">            ``self.agg_function``.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            If ``ensemble`` is ``True`` and ``self.agg_function`` is ``None``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">ensemble</span> <span class="ow">and</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">agg_function</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;If ensemble is True, the aggregation function has to be &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;in &#39;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ensemble_agg_functions_</span><span class="si">}</span><span class="s2">&#39;.&quot;</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_check_fit_parameters</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">X</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
+        <span class="n">y</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
+        <span class="n">sample_weight</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ArrayLike</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">groups</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ArrayLike</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Perform several checks on class parameters.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        X: ArrayLike</span>
+<span class="sd">            Observed values.</span>
+
+<span class="sd">        y: ArrayLike</span>
+<span class="sd">            Target values.</span>
+
+<span class="sd">        sample_weight: Optional[NDArray] of shape (n_samples,)</span>
+<span class="sd">            Non-null sample weights.</span>
+
+<span class="sd">        groups: Optional[ArrayLike] of shape (n_samples,)</span>
+<span class="sd">            Group labels for the samples used while splitting the dataset into</span>
+<span class="sd">            train/test set.</span>
+<span class="sd">            By default ``None``.</span>
+
+<span class="sd">        Raises</span>
+<span class="sd">        ------</span>
+<span class="sd">        ValueError</span>
+<span class="sd">            If conformity score is FittedResidualNormalizing score and method</span>
+<span class="sd">            is neither ``&quot;prefit&quot;`` or ``&quot;split&quot;``.</span>
+
+<span class="sd">        ValueError</span>
+<span class="sd">            If ``cv`` is `&quot;prefit&quot;`` or ``&quot;split&quot;`` and ``method`` is not</span>
+<span class="sd">            ``&quot;base&quot;``.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Checking</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_parameters</span><span class="p">()</span>
+        <span class="n">cv</span> <span class="o">=</span> <span class="n">check_cv</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cv</span><span class="p">,</span> <span class="n">test_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">test_size</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">random_state</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cv</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;split&quot;</span><span class="p">,</span> <span class="s2">&quot;prefit&quot;</span><span class="p">]</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">!=</span> <span class="s2">&quot;base&quot;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">=</span> <span class="s2">&quot;base&quot;</span>
+        <span class="n">estimator</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_estimator</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">estimator</span><span class="p">)</span>
+        <span class="n">agg_function</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_agg_function</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">agg_function</span><span class="p">)</span>
+        <span class="n">cs_estimator</span> <span class="o">=</span> <span class="n">check_conformity_score</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">conformity_score</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">default_sym_</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">cs_estimator</span><span class="p">,</span> <span class="n">ResidualNormalisedScore</span><span class="p">)</span> <span class="ow">and</span> \
+           <span class="bp">self</span><span class="o">.</span><span class="n">cv</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;split&quot;</span><span class="p">,</span> <span class="s2">&quot;prefit&quot;</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;The ResidualNormalisedScore can be used only with &quot;</span>
+                <span class="s2">&quot;``cv=&#39;split&#39;`` and ``cv=&#39;prefit&#39;``&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">indexable</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">_check_y</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+        <span class="n">sample_weight</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">check_null_weight</span><span class="p">(</span><span class="n">sample_weight</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_features_in_</span> <span class="o">=</span> <span class="n">check_n_features_in</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+
+        <span class="c1"># Casting</span>
+        <span class="n">cv</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">BaseCrossValidator</span><span class="p">,</span> <span class="n">cv</span><span class="p">)</span>
+        <span class="n">estimator</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">RegressorMixin</span><span class="p">,</span> <span class="n">estimator</span><span class="p">)</span>
+        <span class="n">cs_estimator</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">ConformityScore</span><span class="p">,</span> <span class="n">cs_estimator</span><span class="p">)</span>
+        <span class="n">agg_function</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="n">agg_function</span><span class="p">)</span>
+        <span class="n">X</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">NDArray</span><span class="p">,</span> <span class="n">X</span><span class="p">)</span>
+        <span class="n">y</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">NDArray</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="n">sample_weight</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">Optional</span><span class="p">[</span><span class="n">NDArray</span><span class="p">],</span> <span class="n">sample_weight</span><span class="p">)</span>
+        <span class="n">groups</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">Optional</span><span class="p">[</span><span class="n">NDArray</span><span class="p">],</span> <span class="n">groups</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">estimator</span><span class="p">,</span> <span class="n">cs_estimator</span><span class="p">,</span>
+            <span class="n">agg_function</span><span class="p">,</span> <span class="n">cv</span><span class="p">,</span>
+            <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span>
+            <span class="n">sample_weight</span><span class="p">,</span> <span class="n">groups</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="MapieRegressor.fit"><a class="viewcode-back" href="../../../src/prom.regression.html#prom.regression.regression.MapieRegressor.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">X</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
+        <span class="n">y</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
+        <span class="n">sample_weight</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ArrayLike</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">groups</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">ArrayLike</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="o">**</span><span class="n">fit_params</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MapieRegressor</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Fit estimator and compute conformity scores used for</span>
+<span class="sd">        prediction intervals.</span>
+
+<span class="sd">        All the types of estimator (single or cross validated ones) are</span>
+<span class="sd">        encapsulated under EnsembleRegressor.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        X: ArrayLike of shape (n_samples, n_features)</span>
+<span class="sd">            Training data.</span>
+
+<span class="sd">        y: ArrayLike of shape (n_samples,)</span>
+<span class="sd">            Training labels.</span>
+
+<span class="sd">        sample_weight: Optional[ArrayLike] of shape (n_samples,)</span>
+<span class="sd">            Sample weights for fitting the out-of-fold models.</span>
+<span class="sd">            If ``None``, then samples are equally weighted.</span>
+<span class="sd">            If some weights are null,</span>
+<span class="sd">            their corresponding observations are removed</span>
+<span class="sd">            before the fitting process and hence have no conformity scores.</span>
+<span class="sd">            If weights are non-uniform,</span>
+<span class="sd">            conformity scores are still uniformly weighted.</span>
+
+<span class="sd">            By default ``None``.</span>
+
+<span class="sd">        groups: Optional[ArrayLike] of shape (n_samples,)</span>
+<span class="sd">            Group labels for the samples used while splitting the dataset into</span>
+<span class="sd">            train/test set.</span>
+<span class="sd">            By default ``None``.</span>
+
+<span class="sd">        **fit_params : dict</span>
+<span class="sd">            Additional fit parameters.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        MapieRegressor</span>
+<span class="sd">            The model itself.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Checks</span>
+        <span class="p">(</span><span class="n">estimator</span><span class="p">,</span>
+         <span class="bp">self</span><span class="o">.</span><span class="n">conformity_score_function_</span><span class="p">,</span>
+         <span class="n">agg_function</span><span class="p">,</span>
+         <span class="n">cv</span><span class="p">,</span>
+         <span class="n">X</span><span class="p">,</span>
+         <span class="n">y</span><span class="p">,</span>
+         <span class="n">sample_weight</span><span class="p">,</span>
+         <span class="n">groups</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_check_fit_parameters</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">sample_weight</span><span class="p">,</span> <span class="n">groups</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">estimator_</span> <span class="o">=</span> <span class="n">EnsembleRegressor</span><span class="p">(</span>
+            <span class="n">estimator</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">,</span>
+            <span class="n">cv</span><span class="p">,</span>
+            <span class="n">agg_function</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">n_jobs</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">random_state</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">test_size</span><span class="p">,</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span>
+        <span class="p">)</span>
+        <span class="c1"># Fit the prediction function</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">estimator_</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">estimator_</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+            <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">sample_weight</span><span class="o">=</span><span class="n">sample_weight</span><span class="p">,</span> <span class="n">groups</span><span class="o">=</span><span class="n">groups</span><span class="p">,</span> <span class="o">**</span><span class="n">fit_params</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Predict on calibration data</span>
+        <span class="n">y_pred</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">estimator_</span><span class="o">.</span><span class="n">predict_calib</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="n">groups</span><span class="o">=</span><span class="n">groups</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cal</span> <span class="o">=</span> <span class="n">X</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cal_y</span> <span class="o">=</span> <span class="n">y</span>
+        <span class="c1"># Compute the conformity scores (manage jk-ab case)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conformity_scores_</span> <span class="o">=</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">conformity_score_function_</span><span class="o">.</span><span class="n">get_conformity_scores</span><span class="p">(</span>
+                <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">y_pred</span>
+            <span class="p">)</span>
+        <span class="c1"># give the classes for each calibration sample</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cal_clusters</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimal_k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">gap_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cluster_cal_data</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+<div class="viewcode-block" id="MapieRegressor.compute_gap_statistic"><a class="viewcode-back" href="../../../src/prom.regression.html#prom.regression.regression.MapieRegressor.compute_gap_statistic">[docs]</a>    <span class="k">def</span> <span class="nf">compute_gap_statistic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">n_refs</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">max_clusters</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+
+        <span class="n">gaps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">max_clusters</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">results_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_clusters</span><span class="p">):</span>
+            <span class="c1"># Holder for reference dispersion results</span>
+            <span class="n">ref_disps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_refs</span><span class="p">)</span>
+
+            <span class="c1"># For n references, generate random sample and perform kmeans getting resulting dispersion of each loop</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_refs</span><span class="p">):</span>
+                <span class="n">random_reference</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random_sample</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+                <span class="n">km</span> <span class="o">=</span> <span class="n">KMeans</span><span class="p">(</span><span class="n">n_clusters</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">n_init</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+                <span class="n">km</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">random_reference</span><span class="p">)</span>
+                <span class="n">ref_disp</span> <span class="o">=</span> <span class="n">km</span><span class="o">.</span><span class="n">inertia_</span>
+                <span class="n">ref_disps</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">ref_disp</span>
+
+            <span class="c1"># Fit cluster to original data and create dispersion</span>
+            <span class="n">km</span> <span class="o">=</span> <span class="n">KMeans</span><span class="p">(</span><span class="n">n_clusters</span><span class="o">=</span><span class="n">k</span><span class="p">)</span>
+            <span class="n">km</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+            <span class="n">orig_disp</span> <span class="o">=</span> <span class="n">km</span><span class="o">.</span><span class="n">inertia_</span>
+
+            <span class="c1"># Calculate gap statistic</span>
+            <span class="n">gap</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">ref_disps</span><span class="p">))</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">orig_disp</span><span class="p">)</span>
+
+            <span class="c1"># Assign this loop&#39;s gap statistic to gaps</span>
+            <span class="n">gaps</span><span class="p">[</span><span class="n">k</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">gap</span>
+
+            <span class="n">results_list</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s1">&#39;clusterCount&#39;</span><span class="p">:</span> <span class="n">k</span><span class="p">,</span> <span class="s1">&#39;gap&#39;</span><span class="p">:</span> <span class="n">gap</span><span class="p">})</span>
+        <span class="n">results_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">results_list</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">gaps</span><span class="o">.</span><span class="n">argmax</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">results_df</span></div>
+
+<div class="viewcode-block" id="MapieRegressor.cluster_cal_data"><a class="viewcode-back" href="../../../src/prom.regression.html#prom.regression.regression.MapieRegressor.cluster_cal_data">[docs]</a>    <span class="k">def</span> <span class="nf">cluster_cal_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Reshape cal to 2D array [n_samples, n_features]</span>
+        <span class="n">n_samples</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cal</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">feature_dim1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cal</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">feature_dim2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cal</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">cal_reshaped</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cal</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">n_samples</span><span class="p">,</span> <span class="n">feature_dim1</span> <span class="o">*</span> <span class="n">feature_dim2</span><span class="p">)</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+
+        <span class="c1"># Determine the optimal number of clusters</span>
+        <span class="n">optimal_k</span><span class="p">,</span> <span class="n">gap_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_gap_statistic</span><span class="p">(</span><span class="n">cal_reshaped</span><span class="p">)</span>
+
+        <span class="c1"># Fit KMeans with the optimal number of clusters</span>
+        <span class="n">kmeans</span> <span class="o">=</span> <span class="n">KMeans</span><span class="p">(</span><span class="n">n_clusters</span><span class="o">=</span><span class="n">optimal_k</span><span class="p">)</span>
+        <span class="n">kmeans</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">cal_reshaped</span><span class="p">)</span>
+
+        <span class="c1"># Assign each sample in cal to a cluster</span>
+        <span class="n">cal_clusters</span> <span class="o">=</span> <span class="n">kmeans</span><span class="o">.</span><span class="n">labels_</span>
+
+        <span class="k">return</span> <span class="n">cal_clusters</span><span class="p">,</span> <span class="n">optimal_k</span><span class="p">,</span> <span class="n">gap_df</span></div>
+
+<div class="viewcode-block" id="MapieRegressor.classify_test_samples"><a class="viewcode-back" href="../../../src/prom.regression.html#prom.regression.regression.MapieRegressor.classify_test_samples">[docs]</a>    <span class="k">def</span> <span class="nf">classify_test_samples</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">cal_clusters</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+        <span class="n">n_cal_samples</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cal</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">n_test_samples</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">feature_dim1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cal</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">feature_dim2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cal</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+
+        <span class="n">cal_reshaped</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cal</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">n_cal_samples</span><span class="p">,</span> <span class="n">feature_dim1</span> <span class="o">*</span> <span class="n">feature_dim2</span><span class="p">)</span>
+        <span class="n">X_reshaped</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">n_test_samples</span><span class="p">,</span> <span class="n">feature_dim1</span> <span class="o">*</span> <span class="n">feature_dim2</span><span class="p">)</span>
+
+        <span class="n">distances</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cdist</span><span class="p">(</span><span class="n">X_reshaped</span><span class="p">,</span> <span class="n">cal_reshaped</span><span class="p">)</span>
+        <span class="n">nearest_indices</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">topk</span><span class="p">(</span><span class="n">distances</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">largest</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">indices</span>
+
+        <span class="n">test_clusters</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_test_samples</span><span class="p">):</span>
+            <span class="n">nearest_clusters</span> <span class="o">=</span> <span class="n">cal_clusters</span><span class="p">[</span><span class="n">nearest_indices</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+            <span class="n">test_cluster</span> <span class="o">=</span> <span class="n">mode</span><span class="p">(</span><span class="n">nearest_clusters</span><span class="p">)</span><span class="o">.</span><span class="n">mode</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">test_clusters</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">test_cluster</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">test_clusters</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MapieRegressor.compute_residuals"><a class="viewcode-back" href="../../../src/prom.regression.html#prom.regression.regression.MapieRegressor.compute_residuals">[docs]</a>    <span class="k">def</span> <span class="nf">compute_residuals</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">):</span>
+        <span class="n">n_cal_samples</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cal</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">distances</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cdist</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">cal</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">n_cal_samples</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">k</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cal</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">//</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="mi">100</span><span class="p">)</span>
+        <span class="n">min_indices</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">topk</span><span class="p">(</span><span class="n">distances</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">largest</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">indices</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conformity_scores_</span><span class="p">[</span><span class="n">min_indices</span><span class="p">]</span>
+        <span class="n">geomean_scores</span> <span class="o">=</span> <span class="n">gmean</span><span class="p">(</span><span class="n">scores</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">true_res</span> <span class="o">=</span> <span class="n">geomean_scores</span> <span class="o">-</span> <span class="n">y_pred</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+        <span class="c1"># true_res: the residuals of the estimated test samples</span>
+        <span class="c1"># geomean_scores: the estimated test samples values</span>
+        <span class="k">return</span> <span class="n">true_res</span><span class="p">,</span><span class="n">geomean_scores</span></div>
+
+<div class="viewcode-block" id="MapieRegressor.compute_p_values"><a class="viewcode-back" href="../../../src/prom.regression.html#prom.regression.regression.MapieRegressor.compute_p_values">[docs]</a>    <span class="k">def</span> <span class="nf">compute_p_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">cal_clusters</span><span class="p">,</span><span class="n">true_res</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+        <span class="c1"># 获取每个测试样本的类别</span>
+        <span class="n">test_clusters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">classify_test_samples</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">cal_clusters</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">)</span>
+        <span class="c1"># 获取所有类别</span>
+        <span class="n">unique_clusters</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">cal_clusters</span><span class="p">)</span>
+        <span class="c1"># 为每个测试样本计算每个类别上的p-value</span>
+        <span class="n">all_p_values</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">predicted_p_values</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)):</span>
+            <span class="n">p_values</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">cluster</span> <span class="ow">in</span> <span class="n">unique_clusters</span><span class="p">:</span>
+                <span class="c1"># 找到同类别的校准样本</span>
+                <span class="n">same_class_indices</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">cal_clusters</span><span class="p">)</span> <span class="o">==</span> <span class="n">cluster</span><span class="p">,</span> <span class="n">as_tuple</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">same_class_scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conformity_scores_</span><span class="p">[</span><span class="n">same_class_indices</span><span class="p">]</span>
+
+                <span class="c1"># 计算测试样本的分数</span>
+                <span class="c1"># distances = torch.cdist(X[i].view(1, -1),</span>
+                <span class="c1">#                         self.cal[same_class_indices].view(same_class_indices.size(0), -1))</span>
+                <span class="c1"># min_index = torch.argmin(distances).item()</span>
+                <span class="c1"># test_score = self.conformity_scores_[same_class_indices[min_index]].item()</span>
+                <span class="n">test_score</span> <span class="o">=</span> <span class="n">true_res</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="c1"># 计算p-value</span>
+                <span class="n">p_value</span> <span class="o">=</span> <span class="n">percentileofscore</span><span class="p">(</span><span class="n">same_class_scores</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">test_score</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s1">&#39;mean&#39;</span><span class="p">)</span> <span class="o">/</span> <span class="mf">100.0</span>
+                <span class="n">p_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p_value</span><span class="p">)</span>
+
+            <span class="n">all_p_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p_values</span><span class="p">)</span>
+
+            <span class="c1"># 获取预测类别上的p-value</span>
+            <span class="n">predicted_cluster</span> <span class="o">=</span> <span class="n">test_clusters</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+            <span class="n">predicted_p_value</span> <span class="o">=</span> <span class="n">p_values</span><span class="p">[</span><span class="n">unique_clusters</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">predicted_cluster</span><span class="p">)]</span>
+            <span class="n">predicted_p_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">predicted_p_value</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">all_p_values</span><span class="p">,</span> <span class="n">predicted_p_values</span></div>
+
+<div class="viewcode-block" id="MapieRegressor.predict"><a class="viewcode-back" href="../../../src/prom.regression.html#prom.regression.regression.MapieRegressor.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">X</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
+        <span class="n">ensemble</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">float</span><span class="p">,</span> <span class="n">Iterable</span><span class="p">[</span><span class="nb">float</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">optimize_beta</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">allow_infinite_bounds</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">NDArray</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">NDArray</span><span class="p">,</span> <span class="n">NDArray</span><span class="p">]]:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Predict target on new samples with confidence intervals.</span>
+<span class="sd">        Conformity scores from the training set and predictions</span>
+<span class="sd">        from the model clones are central to the computation.</span>
+<span class="sd">        Prediction Intervals for a given ``alpha`` are deduced from either</span>
+
+<span class="sd">        - quantiles of conformity scores (``naive`` and ``base`` methods),</span>
+<span class="sd">        - quantiles of (predictions +/- conformity scores) (``plus`` method),</span>
+<span class="sd">        - quantiles of (max/min(predictions) +/- conformity scores)</span>
+<span class="sd">          (``minmax`` method).</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        X: ArrayLike of shape (n_samples, n_features)</span>
+<span class="sd">            Test data.</span>
+
+<span class="sd">        ensemble: bool</span>
+<span class="sd">            Boolean determining whether the predictions are ensembled or not.</span>
+<span class="sd">            If ``False``, predictions are those of the model trained on the</span>
+<span class="sd">            whole training set.</span>
+<span class="sd">            If ``True``, predictions from perturbed models are aggregated by</span>
+<span class="sd">            the aggregation function specified in the ``agg_function``</span>
+<span class="sd">            attribute.</span>
+
+<span class="sd">            If ``cv`` is ``&quot;prefit&quot;`` or ``&quot;split&quot;``, ``ensemble`` is ignored.</span>
+
+<span class="sd">            By default ``False``.</span>
+
+<span class="sd">        alpha: Optional[Union[float, Iterable[float]]]</span>
+<span class="sd">            Can be a float, a list of floats, or a ``ArrayLike`` of floats.</span>
+<span class="sd">            Between ``0`` and ``1``, represents the uncertainty of the</span>
+<span class="sd">            confidence interval.</span>
+<span class="sd">            Lower ``alpha`` produce larger (more conservative) prediction</span>
+<span class="sd">            intervals.</span>
+<span class="sd">            ``alpha`` is the complement of the target coverage level.</span>
+
+<span class="sd">            By default ``None``.</span>
+
+<span class="sd">        optimize_beta: bool</span>
+<span class="sd">            Whether to optimize the PIs&#39; width or not.</span>
+
+<span class="sd">            By default ``False``.</span>
+
+<span class="sd">        allow_infinite_bounds: bool</span>
+<span class="sd">            Allow infinite prediction intervals to be produced.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        Union[NDArray, Tuple[NDArray, NDArray]]</span>
+<span class="sd">            - NDArray of shape (n_samples,) if ``alpha`` is ``None``.</span>
+<span class="sd">            - Tuple[NDArray, NDArray] of shapes (n_samples,) and</span>
+<span class="sd">              (n_samples, 2, n_alpha) if ``alpha`` is not ``None``.</span>
+<span class="sd">                - [:, 0, :]: Lower bound of the prediction interval.</span>
+<span class="sd">                - [:, 1, :]: Upper bound of the prediction interval.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Checks</span>
+        <span class="n">check_is_fitted</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">fit_attributes</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_check_ensemble</span><span class="p">(</span><span class="n">ensemble</span><span class="p">)</span>
+        <span class="n">alpha</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">Optional</span><span class="p">[</span><span class="n">NDArray</span><span class="p">],</span> <span class="n">check_alpha</span><span class="p">(</span><span class="n">alpha</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">alpha</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">y_pred</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">estimator_</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
+                <span class="n">X</span><span class="p">,</span> <span class="n">ensemble</span><span class="p">,</span> <span class="n">return_multi_pred</span><span class="o">=</span><span class="kc">False</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y_pred</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">optimize_beta</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">method</span> <span class="o">!=</span> <span class="s1">&#39;enbpi&#39;</span><span class="p">:</span>
+                <span class="n">warnings</span><span class="o">.</span><span class="n">warn</span><span class="p">(</span>
+                    <span class="s2">&quot;WARNING: Beta optimisation should only be used for &quot;</span>
+                    <span class="s2">&quot;method=&#39;enbpi&#39;.&quot;</span><span class="p">,</span>
+                    <span class="ne">UserWarning</span>
+                <span class="p">)</span>
+
+            <span class="n">alpha_np</span> <span class="o">=</span> <span class="n">cast</span><span class="p">(</span><span class="n">NDArray</span><span class="p">,</span> <span class="n">alpha</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">allow_infinite_bounds</span><span class="p">:</span>
+                <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">conformity_scores_</span><span class="p">)</span>
+                <span class="n">check_alpha_and_n_samples</span><span class="p">(</span><span class="n">alpha_np</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
+
+
+            <span class="n">y_pred</span><span class="p">,</span> <span class="n">y_pred_low</span><span class="p">,</span> <span class="n">y_pred_up</span> <span class="o">=</span> \
+                <span class="bp">self</span><span class="o">.</span><span class="n">conformity_score_function_</span><span class="o">.</span><span class="n">get_bounds</span><span class="p">(</span>
+                    <span class="n">X</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">estimator_</span><span class="p">,</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">conformity_scores_</span><span class="p">,</span>
+                    <span class="n">alpha_np</span><span class="p">,</span>
+                    <span class="n">ensemble</span><span class="o">=</span><span class="n">ensemble</span><span class="p">,</span>
+                    <span class="n">method</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">,</span>
+                    <span class="n">optimize_beta</span><span class="o">=</span><span class="n">optimize_beta</span>
+                <span class="p">)</span>
+            <span class="n">true_res</span><span class="p">,</span> <span class="n">geomean_scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_residuals</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">)</span>
+            <span class="n">all_p_values</span><span class="p">,</span> <span class="n">predicted_p_values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_p_values</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cal_clusters</span><span class="p">,</span><span class="n">true_res</span><span class="p">,</span><span class="n">k</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+            <span class="c1"># compute the p-value and confidence value</span>
+            <span class="n">credibility_scores</span> <span class="o">=</span> <span class="n">predicted_p_values</span>
+            <span class="n">confidence_scores</span> <span class="o">=</span> <span class="n">all_p_values</span>
+
+            <span class="c1">#</span>
+            <span class="n">y_pred_low</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y_pred_low</span><span class="p">)</span>
+            <span class="n">y_pred_up</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y_pred_up</span><span class="p">)</span>
+
+            <span class="c1"># 创建一个三维布尔矩阵来存储结果，形状为 (num_samples, num_confidence_scores, n)</span>
+            <span class="n">num_samples</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">geomean_scores</span><span class="p">)</span>
+            <span class="c1"># num_confidence_scores = max(len(scores) for scores in geomean_scores if isinstance(scores, (list, np.ndarray)))</span>
+
+            <span class="n">n</span> <span class="o">=</span> <span class="n">y_pred_low</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+            <span class="n">confidence_result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">num_samples</span><span class="p">,</span> <span class="n">n</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_samples</span><span class="p">):</span>
+                <span class="n">sample_confidence</span> <span class="o">=</span> <span class="n">geomean_scores</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="n">sample_low</span> <span class="o">=</span> <span class="n">y_pred_low</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="n">sample_up</span> <span class="o">=</span> <span class="n">y_pred_up</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+                <span class="c1"># for j, score in enumerate(sample_confidence):</span>
+                <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+                    <span class="n">confidence_result</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">sample_low</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">sample_confidence</span> <span class="o">&lt;=</span> <span class="n">sample_up</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+
+            <span class="c1"># 将结果转换为 numpy 数组以便于后续操作</span>
+            <span class="n">confidence_result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">confidence_result</span><span class="p">)</span>
+            <span class="c1"># 将 credibility_scores 转换为 NumPy 数组，并变形为 (4000, 1)</span>
+            <span class="n">credibility_scores_np</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">credibility_scores</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+            <span class="c1"># 对比两个数组，生成布尔标志</span>
+            <span class="n">credibility_result</span> <span class="o">=</span> <span class="n">credibility_scores_np</span> <span class="o">&lt;</span> <span class="n">alpha_np</span>
+            <span class="k">return</span> <span class="n">credibility_result</span><span class="p">,</span> <span class="n">confidence_result</span>
+            <span class="c1"># print(&quot;a&quot;)</span>
+            <span class="c1"># select around samples and compute Kmeans as true prediction</span>
+            <span class="c1"># n_cal_samples = self.cal.size(0)</span>
+            <span class="c1"># distances = torch.cdist(X.view(X.size(0), -1), self.cal.view(n_cal_samples, -1))  # 展平后计算距离</span>
+            <span class="c1"># k = min(max(self.cal.size(0) // 10, 1), 100)  # k 是cal大小的1/10，但不超过100</span>
+            <span class="c1"># min_indices = torch.topk(distances, k, largest=False, dim=1).indices  # 获取最近的k个样本索引</span>
+            <span class="c1"># scores = self.conformity_scores_[min_indices]  # 根据索引获取分数</span>
+            <span class="c1"># geomean_scores = gmean(scores, axis=1)  # 计算几何平均数</span>
+            <span class="c1"># # compute the residuals = true - prediction</span>
+            <span class="c1"># ture_res = geomean_scores - y_pred.detach().numpy()  # 计算预估残差</span>
+
+
+            <span class="c1"># return np.array(y_pred), np.stack([y_pred_low, y_pred_up], axis=1)</span>
+            <span class="c1"># test_clusters = self.classify_test_samples(X, self.cal_clusters)</span>
+            <span class="n">true_res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_residuals</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">)</span></div></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, _.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

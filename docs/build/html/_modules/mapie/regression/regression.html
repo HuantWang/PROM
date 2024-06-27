@@ -92,6 +92,7 @@
 <span></span><span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
 
 <span class="kn">import</span> <span class="nn">warnings</span>
+<span class="n">warnings</span><span class="o">.</span><span class="n">filterwarnings</span><span class="p">(</span><span class="s2">&quot;ignore&quot;</span><span class="p">)</span>
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Iterable</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">,</span> <span class="n">Union</span><span class="p">,</span> <span class="n">cast</span>
 
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
@@ -101,7 +102,7 @@
 <span class="kn">from</span> <span class="nn">sklearn.pipeline</span> <span class="kn">import</span> <span class="n">Pipeline</span>
 <span class="kn">from</span> <span class="nn">sklearn.utils</span> <span class="kn">import</span> <span class="n">check_random_state</span>
 <span class="kn">from</span> <span class="nn">sklearn.utils.validation</span> <span class="kn">import</span> <span class="n">_check_y</span><span class="p">,</span> <span class="n">check_is_fitted</span><span class="p">,</span> <span class="n">indexable</span>
-
+<span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">gmean</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span><span class="n">percentileofscore</span>
 <span class="kn">from</span> <span class="nn">mapie._typing</span> <span class="kn">import</span> <span class="n">ArrayLike</span><span class="p">,</span> <span class="n">NDArray</span>
 <span class="kn">from</span> <span class="nn">mapie.conformity_scores</span> <span class="kn">import</span> <span class="n">ConformityScore</span><span class="p">,</span> <span class="n">ResidualNormalisedScore</span>
 <span class="kn">from</span> <span class="nn">mapie.estimator.estimator</span> <span class="kn">import</span> <span class="n">EnsembleRegressor</span>
@@ -109,7 +110,11 @@
                          <span class="n">check_conformity_score</span><span class="p">,</span> <span class="n">check_cv</span><span class="p">,</span>
                          <span class="n">check_estimator_fit_predict</span><span class="p">,</span> <span class="n">check_n_features_in</span><span class="p">,</span>
                          <span class="n">check_n_jobs</span><span class="p">,</span> <span class="n">check_null_weight</span><span class="p">,</span> <span class="n">check_verbose</span><span class="p">)</span>
-
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">sklearn.cluster</span> <span class="kn">import</span> <span class="n">KMeans</span>
+<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">pairwise_distances</span>
 
 <div class="viewcode-block" id="MapieRegressor"><a class="viewcode-back" href="../../../prom_mapie/mapie.regression.html#mapie.regression.regression.MapieRegressor">[docs]</a><span class="k">class</span> <span class="nc">MapieRegressor</span><span class="p">(</span><span class="n">BaseEstimator</span><span class="p">,</span> <span class="n">RegressorMixin</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot;</span>
@@ -444,11 +449,11 @@
             <span class="k">return</span> <span class="n">LinearRegression</span><span class="p">()</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">check_estimator_fit_predict</span><span class="p">(</span><span class="n">estimator</span><span class="p">)</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">cv</span> <span class="o">==</span> <span class="s2">&quot;prefit&quot;</span><span class="p">:</span>
-                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">estimator</span><span class="p">,</span> <span class="n">Pipeline</span><span class="p">):</span>
-                    <span class="n">check_is_fitted</span><span class="p">(</span><span class="n">estimator</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">check_is_fitted</span><span class="p">(</span><span class="n">estimator</span><span class="p">)</span>
+            <span class="c1"># if self.cv == &quot;prefit&quot;:</span>
+            <span class="c1">#     if isinstance(estimator, Pipeline):</span>
+            <span class="c1">#         check_is_fitted(estimator[-1])</span>
+            <span class="c1">#     else:</span>
+            <span class="c1">#         check_is_fitted(estimator)</span>
             <span class="k">return</span> <span class="n">estimator</span>
 
     <span class="k">def</span> <span class="nf">_check_ensemble</span><span class="p">(</span>
@@ -626,14 +631,133 @@
 
         <span class="c1"># Predict on calibration data</span>
         <span class="n">y_pred</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">estimator_</span><span class="o">.</span><span class="n">predict_calib</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="n">y</span><span class="p">,</span> <span class="n">groups</span><span class="o">=</span><span class="n">groups</span><span class="p">)</span>
-
+        <span class="bp">self</span><span class="o">.</span><span class="n">cal</span> <span class="o">=</span> <span class="n">X</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cal_y</span> <span class="o">=</span> <span class="n">y</span>
         <span class="c1"># Compute the conformity scores (manage jk-ab case)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">conformity_scores_</span> <span class="o">=</span> \
             <span class="bp">self</span><span class="o">.</span><span class="n">conformity_score_function_</span><span class="o">.</span><span class="n">get_conformity_scores</span><span class="p">(</span>
                 <span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">y_pred</span>
             <span class="p">)</span>
-
+        <span class="c1"># give the classes for each calibration sample</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cal_clusters</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">optimal_k</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">gap_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cluster_cal_data</span><span class="p">()</span>
         <span class="k">return</span> <span class="bp">self</span></div>
+
+<div class="viewcode-block" id="MapieRegressor.compute_gap_statistic"><a class="viewcode-back" href="../../../prom_mapie/mapie.regression.html#mapie.regression.regression.MapieRegressor.compute_gap_statistic">[docs]</a>    <span class="k">def</span> <span class="nf">compute_gap_statistic</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">n_refs</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">max_clusters</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+
+        <span class="n">gaps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">max_clusters</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">results_list</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">max_clusters</span><span class="p">):</span>
+            <span class="c1"># Holder for reference dispersion results</span>
+            <span class="n">ref_disps</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">n_refs</span><span class="p">)</span>
+
+            <span class="c1"># For n references, generate random sample and perform kmeans getting resulting dispersion of each loop</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_refs</span><span class="p">):</span>
+                <span class="n">random_reference</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">random_sample</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="n">X</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+                <span class="n">km</span> <span class="o">=</span> <span class="n">KMeans</span><span class="p">(</span><span class="n">n_clusters</span><span class="o">=</span><span class="n">k</span><span class="p">,</span> <span class="n">n_init</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+                <span class="n">km</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">random_reference</span><span class="p">)</span>
+                <span class="n">ref_disp</span> <span class="o">=</span> <span class="n">km</span><span class="o">.</span><span class="n">inertia_</span>
+                <span class="n">ref_disps</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">ref_disp</span>
+
+            <span class="c1"># Fit cluster to original data and create dispersion</span>
+            <span class="n">km</span> <span class="o">=</span> <span class="n">KMeans</span><span class="p">(</span><span class="n">n_clusters</span><span class="o">=</span><span class="n">k</span><span class="p">)</span>
+            <span class="n">km</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
+            <span class="n">orig_disp</span> <span class="o">=</span> <span class="n">km</span><span class="o">.</span><span class="n">inertia_</span>
+
+            <span class="c1"># Calculate gap statistic</span>
+            <span class="n">gap</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">ref_disps</span><span class="p">))</span> <span class="o">-</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">orig_disp</span><span class="p">)</span>
+
+            <span class="c1"># Assign this loop&#39;s gap statistic to gaps</span>
+            <span class="n">gaps</span><span class="p">[</span><span class="n">k</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">gap</span>
+
+            <span class="n">results_list</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s1">&#39;clusterCount&#39;</span><span class="p">:</span> <span class="n">k</span><span class="p">,</span> <span class="s1">&#39;gap&#39;</span><span class="p">:</span> <span class="n">gap</span><span class="p">})</span>
+        <span class="n">results_df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">results_list</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">gaps</span><span class="o">.</span><span class="n">argmax</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">results_df</span></div>
+
+<div class="viewcode-block" id="MapieRegressor.cluster_cal_data"><a class="viewcode-back" href="../../../prom_mapie/mapie.regression.html#mapie.regression.regression.MapieRegressor.cluster_cal_data">[docs]</a>    <span class="k">def</span> <span class="nf">cluster_cal_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># Reshape cal to 2D array [n_samples, n_features]</span>
+        <span class="n">n_samples</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cal</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">feature_dim1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cal</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">feature_dim2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cal</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+        <span class="n">cal_reshaped</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cal</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">n_samples</span><span class="p">,</span> <span class="n">feature_dim1</span> <span class="o">*</span> <span class="n">feature_dim2</span><span class="p">)</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+
+        <span class="c1"># Determine the optimal number of clusters</span>
+        <span class="n">optimal_k</span><span class="p">,</span> <span class="n">gap_df</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_gap_statistic</span><span class="p">(</span><span class="n">cal_reshaped</span><span class="p">)</span>
+
+        <span class="c1"># Fit KMeans with the optimal number of clusters</span>
+        <span class="n">kmeans</span> <span class="o">=</span> <span class="n">KMeans</span><span class="p">(</span><span class="n">n_clusters</span><span class="o">=</span><span class="n">optimal_k</span><span class="p">)</span>
+        <span class="n">kmeans</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">cal_reshaped</span><span class="p">)</span>
+
+        <span class="c1"># Assign each sample in cal to a cluster</span>
+        <span class="n">cal_clusters</span> <span class="o">=</span> <span class="n">kmeans</span><span class="o">.</span><span class="n">labels_</span>
+
+        <span class="k">return</span> <span class="n">cal_clusters</span><span class="p">,</span> <span class="n">optimal_k</span><span class="p">,</span> <span class="n">gap_df</span></div>
+
+<div class="viewcode-block" id="MapieRegressor.classify_test_samples"><a class="viewcode-back" href="../../../prom_mapie/mapie.regression.html#mapie.regression.regression.MapieRegressor.classify_test_samples">[docs]</a>    <span class="k">def</span> <span class="nf">classify_test_samples</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">cal_clusters</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+        <span class="n">n_cal_samples</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cal</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">n_test_samples</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">feature_dim1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cal</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">feature_dim2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cal</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span>
+
+        <span class="n">cal_reshaped</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cal</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">n_cal_samples</span><span class="p">,</span> <span class="n">feature_dim1</span> <span class="o">*</span> <span class="n">feature_dim2</span><span class="p">)</span>
+        <span class="n">X_reshaped</span> <span class="o">=</span> <span class="n">X</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">n_test_samples</span><span class="p">,</span> <span class="n">feature_dim1</span> <span class="o">*</span> <span class="n">feature_dim2</span><span class="p">)</span>
+
+        <span class="n">distances</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cdist</span><span class="p">(</span><span class="n">X_reshaped</span><span class="p">,</span> <span class="n">cal_reshaped</span><span class="p">)</span>
+        <span class="n">nearest_indices</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">topk</span><span class="p">(</span><span class="n">distances</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">largest</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">indices</span>
+
+        <span class="n">test_clusters</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n_test_samples</span><span class="p">):</span>
+            <span class="n">nearest_clusters</span> <span class="o">=</span> <span class="n">cal_clusters</span><span class="p">[</span><span class="n">nearest_indices</span><span class="p">[</span><span class="n">i</span><span class="p">]]</span>
+            <span class="n">test_cluster</span> <span class="o">=</span> <span class="n">mode</span><span class="p">(</span><span class="n">nearest_clusters</span><span class="p">)</span><span class="o">.</span><span class="n">mode</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">test_clusters</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">test_cluster</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">test_clusters</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="MapieRegressor.compute_residuals"><a class="viewcode-back" href="../../../prom_mapie/mapie.regression.html#mapie.regression.regression.MapieRegressor.compute_residuals">[docs]</a>    <span class="k">def</span> <span class="nf">compute_residuals</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">):</span>
+        <span class="n">n_cal_samples</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">cal</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">distances</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cdist</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="o">-</span><span class="mi">1</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">cal</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">n_cal_samples</span><span class="p">,</span> <span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+        <span class="n">k</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">max</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">cal</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="o">//</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="mi">100</span><span class="p">)</span>
+        <span class="n">min_indices</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">topk</span><span class="p">(</span><span class="n">distances</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">largest</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">indices</span>
+        <span class="n">scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conformity_scores_</span><span class="p">[</span><span class="n">min_indices</span><span class="p">]</span>
+        <span class="n">geomean_scores</span> <span class="o">=</span> <span class="n">gmean</span><span class="p">(</span><span class="n">scores</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">true_res</span> <span class="o">=</span> <span class="n">geomean_scores</span> <span class="o">-</span> <span class="n">y_pred</span><span class="o">.</span><span class="n">detach</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span>
+        <span class="c1"># true_res: the residuals of the estimated test samples</span>
+        <span class="c1"># geomean_scores: the estimated test samples values</span>
+        <span class="k">return</span> <span class="n">true_res</span><span class="p">,</span><span class="n">geomean_scores</span></div>
+
+<div class="viewcode-block" id="MapieRegressor.compute_p_values"><a class="viewcode-back" href="../../../prom_mapie/mapie.regression.html#mapie.regression.regression.MapieRegressor.compute_p_values">[docs]</a>    <span class="k">def</span> <span class="nf">compute_p_values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">,</span> <span class="n">cal_clusters</span><span class="p">,</span><span class="n">true_res</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+        <span class="c1"># 获取每个测试样本的类别</span>
+        <span class="n">test_clusters</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">classify_test_samples</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">cal_clusters</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="n">k</span><span class="p">)</span>
+        <span class="c1"># 获取所有类别</span>
+        <span class="n">unique_clusters</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">unique</span><span class="p">(</span><span class="n">cal_clusters</span><span class="p">)</span>
+        <span class="c1"># 为每个测试样本计算每个类别上的p-value</span>
+        <span class="n">all_p_values</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">predicted_p_values</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">X</span><span class="o">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)):</span>
+            <span class="n">p_values</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">cluster</span> <span class="ow">in</span> <span class="n">unique_clusters</span><span class="p">:</span>
+                <span class="c1"># 找到同类别的校准样本</span>
+                <span class="n">same_class_indices</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">nonzero</span><span class="p">(</span><span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">(</span><span class="n">cal_clusters</span><span class="p">)</span> <span class="o">==</span> <span class="n">cluster</span><span class="p">,</span> <span class="n">as_tuple</span><span class="o">=</span><span class="kc">True</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">same_class_scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conformity_scores_</span><span class="p">[</span><span class="n">same_class_indices</span><span class="p">]</span>
+
+                <span class="c1"># 计算测试样本的分数</span>
+                <span class="c1"># distances = torch.cdist(X[i].view(1, -1),</span>
+                <span class="c1">#                         self.cal[same_class_indices].view(same_class_indices.size(0), -1))</span>
+                <span class="c1"># min_index = torch.argmin(distances).item()</span>
+                <span class="c1"># test_score = self.conformity_scores_[same_class_indices[min_index]].item()</span>
+                <span class="n">test_score</span> <span class="o">=</span> <span class="n">true_res</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="c1"># 计算p-value</span>
+                <span class="n">p_value</span> <span class="o">=</span> <span class="n">percentileofscore</span><span class="p">(</span><span class="n">same_class_scores</span><span class="o">.</span><span class="n">numpy</span><span class="p">(),</span> <span class="n">test_score</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s1">&#39;mean&#39;</span><span class="p">)</span> <span class="o">/</span> <span class="mf">100.0</span>
+                <span class="n">p_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p_value</span><span class="p">)</span>
+
+            <span class="n">all_p_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">p_values</span><span class="p">)</span>
+
+            <span class="c1"># 获取预测类别上的p-value</span>
+            <span class="n">predicted_cluster</span> <span class="o">=</span> <span class="n">test_clusters</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">item</span><span class="p">()</span>
+            <span class="n">predicted_p_value</span> <span class="o">=</span> <span class="n">p_values</span><span class="p">[</span><span class="n">unique_clusters</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">predicted_cluster</span><span class="p">)]</span>
+            <span class="n">predicted_p_values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">predicted_p_value</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">all_p_values</span><span class="p">,</span> <span class="n">predicted_p_values</span></div>
 
 <div class="viewcode-block" id="MapieRegressor.predict"><a class="viewcode-back" href="../../../prom_mapie/mapie.regression.html#mapie.regression.regression.MapieRegressor.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span>
         <span class="bp">self</span><span class="p">,</span>
@@ -722,6 +846,7 @@
                 <span class="n">n</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">conformity_scores_</span><span class="p">)</span>
                 <span class="n">check_alpha_and_n_samples</span><span class="p">(</span><span class="n">alpha_np</span><span class="p">,</span> <span class="n">n</span><span class="p">)</span>
 
+
             <span class="n">y_pred</span><span class="p">,</span> <span class="n">y_pred_low</span><span class="p">,</span> <span class="n">y_pred_up</span> <span class="o">=</span> \
                 <span class="bp">self</span><span class="o">.</span><span class="n">conformity_score_function_</span><span class="o">.</span><span class="n">get_bounds</span><span class="p">(</span>
                     <span class="n">X</span><span class="p">,</span>
@@ -732,7 +857,56 @@
                     <span class="n">method</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">method</span><span class="p">,</span>
                     <span class="n">optimize_beta</span><span class="o">=</span><span class="n">optimize_beta</span>
                 <span class="p">)</span>
-            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y_pred</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">([</span><span class="n">y_pred_low</span><span class="p">,</span> <span class="n">y_pred_up</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span></div></div>
+            <span class="n">true_res</span><span class="p">,</span> <span class="n">geomean_scores</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_residuals</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">)</span>
+            <span class="n">all_p_values</span><span class="p">,</span> <span class="n">predicted_p_values</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_p_values</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">cal_clusters</span><span class="p">,</span><span class="n">true_res</span><span class="p">,</span><span class="n">k</span><span class="o">=</span><span class="mi">10</span><span class="p">)</span>
+            <span class="c1"># compute the p-value and confidence value</span>
+            <span class="n">credibility_scores</span> <span class="o">=</span> <span class="n">predicted_p_values</span>
+            <span class="n">confidence_scores</span> <span class="o">=</span> <span class="n">all_p_values</span>
+
+            <span class="c1">#</span>
+            <span class="n">y_pred_low</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y_pred_low</span><span class="p">)</span>
+            <span class="n">y_pred_up</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y_pred_up</span><span class="p">)</span>
+
+            <span class="c1"># 创建一个三维布尔矩阵来存储结果，形状为 (num_samples, num_confidence_scores, n)</span>
+            <span class="n">num_samples</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">geomean_scores</span><span class="p">)</span>
+            <span class="c1"># num_confidence_scores = max(len(scores) for scores in geomean_scores if isinstance(scores, (list, np.ndarray)))</span>
+
+            <span class="n">n</span> <span class="o">=</span> <span class="n">y_pred_low</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+
+            <span class="n">confidence_result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">num_samples</span><span class="p">,</span> <span class="n">n</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">bool</span><span class="p">)</span>
+
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_samples</span><span class="p">):</span>
+                <span class="n">sample_confidence</span> <span class="o">=</span> <span class="n">geomean_scores</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="n">sample_low</span> <span class="o">=</span> <span class="n">y_pred_low</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                <span class="n">sample_up</span> <span class="o">=</span> <span class="n">y_pred_up</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+
+                <span class="c1"># for j, score in enumerate(sample_confidence):</span>
+                <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+                    <span class="n">confidence_result</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">sample_low</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">sample_confidence</span> <span class="o">&lt;=</span> <span class="n">sample_up</span><span class="p">[</span><span class="n">k</span><span class="p">]</span>
+
+            <span class="c1"># 将结果转换为 numpy 数组以便于后续操作</span>
+            <span class="n">confidence_result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">confidence_result</span><span class="p">)</span>
+            <span class="c1"># 将 credibility_scores 转换为 NumPy 数组，并变形为 (4000, 1)</span>
+            <span class="n">credibility_scores_np</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">credibility_scores</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+            <span class="c1"># 对比两个数组，生成布尔标志</span>
+            <span class="n">credibility_result</span> <span class="o">=</span> <span class="n">credibility_scores_np</span> <span class="o">&lt;</span> <span class="n">alpha_np</span>
+            <span class="k">return</span> <span class="n">credibility_result</span><span class="p">,</span> <span class="n">confidence_result</span>
+            <span class="c1"># print(&quot;a&quot;)</span>
+            <span class="c1"># select around samples and compute Kmeans as true prediction</span>
+            <span class="c1"># n_cal_samples = self.cal.size(0)</span>
+            <span class="c1"># distances = torch.cdist(X.view(X.size(0), -1), self.cal.view(n_cal_samples, -1))  # 展平后计算距离</span>
+            <span class="c1"># k = min(max(self.cal.size(0) // 10, 1), 100)  # k 是cal大小的1/10，但不超过100</span>
+            <span class="c1"># min_indices = torch.topk(distances, k, largest=False, dim=1).indices  # 获取最近的k个样本索引</span>
+            <span class="c1"># scores = self.conformity_scores_[min_indices]  # 根据索引获取分数</span>
+            <span class="c1"># geomean_scores = gmean(scores, axis=1)  # 计算几何平均数</span>
+            <span class="c1"># # compute the residuals = true - prediction</span>
+            <span class="c1"># ture_res = geomean_scores - y_pred.detach().numpy()  # 计算预估残差</span>
+
+
+            <span class="c1"># return np.array(y_pred), np.stack([y_pred_low, y_pred_up], axis=1)</span>
+            <span class="c1"># test_clusters = self.classify_test_samples(X, self.cal_clusters)</span>
+            <span class="n">true_res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">compute_residuals</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y_pred</span><span class="p">)</span></div></div>
 </pre></div>
 
            </div>

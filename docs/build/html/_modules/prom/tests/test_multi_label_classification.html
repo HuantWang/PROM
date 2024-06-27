@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>prom.tests.test_multi_label_classification &mdash; Prom v0.1 documentation</title>
+      <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="../../../_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="../../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+        <script src="../../../_static/jquery.js"></script>
+        <script src="../../../_static/underscore.js"></script>
+        <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../../_static/doctools.js"></script>
+        <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/js/theme.js"></script>
+    <link rel="author" title="About these documents" href="../../../about.html" />
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="../../../index.html" class="icon icon-home">
+            Prom
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">User Guide</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../getting_started.html">Getting Started</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../about.html">About</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../faq.html">Frequently Asked Questions</a></li>
+</ul>
+<p class="caption" role="heading"><span class="caption-text">Python API Reference</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="../../../src/prom.html">prom module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../src/util.html">util module</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../src/prom.conformity_scores.html">prom.conformity_scores package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../src/prom.control_risk.html">prom.control_risk package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../src/prom.estimator.html">prom.estimator package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../src/prom.regression.html">prom.regression package</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../src/prom.tests.html">prom.tests package</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../../index.html">Prom</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../../index.html" class="icon icon-home" aria-label="Home"></a></li>
+          <li class="breadcrumb-item"><a href="../../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">prom.tests.test_multi_label_classification</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <h1>Source code for prom.tests.test_multi_label_classification</h1><div class="highlight"><pre>
+<span></span><span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span>
+
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="nn">pd</span>
+<span class="kn">import</span> <span class="nn">pytest</span>
+<span class="kn">from</span> <span class="nn">sklearn.compose</span> <span class="kn">import</span> <span class="n">ColumnTransformer</span>
+<span class="kn">from</span> <span class="nn">sklearn.datasets</span> <span class="kn">import</span> <span class="n">make_multilabel_classification</span>
+<span class="kn">from</span> <span class="nn">sklearn.impute</span> <span class="kn">import</span> <span class="n">SimpleImputer</span>
+<span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">LogisticRegression</span>
+<span class="kn">from</span> <span class="nn">sklearn.multioutput</span> <span class="kn">import</span> <span class="n">MultiOutputClassifier</span>
+<span class="kn">from</span> <span class="nn">sklearn.pipeline</span> <span class="kn">import</span> <span class="n">Pipeline</span><span class="p">,</span> <span class="n">make_pipeline</span>
+<span class="kn">from</span> <span class="nn">sklearn.preprocessing</span> <span class="kn">import</span> <span class="n">OneHotEncoder</span>
+<span class="kn">from</span> <span class="nn">sklearn.utils.validation</span> <span class="kn">import</span> <span class="n">check_is_fitted</span>
+<span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="kn">import</span> <span class="n">TypedDict</span>
+
+<span class="kn">from</span> <span class="nn">mapie._typing</span> <span class="kn">import</span> <span class="n">NDArray</span>
+<span class="kn">from</span> <span class="nn">mapie.multi_label_classification</span> <span class="kn">import</span> <span class="n">MapieMultiLabelClassifier</span>
+
+<span class="n">Params</span> <span class="o">=</span> <span class="n">TypedDict</span><span class="p">(</span>
+    <span class="s2">&quot;Params&quot;</span><span class="p">,</span>
+    <span class="p">{</span>
+        <span class="s2">&quot;method&quot;</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="s2">&quot;bound&quot;</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span>
+        <span class="s2">&quot;random_state&quot;</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="s2">&quot;metric_control&quot;</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span>
+    <span class="p">}</span>
+<span class="p">)</span>
+
+<span class="n">METHODS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;crc&quot;</span><span class="p">,</span> <span class="s2">&quot;rcps&quot;</span><span class="p">,</span> <span class="s2">&quot;ltt&quot;</span><span class="p">]</span>
+<span class="n">METRICS</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;recall&#39;</span><span class="p">,</span> <span class="s1">&#39;precision&#39;</span><span class="p">]</span>
+
+<span class="n">BOUNDS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;wsr&quot;</span><span class="p">,</span> <span class="s2">&quot;hoeffding&quot;</span><span class="p">,</span> <span class="s2">&quot;bernstein&quot;</span><span class="p">]</span>
+<span class="n">random_state</span> <span class="o">=</span> <span class="mi">42</span>
+
+<span class="n">WRONG_METHODS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;rpcs&quot;</span><span class="p">,</span> <span class="s2">&quot;rcr&quot;</span><span class="p">,</span> <span class="s2">&quot;test&quot;</span><span class="p">,</span> <span class="s2">&quot;llt&quot;</span><span class="p">]</span>
+<span class="n">WRONG_BOUNDS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;wrs&quot;</span><span class="p">,</span> <span class="s2">&quot;hoeff&quot;</span><span class="p">,</span> <span class="s2">&quot;test&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">2.5</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">2</span><span class="p">)]</span>
+<span class="n">WRONG_METRICS</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;presicion&quot;</span><span class="p">,</span> <span class="s2">&quot;recal&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">]</span>
+
+
+<span class="n">STRATEGIES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;crc&quot;</span><span class="p">:</span> <span class="p">(</span>
+        <span class="n">Params</span><span class="p">(</span>
+            <span class="n">method</span><span class="o">=</span><span class="s2">&quot;crc&quot;</span><span class="p">,</span>
+            <span class="n">bound</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+            <span class="n">metric_control</span><span class="o">=</span><span class="s2">&quot;recall&quot;</span>
+        <span class="p">),</span>
+    <span class="p">),</span>
+    <span class="s2">&quot;rcps_wsr&quot;</span><span class="p">:</span> <span class="p">(</span>
+        <span class="n">Params</span><span class="p">(</span>
+            <span class="n">method</span><span class="o">=</span><span class="s2">&quot;rcps&quot;</span><span class="p">,</span>
+            <span class="n">bound</span><span class="o">=</span><span class="s2">&quot;wsr&quot;</span><span class="p">,</span>
+            <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+            <span class="n">metric_control</span><span class="o">=</span><span class="s1">&#39;recall&#39;</span>
+        <span class="p">),</span>
+    <span class="p">),</span>
+    <span class="s2">&quot;rcps_hoeffding&quot;</span><span class="p">:</span> <span class="p">(</span>
+        <span class="n">Params</span><span class="p">(</span>
+            <span class="n">method</span><span class="o">=</span><span class="s2">&quot;rcps&quot;</span><span class="p">,</span>
+            <span class="n">bound</span><span class="o">=</span><span class="s2">&quot;hoeffding&quot;</span><span class="p">,</span>
+            <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+            <span class="n">metric_control</span><span class="o">=</span><span class="s1">&#39;recall&#39;</span>
+        <span class="p">),</span>
+    <span class="p">),</span>
+    <span class="s2">&quot;rcps_bernstein&quot;</span><span class="p">:</span> <span class="p">(</span>
+        <span class="n">Params</span><span class="p">(</span>
+            <span class="n">method</span><span class="o">=</span><span class="s2">&quot;rcps&quot;</span><span class="p">,</span>
+            <span class="n">bound</span><span class="o">=</span><span class="s2">&quot;bernstein&quot;</span><span class="p">,</span>
+            <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+            <span class="n">metric_control</span><span class="o">=</span><span class="s1">&#39;recall&#39;</span>
+        <span class="p">),</span>
+    <span class="p">),</span>
+    <span class="s2">&quot;ltt&quot;</span><span class="p">:</span> <span class="p">(</span>
+        <span class="n">Params</span><span class="p">(</span>
+            <span class="n">method</span><span class="o">=</span><span class="s2">&quot;ltt&quot;</span><span class="p">,</span>
+            <span class="n">bound</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+            <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+            <span class="n">metric_control</span><span class="o">=</span><span class="s1">&#39;precision&#39;</span>
+        <span class="p">),</span>
+    <span class="p">),</span>
+<span class="p">}</span>
+
+
+<span class="n">y_toy_mapie</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;crc&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">False</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">]</span>
+    <span class="p">],</span>
+    <span class="s2">&quot;rcps_bernstein&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+    <span class="p">],</span>
+    <span class="s2">&quot;rcps_wsr&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+    <span class="p">],</span>
+    <span class="s2">&quot;rcps_hoeffding&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">,</span> <span class="kc">True</span><span class="p">],</span>
+    <span class="p">],</span>
+    <span class="s2">&quot;ltt&quot;</span><span class="p">:</span> <span class="p">[</span>
+        <span class="p">[</span><span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">],</span>
+        <span class="p">[</span><span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">,</span> <span class="kc">False</span><span class="p">],</span>
+    <span class="p">]</span>
+<span class="p">}</span>
+
+
+<div class="viewcode-block" id="WrongOutputModel"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.WrongOutputModel">[docs]</a><span class="k">class</span> <span class="nc">WrongOutputModel</span><span class="p">:</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">pass</span>
+
+<div class="viewcode-block" id="WrongOutputModel.predict_proba"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.WrongOutputModel.predict_proba">[docs]</a>    <span class="k">def</span> <span class="nf">predict_proba</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Dummy predict_proba.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="WrongOutputModel.predict"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.WrongOutputModel.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Dummy predict.&quot;&quot;&quot;</span></div></div>
+
+
+<div class="viewcode-block" id="ArrayOutputModel"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.ArrayOutputModel">[docs]</a><span class="k">class</span> <span class="nc">ArrayOutputModel</span><span class="p">:</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">trained_</span> <span class="o">=</span> <span class="kc">True</span>
+
+<div class="viewcode-block" id="ArrayOutputModel.fit"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.ArrayOutputModel.fit">[docs]</a>    <span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Dummy fit.&quot;&quot;&quot;</span></div>
+
+<div class="viewcode-block" id="ArrayOutputModel.predict_proba"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.ArrayOutputModel.predict_proba">[docs]</a>    <span class="k">def</span> <span class="nf">predict_proba</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">:</span>
+        <span class="n">probas</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([[</span><span class="mf">.9</span><span class="p">,</span> <span class="mf">.05</span><span class="p">,</span> <span class="mf">.05</span><span class="p">]])</span>
+        <span class="n">proba_out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">probas</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="p">),</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">proba_out</span></div>
+
+<div class="viewcode-block" id="ArrayOutputModel.predict"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.ArrayOutputModel.predict">[docs]</a>    <span class="k">def</span> <span class="nf">predict</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">X</span><span class="p">:</span> <span class="n">NDArray</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">NDArray</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">predict_proba</span><span class="p">(</span><span class="n">X</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="mf">.3</span></div>
+
+    <span class="k">def</span> <span class="nf">__sklearn_is_fitted__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+
+<span class="n">X_toy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">9</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+<span class="n">y_toy</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">stack</span><span class="p">(</span>
+    <span class="p">[</span>
+        <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+        <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+    <span class="p">]</span>
+<span class="p">)</span>
+
+<span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">make_multilabel_classification</span><span class="p">(</span>
+    <span class="n">n_samples</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">n_classes</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+    <span class="n">allow_unlabeled</span><span class="o">=</span><span class="kc">False</span>
+<span class="p">)</span>
+
+<span class="n">X_no_label</span><span class="p">,</span> <span class="n">y_no_label</span> <span class="o">=</span> <span class="n">make_multilabel_classification</span><span class="p">(</span>
+    <span class="n">n_samples</span><span class="o">=</span><span class="mi">1000</span><span class="p">,</span>
+    <span class="n">n_classes</span><span class="o">=</span><span class="mi">5</span><span class="p">,</span>
+    <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+    <span class="n">allow_unlabeled</span><span class="o">=</span><span class="kc">True</span>
+<span class="p">)</span>
+
+
+<div class="viewcode-block" id="test_initialized"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_initialized">[docs]</a><span class="k">def</span> <span class="nf">test_initialized</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test that initialization does not crash.&quot;&quot;&quot;</span>
+    <span class="n">MapieMultiLabelClassifier</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="test_valid_estimator"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_valid_estimator">[docs]</a><span class="k">def</span> <span class="nf">test_valid_estimator</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test that valid estimators are not corrupted, for all strategies.&quot;&quot;&quot;</span>
+    <span class="n">clf</span> <span class="o">=</span> <span class="n">MultiOutputClassifier</span><span class="p">(</span><span class="n">LogisticRegression</span><span class="p">())</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span>
+    <span class="n">mapie_clf</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span>
+        <span class="n">estimator</span><span class="o">=</span><span class="n">clf</span><span class="p">,</span>
+        <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span>
+    <span class="p">)</span>
+    <span class="n">mapie_clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">mapie_clf</span><span class="o">.</span><span class="n">single_estimator_</span><span class="p">,</span> <span class="n">MultiOutputClassifier</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_valid_method"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_valid_method">[docs]</a><span class="k">def</span> <span class="nf">test_valid_method</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test that valid methods raise no errors.&quot;&quot;&quot;</span>
+    <span class="n">mapie_clf</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">)</span>
+    <span class="n">mapie_clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span>
+    <span class="n">check_is_fitted</span><span class="p">(</span><span class="n">mapie_clf</span><span class="p">,</span> <span class="n">mapie_clf</span><span class="o">.</span><span class="n">fit_attributes</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_valid_metric_method"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_valid_metric_method">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;strategy&quot;</span><span class="p">,</span> <span class="p">[</span><span class="o">*</span><span class="n">STRATEGIES</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">test_valid_metric_method</span><span class="p">(</span><span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test that valid metric raise no errors&quot;&quot;&quot;</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">STRATEGIES</span><span class="p">[</span><span class="n">strategy</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">mapie_clf</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span>
+        <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+        <span class="n">metric_control</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;metric_control&quot;</span><span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">mapie_clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span>
+    <span class="n">check_is_fitted</span><span class="p">(</span><span class="n">mapie_clf</span><span class="p">,</span> <span class="n">mapie_clf</span><span class="o">.</span><span class="n">fit_attributes</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_valid_bound"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_valid_bound">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;bound&quot;</span><span class="p">,</span> <span class="n">BOUNDS</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">test_valid_bound</span><span class="p">(</span><span class="n">bound</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test that valid methods raise no errors.&quot;&quot;&quot;</span>
+    <span class="n">mapie_clf</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span>
+        <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;rcps&quot;</span>
+    <span class="p">)</span>
+    <span class="n">mapie_clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span>
+    <span class="n">mapie_clf</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="n">bound</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="mf">.1</span><span class="p">)</span>
+    <span class="n">check_is_fitted</span><span class="p">(</span><span class="n">mapie_clf</span><span class="p">,</span> <span class="n">mapie_clf</span><span class="o">.</span><span class="n">fit_attributes</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_predict_output_shape"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_predict_output_shape">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;strategy&quot;</span><span class="p">,</span> <span class="p">[</span><span class="o">*</span><span class="n">STRATEGIES</span><span class="p">])</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;alpha&quot;</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.2</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">],</span> <span class="p">(</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.3</span><span class="p">)])</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;delta&quot;</span><span class="p">,</span> <span class="p">[</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">test_predict_output_shape</span><span class="p">(</span>
+    <span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">alpha</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">delta</span><span class="p">:</span> <span class="n">Any</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test predict output shape.&quot;&quot;&quot;</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">STRATEGIES</span><span class="p">[</span><span class="n">strategy</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">mapie_clf</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span>
+        <span class="n">method</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;method&quot;</span><span class="p">],</span>
+        <span class="n">metric_control</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;metric_control&quot;</span><span class="p">],</span>
+        <span class="n">random_state</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;random_state&quot;</span><span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">mapie_clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+    <span class="n">y_pred</span><span class="p">,</span> <span class="n">y_ps</span> <span class="o">=</span> <span class="n">mapie_clf</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
+        <span class="n">X</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">,</span>
+        <span class="n">bound</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;bound&quot;</span><span class="p">],</span>
+        <span class="n">delta</span><span class="o">=</span><span class="mf">.1</span>
+    <span class="p">)</span>
+    <span class="n">n_alpha</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">alpha</span><span class="p">)</span> <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">alpha</span><span class="p">,</span> <span class="s2">&quot;__len__&quot;</span><span class="p">)</span> <span class="k">else</span> <span class="mi">1</span>
+    <span class="k">assert</span> <span class="n">y_pred</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span>
+    <span class="k">assert</span> <span class="n">y_ps</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="p">(</span><span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">y</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">n_alpha</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_results_for_same_alpha"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_results_for_same_alpha">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;strategy&quot;</span><span class="p">,</span> <span class="p">[</span><span class="o">*</span><span class="n">STRATEGIES</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">test_results_for_same_alpha</span><span class="p">(</span><span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Test that predictions and intervals</span>
+<span class="sd">    are similar with two equal values of alpha.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">STRATEGIES</span><span class="p">[</span><span class="n">strategy</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">mapie_clf</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span>
+        <span class="n">method</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;method&quot;</span><span class="p">],</span>
+        <span class="n">metric_control</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;metric_control&quot;</span><span class="p">],</span>
+        <span class="n">random_state</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;random_state&quot;</span><span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">mapie_clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">y_ps</span> <span class="o">=</span> <span class="n">mapie_clf</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
+        <span class="n">X</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">],</span>
+        <span class="n">bound</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;bound&quot;</span><span class="p">],</span>
+        <span class="n">delta</span><span class="o">=</span><span class="mf">.1</span>
+    <span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">y_ps</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">y_ps</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">y_ps</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">y_ps</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="test_results_for_partial_fit"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_results_for_partial_fit">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;strategy&quot;</span><span class="p">,</span> <span class="p">[</span><span class="o">*</span><span class="n">STRATEGIES</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">test_results_for_partial_fit</span><span class="p">(</span><span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Test that predictions and intervals</span>
+<span class="sd">    are similar with two equal values of alpha.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">STRATEGIES</span><span class="p">[</span><span class="n">strategy</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">clf</span> <span class="o">=</span> <span class="n">MultiOutputClassifier</span><span class="p">(</span><span class="n">LogisticRegression</span><span class="p">())</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+    <span class="n">mapie_clf</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span>
+        <span class="n">estimator</span><span class="o">=</span><span class="n">clf</span><span class="p">,</span>
+        <span class="n">method</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;method&quot;</span><span class="p">],</span>
+        <span class="n">metric_control</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;metric_control&quot;</span><span class="p">],</span>
+        <span class="n">random_state</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;random_state&quot;</span><span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">mapie_clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+
+    <span class="n">mapie_clf_partial</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span>
+        <span class="n">estimator</span><span class="o">=</span><span class="n">clf</span><span class="p">,</span>
+        <span class="n">method</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;method&quot;</span><span class="p">],</span>
+        <span class="n">metric_control</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;metric_control&quot;</span><span class="p">],</span>
+        <span class="n">random_state</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;random_state&quot;</span><span class="p">]</span>
+    <span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">X</span><span class="p">)):</span>
+        <span class="n">mapie_clf_partial</span><span class="o">.</span><span class="n">partial_fit</span><span class="p">(</span>
+            <span class="n">X</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="p">:],</span>
+            <span class="n">y</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">,</span> <span class="p">:]</span>
+        <span class="p">)</span>
+
+    <span class="n">y_pred</span><span class="p">,</span> <span class="n">y_ps</span> <span class="o">=</span> <span class="n">mapie_clf</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
+        <span class="n">X</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">],</span>
+        <span class="n">bound</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;bound&quot;</span><span class="p">],</span>
+        <span class="n">delta</span><span class="o">=</span><span class="mf">.1</span>
+    <span class="p">)</span>
+
+    <span class="n">y_pred_partial</span><span class="p">,</span> <span class="n">y_ps_partial</span> <span class="o">=</span> <span class="n">mapie_clf_partial</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
+        <span class="n">X</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">],</span>
+        <span class="n">bound</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;bound&quot;</span><span class="p">],</span>
+        <span class="n">delta</span><span class="o">=</span><span class="mf">.1</span>
+    <span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">y_pred</span><span class="p">,</span> <span class="n">y_pred_partial</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">y_ps</span><span class="p">,</span> <span class="n">y_ps_partial</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_results_for_alpha_as_float_and_arraylike"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_results_for_alpha_as_float_and_arraylike">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;strategy&quot;</span><span class="p">,</span> <span class="p">[</span><span class="o">*</span><span class="n">STRATEGIES</span><span class="p">])</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span>
+    <span class="s2">&quot;alpha&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">]),</span> <span class="p">[</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">],</span> <span class="p">(</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">)]</span>
+<span class="p">)</span>
+<span class="k">def</span> <span class="nf">test_results_for_alpha_as_float_and_arraylike</span><span class="p">(</span>
+    <span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">alpha</span><span class="p">:</span> <span class="n">Any</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test that output values do not depend on type of alpha.&quot;&quot;&quot;</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">STRATEGIES</span><span class="p">[</span><span class="n">strategy</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">mapie_clf</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span>
+        <span class="n">method</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;method&quot;</span><span class="p">],</span>
+        <span class="n">metric_control</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;metric_control&quot;</span><span class="p">],</span>
+        <span class="n">random_state</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;random_state&quot;</span><span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">mapie_clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+    <span class="n">y_pred_float1</span><span class="p">,</span> <span class="n">y_ps_float1</span> <span class="o">=</span> <span class="n">mapie_clf</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
+        <span class="n">X</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>
+        <span class="n">bound</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;bound&quot;</span><span class="p">],</span>
+        <span class="n">delta</span><span class="o">=</span><span class="mf">.9</span>
+    <span class="p">)</span>
+    <span class="n">y_pred_float2</span><span class="p">,</span> <span class="n">y_ps_float2</span> <span class="o">=</span> <span class="n">mapie_clf</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
+        <span class="n">X</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span>
+        <span class="n">bound</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;bound&quot;</span><span class="p">],</span>
+        <span class="n">delta</span><span class="o">=</span><span class="mf">.9</span>
+    <span class="p">)</span>
+    <span class="n">y_pred_array</span><span class="p">,</span> <span class="n">y_ps_array</span> <span class="o">=</span> <span class="n">mapie_clf</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
+        <span class="n">X</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">,</span>
+        <span class="n">bound</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;bound&quot;</span><span class="p">],</span>
+        <span class="n">delta</span><span class="o">=</span><span class="mf">.9</span>
+    <span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">y_pred_float1</span><span class="p">,</span> <span class="n">y_pred_array</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">y_pred_float2</span><span class="p">,</span> <span class="n">y_pred_array</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">y_ps_float1</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">y_ps_array</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">])</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">y_ps_float2</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">y_ps_array</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">1</span><span class="p">])</span></div>
+
+
+<div class="viewcode-block" id="test_results_single_and_multi_jobs"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_results_single_and_multi_jobs">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;strategy&quot;</span><span class="p">,</span> <span class="p">[</span><span class="o">*</span><span class="n">STRATEGIES</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">test_results_single_and_multi_jobs</span><span class="p">(</span><span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Test that MapieClassifier gives equal predictions</span>
+<span class="sd">    regardless of number of parallel jobs.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">STRATEGIES</span><span class="p">[</span><span class="n">strategy</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">mapie_clf_single</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span>
+        <span class="n">n_jobs</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">metric_control</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;metric_control&quot;</span><span class="p">],</span>
+        <span class="n">random_state</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;random_state&quot;</span><span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">mapie_clf_multi</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span>
+        <span class="n">n_jobs</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">metric_control</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;metric_control&quot;</span><span class="p">],</span>
+        <span class="n">random_state</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;random_state&quot;</span><span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">mapie_clf_single</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+    <span class="n">mapie_clf_multi</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+    <span class="n">y_pred_single</span><span class="p">,</span> <span class="n">y_ps_single</span> <span class="o">=</span> <span class="n">mapie_clf_single</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
+        <span class="n">X</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>
+        <span class="n">bound</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;bound&quot;</span><span class="p">],</span>
+        <span class="n">delta</span><span class="o">=</span><span class="mf">.9</span>
+    <span class="p">)</span>
+    <span class="n">y_pred_multi</span><span class="p">,</span> <span class="n">y_ps_multi</span> <span class="o">=</span> <span class="n">mapie_clf_multi</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
+        <span class="n">X</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">,</span>
+        <span class="n">bound</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;bound&quot;</span><span class="p">],</span>
+        <span class="n">delta</span><span class="o">=</span><span class="mf">.9</span>
+    <span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">y_pred_single</span><span class="p">,</span> <span class="n">y_pred_multi</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span><span class="n">y_ps_single</span><span class="p">,</span> <span class="n">y_ps_multi</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_valid_prediction"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_valid_prediction">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span>
+    <span class="s2">&quot;alpha&quot;</span><span class="p">,</span> <span class="p">[[</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">],</span> <span class="p">(</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">]),</span> <span class="kc">None</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span>
+    <span class="s2">&quot;delta&quot;</span><span class="p">,</span> <span class="p">[</span><span class="mf">.1</span><span class="p">,</span> <span class="mf">.2</span><span class="p">,</span> <span class="mf">.5</span><span class="p">,</span> <span class="mf">.9</span><span class="p">,</span> <span class="mf">.001</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span>
+    <span class="s2">&quot;bound&quot;</span><span class="p">,</span> <span class="n">BOUNDS</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="k">def</span> <span class="nf">test_valid_prediction</span><span class="p">(</span><span class="n">alpha</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">delta</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">bound</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test fit and predict.&quot;&quot;&quot;</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">MultiOutputClassifier</span><span class="p">(</span>
+        <span class="n">LogisticRegression</span><span class="p">(</span><span class="n">multi_class</span><span class="o">=</span><span class="s2">&quot;multinomial&quot;</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span>
+    <span class="n">mapie_clf</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span>
+      <span class="n">estimator</span><span class="o">=</span><span class="n">model</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;rcps&quot;</span><span class="p">,</span>
+      <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span>
+    <span class="p">)</span>
+
+    <span class="n">mapie_clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span>
+    <span class="n">mapie_clf</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
+        <span class="n">X_toy</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">,</span>
+        <span class="n">bound</span><span class="o">=</span><span class="n">bound</span><span class="p">,</span>
+        <span class="n">delta</span><span class="o">=</span><span class="n">delta</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_array_output_model"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_array_output_model">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span>
+    <span class="s2">&quot;alpha&quot;</span><span class="p">,</span> <span class="p">[[</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">],</span> <span class="p">(</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">0.2</span><span class="p">,</span> <span class="mf">0.8</span><span class="p">]),</span> <span class="kc">None</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span>
+    <span class="s2">&quot;delta&quot;</span><span class="p">,</span> <span class="p">[</span><span class="mf">.1</span><span class="p">,</span> <span class="mf">.2</span><span class="p">,</span> <span class="mf">.5</span><span class="p">,</span> <span class="mf">.9</span><span class="p">,</span> <span class="mf">.001</span><span class="p">],</span>
+<span class="p">)</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span>
+    <span class="s2">&quot;bound&quot;</span><span class="p">,</span> <span class="n">BOUNDS</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;strategy&quot;</span><span class="p">,</span> <span class="p">[</span><span class="o">*</span><span class="n">STRATEGIES</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">test_array_output_model</span><span class="p">(</span><span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">alpha</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">delta</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">bound</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">STRATEGIES</span><span class="p">[</span><span class="n">strategy</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">ArrayOutputModel</span><span class="p">()</span>
+    <span class="n">mapie_clf</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span>
+        <span class="n">estimator</span><span class="o">=</span><span class="n">model</span><span class="p">,</span>
+        <span class="n">method</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;method&quot;</span><span class="p">],</span>
+        <span class="n">metric_control</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;metric_control&quot;</span><span class="p">],</span>
+        <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span>
+    <span class="p">)</span>
+    <span class="n">mapie_clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span>
+    <span class="n">mapie_clf</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
+        <span class="n">X_toy</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">,</span>
+        <span class="n">bound</span><span class="o">=</span><span class="n">bound</span><span class="p">,</span>
+        <span class="n">delta</span><span class="o">=</span><span class="n">delta</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_reinit_new_fit"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_reinit_new_fit">[docs]</a><span class="k">def</span> <span class="nf">test_reinit_new_fit</span><span class="p">():</span>
+    <span class="n">clf</span> <span class="o">=</span> <span class="n">MultiOutputClassifier</span><span class="p">(</span><span class="n">LogisticRegression</span><span class="p">())</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span>
+    <span class="n">mapie_clf</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span>
+        <span class="n">estimator</span><span class="o">=</span><span class="n">clf</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span>
+    <span class="p">)</span>
+    <span class="n">mapie_clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span>
+    <span class="n">mapie_clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">mapie_clf</span><span class="o">.</span><span class="n">risks</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">X_toy</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_method_error_in_fit"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_method_error_in_fit">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;method&quot;</span><span class="p">,</span> <span class="n">WRONG_METHODS</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">test_method_error_in_fit</span><span class="p">(</span><span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test error for wrong method&quot;&quot;&quot;</span>
+    <span class="n">mapie_clf</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span>
+      <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="n">method</span>
+    <span class="p">)</span>
+
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;.*Invalid method.*&quot;</span><span class="p">):</span>
+        <span class="n">mapie_clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_method_error_if_no_label_fit"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_method_error_if_no_label_fit">[docs]</a><span class="k">def</span> <span class="nf">test_method_error_if_no_label_fit</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test error for wrong method&quot;&quot;&quot;</span>
+    <span class="n">mapie_clf</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;.*Invalid y.*&quot;</span><span class="p">):</span>
+        <span class="n">mapie_clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_no_label</span><span class="p">,</span> <span class="n">y_no_label</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_method_error_if_no_label_partial_fit"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_method_error_if_no_label_partial_fit">[docs]</a><span class="k">def</span> <span class="nf">test_method_error_if_no_label_partial_fit</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test error for wrong method&quot;&quot;&quot;</span>
+    <span class="n">clf</span> <span class="o">=</span> <span class="n">MultiOutputClassifier</span><span class="p">(</span><span class="n">LogisticRegression</span><span class="p">())</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span>
+        <span class="n">X_no_label</span><span class="p">,</span>
+        <span class="n">y_no_label</span>
+    <span class="p">)</span>
+    <span class="n">mapie_clf</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span>
+        <span class="n">estimator</span><span class="o">=</span><span class="n">clf</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span>
+    <span class="p">)</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;.*Invalid y.*&quot;</span><span class="p">):</span>
+        <span class="n">mapie_clf</span><span class="o">.</span><span class="n">partial_fit</span><span class="p">(</span><span class="n">X_no_label</span><span class="p">,</span> <span class="n">y_no_label</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_bound_error_in_predict"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_bound_error_in_predict">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;bound&quot;</span><span class="p">,</span> <span class="n">WRONG_BOUNDS</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">test_bound_error_in_predict</span><span class="p">(</span><span class="n">bound</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test error for wrong bounds&quot;&quot;&quot;</span>
+    <span class="n">mapie_clf</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span>
+      <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;rcps&#39;</span>
+    <span class="p">)</span>
+
+    <span class="n">mapie_clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;.*bound must be in.*&quot;</span><span class="p">):</span>
+        <span class="n">mapie_clf</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="n">bound</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="mf">.1</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_metric_error_in_fit"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_metric_error_in_fit">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;metric_control&quot;</span><span class="p">,</span> <span class="n">WRONG_METRICS</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">test_metric_error_in_fit</span><span class="p">(</span><span class="n">metric_control</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test error for wrong metrics&quot;&quot;&quot;</span>
+    <span class="n">mapie_clf</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span>
+        <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+        <span class="n">metric_control</span><span class="o">=</span><span class="n">metric_control</span>
+    <span class="p">)</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;.*Invalid metric. *&quot;</span><span class="p">):</span>
+        <span class="n">mapie_clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_error_rcps_delta_null"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_error_rcps_delta_null">[docs]</a><span class="k">def</span> <span class="nf">test_error_rcps_delta_null</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test error for RCPS method and delta None&quot;&quot;&quot;</span>
+    <span class="n">mapie_clf</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span>
+      <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;rcps&#39;</span>
+    <span class="p">)</span>
+
+    <span class="n">mapie_clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;.*delta cannot be ``None``*&quot;</span><span class="p">):</span>
+        <span class="n">mapie_clf</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_toy</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_error_ltt_delta_null"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_error_ltt_delta_null">[docs]</a><span class="k">def</span> <span class="nf">test_error_ltt_delta_null</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test error for LTT method and delta None&quot;&quot;&quot;</span>
+    <span class="n">mapie_clf</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span>
+        <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+        <span class="n">metric_control</span><span class="o">=</span><span class="s1">&#39;precision&#39;</span>
+    <span class="p">)</span>
+    <span class="n">mapie_clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;.*Invalid delta. *&quot;</span><span class="p">):</span>
+        <span class="n">mapie_clf</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_toy</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_error_delta_wrong_value"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_error_delta_wrong_value">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;delta&quot;</span><span class="p">,</span> <span class="p">[</span><span class="o">-</span><span class="mf">1.</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="o">-</span><span class="mi">3</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">test_error_delta_wrong_value</span><span class="p">(</span><span class="n">delta</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test error for RCPS method and delta None&quot;&quot;&quot;</span>
+    <span class="n">mapie_clf</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span>
+      <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;rcps&#39;</span>
+    <span class="p">)</span>
+    <span class="n">mapie_clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;.*delta must be*&quot;</span><span class="p">):</span>
+        <span class="n">mapie_clf</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="n">delta</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_error_delta_wrong_value_ltt"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_error_delta_wrong_value_ltt">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;delta&quot;</span><span class="p">,</span> <span class="p">[</span><span class="o">-</span><span class="mf">1.</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="o">-</span><span class="mi">3</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">test_error_delta_wrong_value_ltt</span><span class="p">(</span><span class="n">delta</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test error for RCPS method and delta None&quot;&quot;&quot;</span>
+    <span class="n">mapie_clf</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span>
+        <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+        <span class="n">metric_control</span><span class="o">=</span><span class="s1">&#39;precision&#39;</span>
+    <span class="p">)</span>
+
+    <span class="n">mapie_clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;.*delta must be*&quot;</span><span class="p">):</span>
+        <span class="n">mapie_clf</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="n">delta</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_bound_none_crc"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_bound_none_crc">[docs]</a><span class="k">def</span> <span class="nf">test_bound_none_crc</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test that a warning is raised nound is not None with CRC method.&quot;&quot;&quot;</span>
+    <span class="n">mapie_clf</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span>
+      <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;crc&quot;</span>
+    <span class="p">)</span>
+
+    <span class="n">mapie_clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">warns</span><span class="p">(</span><span class="ne">UserWarning</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;WARNING: you are using crc*&quot;</span><span class="p">):</span>
+        <span class="n">mapie_clf</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="s2">&quot;wsr&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_delta_none_crc"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_delta_none_crc">[docs]</a><span class="k">def</span> <span class="nf">test_delta_none_crc</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test that a warning is raised nound is not None with CRC method.&quot;&quot;&quot;</span>
+    <span class="n">mapie_clf</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span>
+      <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;crc&quot;</span>
+    <span class="p">)</span>
+    <span class="n">mapie_clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">warns</span><span class="p">(</span><span class="ne">UserWarning</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;WARNING: you are using crc*&quot;</span><span class="p">):</span>
+        <span class="n">mapie_clf</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="mf">.1</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_warning_estimator_none"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_warning_estimator_none">[docs]</a><span class="k">def</span> <span class="nf">test_warning_estimator_none</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test that a warning is raised nound is not None with CRC method.&quot;&quot;&quot;</span>
+    <span class="n">mapie_clf</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">warns</span><span class="p">(</span><span class="ne">UserWarning</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;WARNING: To avoid overffiting,*&quot;</span><span class="p">):</span>
+        <span class="n">mapie_clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_error_delta_wrong_type"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_error_delta_wrong_type">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;delta&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">),</span> <span class="p">(</span><span class="mf">.1</span><span class="p">,</span> <span class="mf">.2</span><span class="p">),</span> <span class="p">[</span><span class="mf">.4</span><span class="p">,</span> <span class="mf">.5</span><span class="p">]])</span>
+<span class="k">def</span> <span class="nf">test_error_delta_wrong_type</span><span class="p">(</span><span class="n">delta</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test error for RCPS method and delta None&quot;&quot;&quot;</span>
+    <span class="n">mapie_clf</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span>
+      <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s2">&quot;rcps&quot;</span>
+    <span class="p">)</span>
+    <span class="n">mapie_clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;.*delta must be a float*&quot;</span><span class="p">):</span>
+        <span class="n">mapie_clf</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="n">delta</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_error_delta_wrong_type_ltt"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_error_delta_wrong_type_ltt">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;delta&quot;</span><span class="p">,</span> <span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">),</span> <span class="p">(</span><span class="mf">.1</span><span class="p">,</span> <span class="mf">.2</span><span class="p">),</span> <span class="p">[</span><span class="mf">.4</span><span class="p">,</span> <span class="mf">.5</span><span class="p">]])</span>
+<span class="k">def</span> <span class="nf">test_error_delta_wrong_type_ltt</span><span class="p">(</span><span class="n">delta</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test error for LTT method and delta None&quot;&quot;&quot;</span>
+    <span class="n">mapie_clf</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span>
+        <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">,</span>
+        <span class="n">metric_control</span><span class="o">=</span><span class="s2">&quot;precision&quot;</span>
+    <span class="p">)</span>
+
+    <span class="n">mapie_clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;.*delta must be a float*&quot;</span><span class="p">):</span>
+        <span class="n">mapie_clf</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">delta</span><span class="o">=</span><span class="n">delta</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_error_partial_fit_different_size"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_error_partial_fit_different_size">[docs]</a><span class="k">def</span> <span class="nf">test_error_partial_fit_different_size</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test error for partial_fit with different size&quot;&quot;&quot;</span>
+    <span class="n">clf</span> <span class="o">=</span> <span class="n">MultiOutputClassifier</span><span class="p">(</span><span class="n">LogisticRegression</span><span class="p">())</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span>
+    <span class="n">mapie_clf</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span>
+        <span class="n">estimator</span><span class="o">=</span><span class="n">clf</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span>
+    <span class="p">)</span>
+    <span class="n">mapie_clf</span><span class="o">.</span><span class="n">partial_fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span><span class="ne">ValueError</span><span class="p">,</span> <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;.*Number of features*&quot;</span><span class="p">):</span>
+        <span class="n">mapie_clf</span><span class="o">.</span><span class="n">partial_fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_pipeline_compatibility"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_pipeline_compatibility">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;strategy&quot;</span><span class="p">,</span> <span class="p">[</span><span class="o">*</span><span class="n">STRATEGIES</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">test_pipeline_compatibility</span><span class="p">(</span><span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Check that MAPIE works on pipeline based on pandas dataframes&quot;&quot;&quot;</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">STRATEGIES</span><span class="p">[</span><span class="n">strategy</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">X</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;x_cat&quot;</span><span class="p">:</span> <span class="p">[</span><span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">,</span> <span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;A&quot;</span><span class="p">,</span> <span class="s2">&quot;B&quot;</span><span class="p">],</span>
+            <span class="s2">&quot;x_num&quot;</span><span class="p">:</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">nan</span><span class="p">,</span> <span class="mi">5</span><span class="p">],</span>
+        <span class="p">}</span>
+    <span class="p">)</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+        <span class="p">[</span>
+            <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span>
+            <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+        <span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">numeric_preprocessor</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">(</span>
+        <span class="p">[</span>
+            <span class="p">(</span><span class="s2">&quot;imputer&quot;</span><span class="p">,</span> <span class="n">SimpleImputer</span><span class="p">(</span><span class="n">strategy</span><span class="o">=</span><span class="s2">&quot;mean&quot;</span><span class="p">)),</span>
+        <span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">categorical_preprocessor</span> <span class="o">=</span> <span class="n">Pipeline</span><span class="p">(</span>
+        <span class="n">steps</span><span class="o">=</span><span class="p">[</span>
+            <span class="p">(</span><span class="s2">&quot;encoding&quot;</span><span class="p">,</span> <span class="n">OneHotEncoder</span><span class="p">(</span><span class="n">handle_unknown</span><span class="o">=</span><span class="s2">&quot;ignore&quot;</span><span class="p">))</span>
+        <span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">preprocessor</span> <span class="o">=</span> <span class="n">ColumnTransformer</span><span class="p">(</span>
+        <span class="p">[</span>
+            <span class="p">(</span><span class="s2">&quot;cat&quot;</span><span class="p">,</span> <span class="n">categorical_preprocessor</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;x_cat&quot;</span><span class="p">]),</span>
+            <span class="p">(</span><span class="s2">&quot;num&quot;</span><span class="p">,</span> <span class="n">numeric_preprocessor</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;x_num&quot;</span><span class="p">])</span>
+        <span class="p">]</span>
+    <span class="p">)</span>
+    <span class="n">pipe</span> <span class="o">=</span> <span class="n">make_pipeline</span><span class="p">(</span>
+        <span class="n">preprocessor</span><span class="p">,</span>
+        <span class="n">MultiOutputClassifier</span><span class="p">(</span><span class="n">LogisticRegression</span><span class="p">())</span>
+    <span class="p">)</span>
+    <span class="n">pipe</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+    <span class="n">mapie</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span>
+        <span class="n">estimator</span><span class="o">=</span><span class="n">pipe</span><span class="p">,</span>
+        <span class="n">method</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;method&quot;</span><span class="p">],</span>
+        <span class="n">metric_control</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;metric_control&quot;</span><span class="p">],</span>
+        <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span>
+    <span class="p">)</span>
+
+    <span class="n">mapie</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+    <span class="n">mapie</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;bound&quot;</span><span class="p">],</span> <span class="n">delta</span><span class="o">=</span><span class="mf">.1</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_error_no_fit"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_error_no_fit">[docs]</a><span class="k">def</span> <span class="nf">test_error_no_fit</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test error for no fit&quot;&quot;&quot;</span>
+    <span class="n">clf</span> <span class="o">=</span> <span class="n">WrongOutputModel</span><span class="p">()</span>
+    <span class="n">mapie_clf</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span>
+        <span class="n">estimator</span><span class="o">=</span><span class="n">clf</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span>
+    <span class="p">)</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span>
+        <span class="ne">ValueError</span><span class="p">,</span>
+        <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;.*Please provide a classifier with*&quot;</span>
+    <span class="p">):</span>
+        <span class="n">mapie_clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_error_estimator_none_partial"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_error_estimator_none_partial">[docs]</a><span class="k">def</span> <span class="nf">test_error_estimator_none_partial</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test error estimator none partial&quot;&quot;&quot;</span>
+    <span class="n">mapie_clf</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">)</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span>
+        <span class="ne">ValueError</span><span class="p">,</span>
+        <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;.*Invalid estimator with partial_fit*&quot;</span>
+    <span class="p">):</span>
+        <span class="n">mapie_clf</span><span class="o">.</span><span class="n">partial_fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_partial_fit_first_time"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_partial_fit_first_time">[docs]</a><span class="k">def</span> <span class="nf">test_partial_fit_first_time</span><span class="p">():</span>
+    <span class="n">mclf</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span><span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">mclf</span><span class="o">.</span><span class="n">_check_partial_fit_first_call</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="test_partial_fit_second_time"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_partial_fit_second_time">[docs]</a><span class="k">def</span> <span class="nf">test_partial_fit_second_time</span><span class="p">():</span>
+    <span class="n">clf</span> <span class="o">=</span> <span class="n">MultiOutputClassifier</span><span class="p">(</span><span class="n">LogisticRegression</span><span class="p">())</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+    <span class="n">mclf</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span>
+        <span class="n">estimator</span><span class="o">=</span><span class="n">clf</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span>
+    <span class="p">)</span>
+    <span class="n">mclf</span><span class="o">.</span><span class="n">partial_fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="ow">not</span> <span class="n">mclf</span><span class="o">.</span><span class="n">_check_partial_fit_first_call</span><span class="p">()</span></div>
+
+
+<div class="viewcode-block" id="test_toy_dataset_predictions"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_toy_dataset_predictions">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;strategy&quot;</span><span class="p">,</span> <span class="p">[</span><span class="o">*</span><span class="n">STRATEGIES</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">test_toy_dataset_predictions</span><span class="p">(</span><span class="n">strategy</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Test toy_dataset_predictions.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">args</span> <span class="o">=</span> <span class="n">STRATEGIES</span><span class="p">[</span><span class="n">strategy</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">clf</span> <span class="o">=</span> <span class="n">MultiOutputClassifier</span><span class="p">(</span><span class="n">LogisticRegression</span><span class="p">())</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span>
+    <span class="n">mapie_clf</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span>
+        <span class="n">clf</span><span class="p">,</span>
+        <span class="n">method</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;method&quot;</span><span class="p">],</span>
+        <span class="n">metric_control</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;metric_control&quot;</span><span class="p">],</span>
+        <span class="n">random_state</span><span class="o">=</span><span class="n">random_state</span>
+    <span class="p">)</span>
+    <span class="n">mapie_clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">y_ps</span> <span class="o">=</span> <span class="n">mapie_clf</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span>
+        <span class="n">X_toy</span><span class="p">,</span>
+        <span class="n">alpha</span><span class="o">=</span><span class="mf">.2</span><span class="p">,</span>
+        <span class="n">bound</span><span class="o">=</span><span class="n">args</span><span class="p">[</span><span class="s2">&quot;bound&quot;</span><span class="p">],</span>
+        <span class="n">delta</span><span class="o">=</span><span class="mf">.1</span>
+    <span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">testing</span><span class="o">.</span><span class="n">assert_allclose</span><span class="p">(</span>
+            <span class="n">y_ps</span><span class="p">[:,</span> <span class="p">:,</span> <span class="mi">0</span><span class="p">],</span>
+            <span class="n">y_toy_mapie</span><span class="p">[</span><span class="n">strategy</span><span class="p">],</span>
+            <span class="n">rtol</span><span class="o">=</span><span class="mf">1e-6</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_error_wrong_method_metric_precision"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_error_wrong_method_metric_precision">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;method&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;rcps&quot;</span><span class="p">,</span> <span class="s2">&quot;crc&quot;</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">test_error_wrong_method_metric_precision</span><span class="p">(</span><span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Test that an error is returned when using a metric</span>
+<span class="sd">    with invalid method .</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">clf</span> <span class="o">=</span> <span class="n">MultiOutputClassifier</span><span class="p">(</span><span class="n">LogisticRegression</span><span class="p">())</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span>
+    <span class="n">mapie_clf</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span>
+        <span class="n">clf</span><span class="p">,</span>
+        <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span>
+        <span class="n">metric_control</span><span class="o">=</span><span class="s2">&quot;precision&quot;</span>
+    <span class="p">)</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span>
+        <span class="ne">ValueError</span><span class="p">,</span>
+        <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;.*Invalid method for metric*&quot;</span>
+    <span class="p">):</span>
+        <span class="n">mapie_clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_check_metric_control"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_check_metric_control">[docs]</a><span class="nd">@pytest</span><span class="o">.</span><span class="n">mark</span><span class="o">.</span><span class="n">parametrize</span><span class="p">(</span><span class="s2">&quot;method&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s2">&quot;ltt&quot;</span><span class="p">])</span>
+<span class="k">def</span> <span class="nf">test_check_metric_control</span><span class="p">(</span><span class="n">method</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Test that an error is returned when using a metric</span>
+<span class="sd">    with invalid method .</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">clf</span> <span class="o">=</span> <span class="n">MultiOutputClassifier</span><span class="p">(</span><span class="n">LogisticRegression</span><span class="p">())</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span>
+    <span class="n">mapie_clf</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span>
+        <span class="n">clf</span><span class="p">,</span>
+        <span class="n">method</span><span class="o">=</span><span class="n">method</span><span class="p">,</span>
+        <span class="n">metric_control</span><span class="o">=</span><span class="s2">&quot;recall&quot;</span>
+    <span class="p">)</span>
+    <span class="k">with</span> <span class="n">pytest</span><span class="o">.</span><span class="n">raises</span><span class="p">(</span>
+        <span class="ne">ValueError</span><span class="p">,</span>
+        <span class="n">match</span><span class="o">=</span><span class="sa">r</span><span class="s2">&quot;.*Invalid method for metric*&quot;</span>
+    <span class="p">):</span>
+        <span class="n">mapie_clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="test_method_none_precision"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_method_none_precision">[docs]</a><span class="k">def</span> <span class="nf">test_method_none_precision</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">clf</span> <span class="o">=</span> <span class="n">MultiOutputClassifier</span><span class="p">(</span><span class="n">LogisticRegression</span><span class="p">())</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span>
+    <span class="n">mapie_clf</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span>
+        <span class="n">clf</span><span class="p">,</span>
+        <span class="n">metric_control</span><span class="o">=</span><span class="s2">&quot;precision&quot;</span>
+    <span class="p">)</span>
+    <span class="n">mapie_clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">mapie_clf</span><span class="o">.</span><span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;ltt&quot;</span></div>
+
+
+<div class="viewcode-block" id="test_method_none_recall"><a class="viewcode-back" href="../../../src/prom.tests.html#prom.tests.test_multi_label_classification.test_method_none_recall">[docs]</a><span class="k">def</span> <span class="nf">test_method_none_recall</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">clf</span> <span class="o">=</span> <span class="n">MultiOutputClassifier</span><span class="p">(</span><span class="n">LogisticRegression</span><span class="p">())</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span>
+    <span class="n">mapie_clf</span> <span class="o">=</span> <span class="n">MapieMultiLabelClassifier</span><span class="p">(</span>
+        <span class="n">clf</span><span class="p">,</span>
+        <span class="n">metric_control</span><span class="o">=</span><span class="s2">&quot;recall&quot;</span>
+    <span class="p">)</span>
+    <span class="n">mapie_clf</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_toy</span><span class="p">,</span> <span class="n">y_toy</span><span class="p">)</span>
+    <span class="k">assert</span> <span class="n">mapie_clf</span><span class="o">.</span><span class="n">method</span> <span class="o">==</span> <span class="s2">&quot;crc&quot;</span></div>
+</pre></div>
+
+           </div>
+          </div>
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, _.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
