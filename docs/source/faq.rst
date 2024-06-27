@@ -3,7 +3,7 @@ Frequently Asked Questions
 
 This page answers some of the commonly asked questions about Prom. Have a
 question not answered here? File an issue on the `GitHub issue tracker
-<https://github.com/anonymous/Prom/issues>`_.
+<https://anonymous.4open.science/r/PROM/issues>`_.
 
 .. contents:: Questions:
     :local:
