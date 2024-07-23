@@ -29,10 +29,10 @@ from transformers import logging as transformers_logging
 
 # 设置Transformers库的日志级别为ERROR，只显示错误信息
 transformers_logging.set_verbosity_error()
-from mapie.prom_classification import MapieClassifier
-from mapie.metrics import (classification_coverage_score,
+from prom.prom_classification import MapieClassifier
+from prom.metrics import (classification_coverage_score,
                            classification_mean_width_score)
-from src.util import Prom_utils
+from src.prom.prom_util import Prom_utils
 # try:
 #     from torch.utils.tensorboard import SummaryWriter
 # except:

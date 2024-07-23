@@ -11,7 +11,7 @@ import argparse
 import sys
 
 # sys.path.append('/home/huanting/PROM/src')
-import src.util as util
+import src.prom_util as util
 
 sys.path.append('/home/huanting/PROM/examples/case_study/tlp/python')
 sys.path.append('/home/huanting/PROM/thirdpackage')

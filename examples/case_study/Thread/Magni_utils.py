@@ -11,7 +11,7 @@ from sklearn.neural_network import MLPClassifier
 logging.set_verbosity_error()
 import pandas as pd
 from transformers import AutoTokenizer
-from keras.utils.data_utils  import pad_sequences
+from keras_preprocessing.sequence import pad_sequences
 from progressbar import ProgressBar
 
 import nni
@@ -31,7 +31,7 @@ from tensorflow.keras.layers import BatchNormalization
 from keras.models import Model, Sequential, load_model
 import random
 
-import src.util as util
+import src.prom.prom_util as util
 # 禁用所有警告
 
 tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
@@ -86,6 +86,10 @@ class Magni():
             self.model = pickle.load(infile)
 
     def train(self, cascading_features: np.array, cascading_y: np.array,
+              verbose: bool=False) -> None:
+        self.model.fit(cascading_features, cascading_y)
+
+    def fine_tune(self, cascading_features: np.array, cascading_y: np.array,
               verbose: bool=False) -> None:
         self.model.fit(cascading_features, cascading_y)
 
@@ -220,7 +224,7 @@ class ThreadCoarsening(util.ModelDefinition):
         self.calibration_data = None
         self.dataset = None
 
-    def data_partitioning(self, dataset,platform='', calibration_ratio=0.2,args=None):
+    def data_partitioning(self, dataset,platform='', mode='train',  calibration_ratio=0.2,args=None):
         pd.set_option('display.max_rows', 5)
         df = pd.read_csv("../../../benchmark/Thread/pact-2014-runtimes.csv")
         oracles = pd.read_csv("../../../benchmark/Thread/pact-2014-oracles.csv")
@@ -263,9 +267,15 @@ class ThreadCoarsening(util.ModelDefinition):
         # 遍历字典，将每个键的值单独添加到列表中
         for values in device_indices.values():
             lists.append(values)
-        train_index = lists[0]
-        valid_index = lists[1]
-        test_index = lists[2]
+        if mode =='train':
+            lists = lists[0]+lists[1]+lists[2]
+            train_index = lists[:-4]
+            valid_index = lists[-4:-2]
+            test_index = lists[-2:]
+        elif mode == 'deploy':
+            train_index = lists[0]
+            valid_index = lists[1]
+            test_index = lists[2]
         X_seq = self.feature_extraction(df["src"].values)
         train_x=X_seq[train_index]
         valid_x=X_seq[valid_index]
@@ -363,7 +373,7 @@ def make_prediction(speed_up_all=[],platform='',
     ##########################
     origin_speedup = sum(p_speedup_all) / len(p_speedup_all)
     speed_up_all.append(origin_speedup)
-    return origin_speedup,all_pre
+    return origin_speedup,all_pre,data_distri
 
 
 def get_magni_features(df, oracles, platform):

@@ -31,7 +31,7 @@ import tensorflow as tf
 import os
 sys.path.append('/home/huanting/PROM/src')
 sys.path.append('/home/huanting/PROM/thirdpackage')
-import src.util as util
+import src.prom_util as util
 import clang.cindex
 from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import GridSearchCV, KFold

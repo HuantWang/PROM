@@ -28,7 +28,7 @@ from tensorflow.keras.layers import BatchNormalization
 from keras.models import Model, Sequential, load_model
 import random
 
-import src.util as util
+import src.prom_util as util
 # 禁用所有警告
 
 tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")

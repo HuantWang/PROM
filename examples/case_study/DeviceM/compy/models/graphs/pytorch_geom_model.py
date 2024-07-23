@@ -23,7 +23,7 @@ sys.path.append('/home/huanting/PROM/thirdpackage')
 from mapie.prom_classification import MapieClassifier
 from mapie.metrics import (classification_coverage_score,
                            classification_mean_width_score)
-import src.util as util
+import src.prom_util as util
 import random
 class Dev_gnn(util.ModelDefinition):
     def __init__(self,model=None,dataset=None,calibration_data=None,args=None):

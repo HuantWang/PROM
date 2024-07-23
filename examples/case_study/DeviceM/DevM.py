@@ -15,7 +15,7 @@ import argparse
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC
-from src.util import Prom_utils
+from src.prom_util import Prom_utils
 
 import numpy as np
 import nni

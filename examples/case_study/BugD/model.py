@@ -9,7 +9,7 @@ from torch.nn import CrossEntropyLoss, MSELoss
 import sys
 sys.path.append('/home/huanting/PROM/src')
 sys.path.append('/home/huanting/PROM/thirdpackage')
-import src.util as util
+import src.prom.prom_util as util
 import os
 import json
 import random
