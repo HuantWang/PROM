@@ -1335,6 +1335,14 @@ class MapieClassifier(BaseEstimator, ClassifierMixin):
 
         y = cast(NDArray, y)
 
+        if task=='thread':
+            actual_labels = np.array([1., 2., 4., 8., 16., 32.])
+            expected_labels = np.array([0, 1, 2, 3, 4, 5])
+            label_mapping = {old: new for old, new in zip(actual_labels, expected_labels)}
+            mapping = {expected: actual for expected, actual in zip(expected_labels, actual_labels)}
+            for index,i in y:
+                y[index] = mapping[i]
+            print("a")
         estimator = check_estimator_classification(
             X,
             y,

@@ -218,7 +218,7 @@ class Magni():
 #         indice = np.array(indices)
 #         return indice
 
-class ThreadCoarsening(util.ModelDefinition):
+class ThreadCoarseningMa(util.ModelDefinition):
     def __init__(self,model=None,dataset=None,calibration_data=None,args=None):
         self.model = Magni()
         self.calibration_data = None
@@ -267,14 +267,17 @@ class ThreadCoarsening(util.ModelDefinition):
         # 遍历字典，将每个键的值单独添加到列表中
         for values in device_indices.values():
             lists.append(values)
-        if mode =='train':
-            lists = lists[0]+lists[1]+lists[2]
+        if mode == 'train':
+            lists = lists[0] + lists[1] + lists[2]
+            random.shuffle(lists)
             train_index = lists[:-4]
             valid_index = lists[-4:-2]
             test_index = lists[-2:]
-        elif mode == 'deploy':
-            train_index = lists[0]
-            valid_index = lists[1]
+        elif mode == 'test':
+            lists_tandc = lists[0] + lists[1]
+            random.shuffle(lists_tandc)
+            train_index = lists_tandc[:-2]
+            valid_index = lists_tandc[-2:]
             test_index = lists[2]
         X_seq = self.feature_extraction(df["src"].values)
         train_x=X_seq[train_index]
@@ -308,11 +311,11 @@ class ThreadCoarsening(util.ModelDefinition):
         encoded = np.array(pad_sequences(seqs, maxlen=1024, value=pad_val))
         return np.vstack([np.expand_dims(x, axis=0) for x in encoded])
 
-def make_prediction_il(speed_up_all=[],platform='',
+def make_prediction_ilMa(speed_up_all=[],platform='',
                     model=None,test_x=None,test_index=None,X_cc=None,origin_speedup=None
                        ,improved_spp_all=[]):
 
-    retrained_speedup, all_pre = make_prediction(speed_up_all=speed_up_all,
+    retrained_speedup, all_pre,_ = make_predictionMa(speed_up_all=speed_up_all,
                                                  platform=platform, model=model,
          test_x=test_x, test_index=test_index, X_cc=X_cc)
 
@@ -324,7 +327,7 @@ def make_prediction_il(speed_up_all=[],platform='',
     return retrained_speedup,inproved_speedup
 
 
-def make_prediction(speed_up_all=[],platform='',
+def make_predictionMa(speed_up_all=[],platform='',
                     model=None,test_x=None,test_index=None,X_cc=None):
     df = pd.read_csv("../../../benchmark/Thread/pact-2014-runtimes.csv")
     oracles = pd.read_csv("../../../benchmark/Thread/pact-2014-oracles.csv")

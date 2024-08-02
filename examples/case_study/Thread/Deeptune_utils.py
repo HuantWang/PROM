@@ -9,7 +9,7 @@ from transformers import logging
 logging.set_verbosity_error()
 import pandas as pd
 from transformers import AutoTokenizer
-from keras.utils.data_utils  import pad_sequences
+from keras_preprocessing.sequence import pad_sequences
 from progressbar import ProgressBar
 
 import nni
@@ -27,7 +27,7 @@ from tensorflow.keras.layers import BatchNormalization
 from keras.models import Model, Sequential, load_model
 import random
 
-import src.prom_util as util
+import src.prom.prom_util as util
 # 禁用所有警告
 
 tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
@@ -104,13 +104,13 @@ class DeepTune():
         indice = np.array(indices)
         return indice
 
-class ThreadCoarsening(util.ModelDefinition):
+class ThreadCoarseningDe(util.ModelDefinition):
     def __init__(self,model=None,dataset=None,calibration_data=None,args=None):
         self.model = DeepTune()
         self.calibration_data = None
         self.dataset = None
 
-    def data_partitioning(self, dataset,platform='', calibration_ratio=0.2,args=None):
+    def data_partitioning(self, dataset, platform='', mode='train', calibration_ratio=0.2, args=None):
         pd.set_option('display.max_rows', 5)
         df = pd.read_csv("../../../benchmark/Thread/pact-2014-runtimes.csv")
         oracles = pd.read_csv("../../../benchmark/Thread/pact-2014-oracles.csv")
@@ -153,20 +153,29 @@ class ThreadCoarsening(util.ModelDefinition):
         # 遍历字典，将每个键的值单独添加到列表中
         for values in device_indices.values():
             lists.append(values)
-        train_index = lists[0]
-        valid_index = lists[1]
-        test_index = lists[2]
+        if mode == 'train':
+            lists = lists[0] + lists[1] + lists[2]
+            random.shuffle(lists)
+            train_index = lists[:-4]
+            valid_index = lists[-4:-2]
+            test_index = lists[-2:]
+        elif mode == 'test':
+            lists_tandc = lists[0] + lists[1]
+            random.shuffle(lists_tandc)
+            train_index = lists_tandc[:-2]
+            valid_index = lists_tandc[-2:]
+            test_index = lists[2]
         X_seq = self.feature_extraction(df["src"].values)
-        train_x=X_seq[train_index]
-        valid_x=X_seq[valid_index]
-        test_x=X_seq[test_index]
-        train_y =y_1hot[train_index]
-        valid_y =y_1hot[valid_index]
-        test_y =y_1hot[test_index]
+        train_x = X_seq[train_index]
+        valid_x = X_seq[valid_index]
+        test_x = X_seq[test_index]
+        train_y = y_1hot[train_index]
+        valid_y = y_1hot[valid_index]
+        test_y = y_1hot[test_index]
         self.calibration_data = X_seq[valid_index]
         cal_y = y_1hot[valid_index]
-        return X_cc, y_cc,train_x, valid_x, test_x, train_y, valid_y, test_y, self.calibration_data,cal_y,\
-               train_index, valid_index, test_index, y, X_seq,y_1hot
+        return X_cc, y_cc, train_x, valid_x, test_x, train_y, valid_y, test_y, self.calibration_data, cal_y, \
+               train_index, valid_index, test_index, y, X_seq, y_1hot
 
 
     def predict(self, X, significant_level=0.1):
@@ -188,11 +197,11 @@ class ThreadCoarsening(util.ModelDefinition):
         encoded = np.array(pad_sequences(seqs, maxlen=1024, value=pad_val))
         return np.vstack([np.expand_dims(x, axis=0) for x in encoded])
 
-def make_prediction_il(speed_up_all=[],platform='',
+def make_prediction_ilDe(speed_up_all=[],platform='',
                     model=None,test_x=None,test_index=None,X_cc=None,origin_speedup=None
                        ,improved_spp_all=[]):
 
-    retrained_speedup, all_pre = make_prediction(speed_up_all=speed_up_all,
+    retrained_speedup, all_pre,_ = make_predictionDe(speed_up_all=speed_up_all,
                                                  platform=platform, model=model,
          test_x=test_x, test_index=test_index, X_cc=X_cc)
 
@@ -204,7 +213,7 @@ def make_prediction_il(speed_up_all=[],platform='',
     return retrained_speedup,inproved_speedup
 
 
-def make_prediction(speed_up_all=[],platform='',
+def make_predictionDe(speed_up_all=[],platform='',
                     model=None,test_x=None,test_index=None,X_cc=None):
     df = pd.read_csv("../../../benchmark/Thread/pact-2014-runtimes.csv")
     oracles = pd.read_csv("../../../benchmark/Thread/pact-2014-oracles.csv")
@@ -253,7 +262,7 @@ def make_prediction(speed_up_all=[],platform='',
     ##########################
     origin_speedup = sum(p_speedup_all) / len(p_speedup_all)
     speed_up_all.append(origin_speedup)
-    return origin_speedup,all_pre
+    return origin_speedup,all_pre,data_distri
 
 
 def get_magni_features(df, oracles, platform):

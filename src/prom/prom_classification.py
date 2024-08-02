@@ -1334,17 +1334,28 @@ class MapieClassifier(BaseEstimator, ClassifierMixin):
         sample_weight, X, y = check_null_weight(sample_weight, X, y)
 
         y = cast(NDArray, y)
-
+        # if task=='thread':
+        #     actual_labels = np.array([1., 2., 4., 8., 16., 32.])
+        #     expected_labels = np.array([0, 1, 2, 3, 4, 5])
+        #     label_mapping = {old: new for old, new in zip(actual_labels, expected_labels)}
+        #     mapping = {expected: actual for expected, actual in zip(expected_labels, actual_labels)}
+        #     y_new=[]
+        #     for i in y:
+        #         new = mapping[i]
+        #         y_new.append(new)
+        #     print("a")
+        # y=y_new
         estimator = check_estimator_classification(
             X,
             y,
             cv,
             self.estimator
         )
+
         enc = LabelEncoder()
         enc.fit(self.classes_)
-        y_enc = enc.transform(y)
-
+        # y_enc = enc.transform(y)
+        y_enc = y
 
 
         if self._target_type == "multiclass":

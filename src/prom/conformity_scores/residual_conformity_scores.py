@@ -9,9 +9,9 @@ from sklearn.pipeline import Pipeline
 from sklearn.utils.validation import (check_is_fitted, check_random_state,
                                       indexable)
 
-from mapie._machine_precision import EPSILON
-from mapie._typing import ArrayLike, NDArray
-from mapie.conformity_scores import ConformityScore
+from prom._machine_precision import EPSILON
+from prom._typing import ArrayLike, NDArray
+from prom.conformity_scores import ConformityScore
 
 
 class AbsoluteConformityScore(ConformityScore):

@@ -5,7 +5,7 @@ from typing import Optional, Tuple, Union
 
 from sklearn.base import RegressorMixin
 
-from mapie._typing import ArrayLike, NDArray
+from prom._typing import ArrayLike, NDArray
 
 
 class EnsembleEstimator(RegressorMixin, metaclass=ABCMeta):
