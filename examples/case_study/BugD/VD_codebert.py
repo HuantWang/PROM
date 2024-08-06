@@ -18,10 +18,13 @@ from torch.utils.data.distributed import DistributedSampler
 import json
 from sklearn.naive_bayes import GaussianNB
 import sys
-
+os.environ['CURL_CA_BUNDLE'] = ''
 # sys.path.append('./case_study/DeviceM')
+sys.path.append('/home/huanting/PROM')
 sys.path.append('/home/huanting/PROM/src')
 sys.path.append('/home/huanting/PROM/thirdpackage')
+sys.path.append('./case_study/BugD')
+
 import warnings
 warnings.filterwarnings("ignore")
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
@@ -417,7 +420,6 @@ def incre(args, train_dataset, model, tokenizer):
                             logger.info("  " + "*" * 20)
     return best_acc
 
-
 def train(args, train_dataset, model, tokenizer):
     """ Train the model """
     args.train_batch_size = args.per_gpu_train_batch_size * max(1, args.n_gpu)
@@ -531,10 +533,9 @@ def train(args, train_dataset, model, tokenizer):
                     tr_nb = global_step
 
                 if args.local_rank in [-1, 0] and args.save_steps > 0 and global_step % args.save_steps == 0:
-
                     if args.local_rank == -1 and args.evaluate_during_training:  # Only evaluate when single GPU otherwise metrics may not average well
                         results = evaluate(args, model, tokenizer, eval_when_training=True)
-
+                        # print("eval results:", results)
                         for key, value in results.items():
                             logger.info("  %s = %s", key, round(value, 4))
                             # Save model checkpoint
@@ -546,23 +547,164 @@ def train(args, train_dataset, model, tokenizer):
                             # logger.info("  Best rec:%s", round(results['eval_rec'], 4))
                             # logger.info("  Best acc:%s", round(results['eval_acc'], 4))
                             # logger.info("  " + "*" * 20)
-                            # 将注释掉的日志记录代码改成print，一行
                             print(
-                                f"The current accuracy is: {round(best_f1, 4)}")
+                                f"The current best accuracy is: {round(best_f1, 4)}")
 
-                            checkpoint_prefix = 'checkpoint-best-acc'
-                            output_dir = os.path.join(args.output_dir, '{}'.format(checkpoint_prefix))
+                            checkpoint_prefix = 'TrainedModel_'+str(best_f1)
+                            output_dir = os.path.join(args.output_dir, '{}'.format(checkpoint_prefix),)
                             if not os.path.exists(output_dir):
                                 os.makedirs(output_dir)
                             model_to_save = model.module if hasattr(model, 'module') else model
                             output_dir = os.path.join(output_dir, '{}'.format('model.bin'))
-                            torch.save(model_to_save.state_dict(), output_dir)
+                            # torch.save(model_to_save.state_dict(), output_dir)
                             # logger.info("Saving model checkpoint to %s", output_dir)
-                            print("Saving model checkpoint to {}".format(output_dir))
+                            # print("Saving model checkpoint to {}".format(output_dir))
 
-                        if results['eval_acc'] >= 0 and results['eval_acc'] <= 0.99:
+    return best_f1
+
+def deploy(args, train_dataset, model, tokenizer):
+    """ Train the model """
+    args.train_batch_size = args.per_gpu_train_batch_size * max(1, args.n_gpu)
+    train_sampler = RandomSampler(train_dataset) if args.local_rank == -1 else DistributedSampler(train_dataset)
+
+    train_dataloader = DataLoader(train_dataset, sampler=train_sampler,
+                                  batch_size=args.train_batch_size, num_workers=0, pin_memory=True)
+    args.max_steps = args.epoch * len(train_dataloader)
+    args.save_steps = len(train_dataloader)
+    args.warmup_steps = len(train_dataloader)
+    args.logging_steps = len(train_dataloader)
+    args.num_train_epochs = args.epoch
+    model.to(args.device)
+    # Prepare optimizer and schedule (linear warmup and decay)
+    no_decay = ['bias', 'LayerNorm.weight']
+    optimizer_grouped_parameters = [
+        {'params': [p for n, p in model.named_parameters() if not any(nd in n for nd in no_decay)],
+         'weight_decay': args.weight_decay},
+        {'params': [p for n, p in model.named_parameters() if any(nd in n for nd in no_decay)], 'weight_decay': 0.0}
+    ]
+
+    optimizer = AdamW(optimizer_grouped_parameters, lr=args.learning_rate)
+    scheduler = get_linear_schedule_with_warmup(optimizer, num_warmup_steps=args.max_steps * 0.1,
+                                                num_training_steps=args.max_steps)
+    if args.fp16:
+        try:
+            from apex import amp
+        except ImportError:
+            raise ImportError("Please install apex from https://www.github.com/nvidia/apex to use fp16 training.")
+        model, optimizer = amp.initialize(model, optimizer, opt_level=args.fp16_opt_level)
+
+    # multi-gpu training (should be after apex fp16 initialization)
+    if args.n_gpu > 1:
+        model = torch.nn.DataParallel(model)
+
+    # Distributed training (should be after apex fp16 initialization)
+    if args.local_rank != -1:
+        model = torch.nn.parallel.DistributedDataParallel(model, device_ids=[args.local_rank],
+                                                          output_device=args.local_rank,
+                                                          find_unused_parameters=True)
+
+    checkpoint_last = os.path.join(args.output_dir, 'checkpoint-last')
+    scheduler_last = os.path.join(checkpoint_last, 'scheduler.pt')
+    optimizer_last = os.path.join(checkpoint_last, 'optimizer.pt')
+    if os.path.exists(scheduler_last):
+        scheduler.load_state_dict(torch.load(scheduler_last))
+    if os.path.exists(optimizer_last):
+        optimizer.load_state_dict(torch.load(optimizer_last))
+    # Train!
+    # logger.info("***** Running training *****")
+    # logger.info("  Num examples = %d", len(train_dataset))
+    # logger.info("  Num Epochs = %d", args.num_train_epochs)
+    # logger.info("  Instantaneous batch size per GPU = %d", args.per_gpu_train_batch_size)
+    # logger.info("  Total train batch size (w. parallel, distributed & accumulation) = %d",
+    #             args.train_batch_size * args.gradient_accumulation_steps * (
+    #                 torch.distributed.get_world_size() if args.local_rank != -1 else 1))
+    # logger.info("  Gradient Accumulation steps = %d", args.gradient_accumulation_steps)
+    # logger.info("  Total optimization steps = %d", args.max_steps)
+
+    global_step = args.start_step
+    tr_loss, logging_loss, avg_loss, tr_nb, tr_num, train_loss = 0.0, 0.0, 0.0, 0, 0, 0
+    best_mrr = 0.0
+    best_f1 = 0.0
+    best_f1_uq = 0.0
+    best_acc = 0.0
+    increment_acc = 0.0
+    # model.resize_token_embeddings(len(tokenizer))
+    model.zero_grad()
+
+    for idx in range(args.start_epoch, int(args.num_train_epochs)):
+        bar = tqdm(train_dataloader, total=len(train_dataloader),disable=True)
+        tr_num = 0
+        train_loss = 0
+        for step, batch in enumerate(bar):
+
+            inputs = batch[0].to(args.device)
+            labels = batch[1].to(args.device)
+            model.train()
+            loss, logits = model(inputs, labels)
+
+            if args.n_gpu > 1:
+                loss = loss.mean()  # mean() to average on multi-gpu parallel training
+            if args.gradient_accumulation_steps > 1:
+                loss = loss / args.gradient_accumulation_steps
+
+            if args.fp16:
+                with amp.scale_loss(loss, optimizer) as scaled_loss:
+                    scaled_loss.backward()
+                torch.nn.utils.clip_grad_norm_(amp.master_params(optimizer), args.max_grad_norm)
+            else:
+                loss.backward()
+                torch.nn.utils.clip_grad_norm_(model.parameters(), args.max_grad_norm)
+
+            tr_loss += loss.item()
+            tr_num += 1
+            train_loss += loss.item()
+            if avg_loss == 0:
+                avg_loss = tr_loss
+            avg_loss = round(train_loss / tr_num, 5)
+            bar.set_description("epoch {} loss {}".format(idx, avg_loss))
+
+            if (step + 1) % args.gradient_accumulation_steps == 0:
+                optimizer.step()
+                optimizer.zero_grad()
+                scheduler.step()
+                global_step += 1
+                output_flag = True
+                avg_loss = round(np.exp((tr_loss - logging_loss) / (global_step - tr_nb)), 4)
+                if args.local_rank in [-1, 0] and args.logging_steps > 0 and global_step % args.logging_steps == 0:
+                    logging_loss = tr_loss
+                    tr_nb = global_step
+
+                if args.local_rank in [-1, 0] and args.save_steps > 0 and global_step % args.save_steps == 0:
+                    if args.local_rank == -1 and args.evaluate_during_training:  # Only evaluate when single GPU otherwise metrics may not average well
+                        results = evaluate(args, model, tokenizer, eval_when_training=True)
+                        for key, value in results.items():
+                            logger.info("  %s = %s", key, round(value, 4))
+                            # Save model checkpoint
+                        if results['eval_acc'] > best_f1:
+                            best_f1 = results['eval_acc']
+                            # logger.info("  " + "*" * 20)
+                            # logger.info("  Best f1:%s", round(best_f1, 4))
+                            # logger.info("  Best pre:%s", round(results['eval_pre'], 4))
+                            # logger.info("  Best rec:%s", round(results['eval_rec'], 4))
+                            # logger.info("  Best acc:%s", round(results['eval_acc'], 4))
+                            # logger.info("  " + "*" * 20)
+                            print(
+                                f"The current accuracy is: {round(best_f1, 4)}")
+
+                            checkpoint_prefix = 'TrainedModel_'+str(best_f1)
+                            output_dir = os.path.join(args.output_dir, '{}'.format(checkpoint_prefix),)
+                            if not os.path.exists(output_dir):
+                                os.makedirs(output_dir)
+                            model_to_save = model.module if hasattr(model, 'module') else model
+                            output_dir = os.path.join(output_dir, '{}'.format('model.bin'))
+                            # torch.save(model_to_save.state_dict(), output_dir)
+                            # logger.info("Saving model checkpoint to %s", output_dir)
+                            # print("Saving model checkpoint to {}".format(output_dir))
+
+                        if results['eval_acc'] >= 0.2 and results['eval_acc'] <= 0.9:
+                            print(
+                                f"The current accuracy is: {round(best_f1, 4)}")
                             results_uq, incre_index = conformal_prediction(args, model, tokenizer)
-
                             if results_uq['find_f1'] > best_f1_uq:
                                 best_f1_uq = results_uq['find_f1']
                                 # # logger.info("  " + "*" * 20)
@@ -587,10 +729,10 @@ def train(args, train_dataset, model, tokenizer):
                                     os.makedirs(output_dir)
                                 model_to_save = model.module if hasattr(model, 'module') else model
                                 output_dir = os.path.join(output_dir, '{}'.format('model.bin'))
-                                torch.save(model_to_save.state_dict(), output_dir)
+                                # torch.save(model_to_save.state_dict(), output_dir)
                                 # logger.info("Saving the retrained model checkpoint to %s", output_dir)
                                 # 将 logger.info 语句改为 print 语句
-                                print(f"Saving the retrained model checkpoint to {output_dir}")
+                                # print(f"Saving the retrained model checkpoint to {output_dir}")
                                 """increment learning"""
                                 # train_dataset = TextDataset(tokenizer, args, args.train_data_file, args.one_hot_vectors,
                                 #                             args.suffixes)
@@ -601,6 +743,7 @@ def train(args, train_dataset, model, tokenizer):
                                 # train_dataset=train_dataset.append(incre_data)
                                 # test_dataset = [item for index, item in enumerate(test_dataset) if
                                 #                index not in incre_index]
+                                print("Incremental Learning...")
                                 selected_content = []
                                 old_train = []
                                 new_test = []
@@ -636,12 +779,15 @@ def train(args, train_dataset, model, tokenizer):
                                 retrained_acc = incre(args, train_dataset, model, tokenizer)
                                 increment_acc_single = retrained_acc - results_origin["test_acc"]
                                 print(f"The retrained accuracy is: {retrained_acc * 100:.2f}%, "
-                                      f"The increment accuracy is: {increment_acc_single * 100:.2f}%")
-
+                                      f"The increment accuracy is: {increment_acc_single * 100:.2f}% "
+                                      f"The best increment accuracy is: {increment_acc * 100:.2f}%")
+                                print("*" * 60)
                                 if increment_acc < increment_acc_single:
                                     increment_acc = increment_acc_single
-                                nni.report_intermediate_result(increment_acc)
-
+                                # if retrained_acc < increment_acc_single:
+                                #     increment_acc = increment_acc_single
+                                # if increment_acc < increment_acc_single:
+                                #     increment_acc = increment_acc_single
     return increment_acc
 
 
@@ -856,6 +1002,14 @@ def conformal_prediction(args, model, tokenizer):
 
     # Evaluate conformal prediction
     print("Detect the drifting samples...")
+    Prom_thread.evaluate_mapie \
+        (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y_test,
+         significance_level=0.05)
+
+    Prom_thread.evaluate_rise \
+        (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y_test,
+         significance_level=0.05)
+
     index_all_right, index_list_right, Acc_all, F1_all, Pre_all, Rec_all,index_list,common_elements \
         = Prom_thread.evaluate_conformal_prediction \
         (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y_test)
@@ -1022,7 +1176,7 @@ def conformal_prediction(args, model, tokenizer):
         #             f"find recall为：{find_recall * 100:.2f}% "
         #             f"find F1：{F1_find * 100:.2f}%")
     """"IL"""
-    print("Incremental Learning...")
+
     selected_count = max(int(len(y_test) * 0.05), 1)
     np.random.seed(args.seed)
     try:
@@ -1258,7 +1412,7 @@ def model_initial():
         params = {
             "learning_rate": 0.002,
             "alpha": 0.1,
-            "epoch": 1,
+            "epoch": 3,
             "train_batch_size": 64,
             "eval_batch_size": 64,
             "seed": 123,
@@ -1271,23 +1425,19 @@ def model_initial():
                         help="The input training data file (a text file).")
     parser.add_argument("--output_dir", default=None, type=str, required=True,
                         help="The output directory where the model predictions and checkpoints will be written.")
-
     ## Other parameters
     parser.add_argument("--eval_data_file", default=None, type=str,
                         help="An optional input evaluation data file to evaluate the perplexity on (a text file).")
     parser.add_argument("--test_data_file", default=None, type=str,
                         help="An optional input evaluation data file to evaluate the perplexity on (a text file).")
-
     parser.add_argument("--model_type", default="bert", type=str,
                         help="The model architecture to be fine-tuned.")
     parser.add_argument("--model_name_or_path", default=None, type=str,
                         help="The model checkpoint for weights initialization.")
-
     parser.add_argument("--mlm", action='store_true',
                         help="Train with masked-language modeling loss instead of language modeling.")
     parser.add_argument("--mlm_probability", type=float, default=0.15,
                         help="Ratio of tokens to mask for masked language modeling loss")
-
     parser.add_argument("--config_name", default="", type=str,
                         help="Optional pretrained config name or path if not the same as model_name_or_path")
     parser.add_argument("--tokenizer_name", default="", type=str,
@@ -1308,7 +1458,6 @@ def model_initial():
                         help="Run evaluation during training at each logging step.")
     parser.add_argument("--do_lower_case", action='store_true',
                         help="Set this flag if you are using an uncased model.")
-
     parser.add_argument("--train_batch_size", default=params['train_batch_size'], type=int,
                         help="Batch size per GPU/CPU for training.")
     parser.add_argument("--eval_batch_size", default=params['eval_batch_size'], type=int,
@@ -1359,7 +1508,7 @@ def model_initial():
     parser.add_argument('--server_ip', type=str, default='', help="For distant debugging.")
     parser.add_argument('--server_port', type=str, default='', help="For distant debugging.")
     parser.add_argument('--method', type=str, default=params['method'])
-
+    parser.add_argument('--mode', choices=['train', 'deploy'], help="Mode to run: train or deploy")
     args = parser.parse_args()
 
     # Setup distant debugging if needed
@@ -1437,11 +1586,7 @@ def model_initial():
         model = model_class(config)
     return model, config, tokenizer, args
 
-
-if __name__ == "__main__":
-    # initial the model parameters
-    print("initial the model parameters...")
-    model_pre, config, tokenizer, args = model_initial()
+def codebert_train(model_pre, config, tokenizer, args):
     model = Model(model_pre, config, tokenizer, args)
     prom_loop = Bug_detection(model=model)
 
@@ -1459,14 +1604,55 @@ if __name__ == "__main__":
         if args.local_rank not in [-1, 0]:
             torch.distributed.barrier()  # Barrier to make sure only the first process in distributed training process the dataset, and the others will use the cache
 
-        # train_data = '/home/huanting/bug_detection/CodeXGLUE-main/Defect-detection/data'
         print("Extracting features...")
         train_dataset = TextDataset(tokenizer, args, args.train_data_file, args.one_hot_vectors, args.suffixes)
         if args.local_rank == 0:
             torch.distributed.barrier()
         print("Training the underlying model...")
-        increment_acc = train(args, train_dataset, model, tokenizer)
+        best_acc = train(args, train_dataset, model, tokenizer)
+    nni.report_final_result(best_acc)
 
+def codebert_deploy(model_pre, config, tokenizer, args):
+    model = Model(model_pre, config, tokenizer, args)
+    prom_loop = Bug_detection(model=model)
+
+    # dataset partition
+    print("dataset partition...")
+    prom_loop.data_partitioning(dataset=r'../../../benchmark/Bug', random_seed=args.seed, num_folders=8)
+    args.one_hot_vectors, args.suffixes = onehot(args.train_data_file, args.seed)
+
+    if args.local_rank == 0:
+        torch.distributed.barrier()  # End of barrier to make sure only the first process in distributed training download model & vocab
+    logger.info("Training/evaluation parameters %s", args)
+
+    # Training
+    if args.do_train:
+        if args.local_rank not in [-1, 0]:
+            torch.distributed.barrier()  # Barrier to make sure only the first process in distributed training process the dataset, and the others will use the cache
+
+        print("Extracting features...")
+        train_dataset = TextDataset(tokenizer, args, args.train_data_file, args.one_hot_vectors, args.suffixes)
+        if args.local_rank == 0:
+            torch.distributed.barrier()
+        print("Training the underlying model...")
+        increment_acc = deploy(args, train_dataset, model, tokenizer)
+        # increment_acc = train(args, train_dataset, model, tokenizer)
+        print("The best incremental accuracy is: ", increment_acc)
     nni.report_final_result(increment_acc)
+
+if __name__ == "__main__":
+    # initial the model parameters
+    print("initial the model parameters...")
+    model_pre, config, tokenizer, args = model_initial()
+    if args.mode == 'train':
+        codebert_train(model_pre, config, tokenizer, args)
+    elif args.mode == 'deploy':
+        codebert_deploy(model_pre, config, tokenizer, args)
+    # codebert_train(model_pre, config, tokenizer, args)
+    # codebert_deploy(model_pre, config, tokenizer, args)
+    # nnictl create --config /home/huanting/PROM/examples/case_study/BugD/config.yaml --port 8088
+    """
+    --output_dir=./saved_models     --model_type=roberta     --tokenizer_name=microsoft/codebert-base     --model_name_or_path=microsoft/codebert-base   --do_train  --do_eval     --do_test     --train_data_file=../../../benchmark/Bug/train.jsonl     --eval_data_file=../../../benchmark/Bug/valid.jsonl     --test_data_file=../../../benchmark/Bug/test.jsonl --evaluate_during_training
+    """
 
 

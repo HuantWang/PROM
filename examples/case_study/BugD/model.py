@@ -7,13 +7,15 @@ from torch.autograd import Variable
 import copy
 from torch.nn import CrossEntropyLoss, MSELoss
 import sys
+sys.path.append('/home/huanting/PROM')
 sys.path.append('/home/huanting/PROM/src')
 sys.path.append('/home/huanting/PROM/thirdpackage')
+sys.path.append('./case_study/BugD')
 import src.prom.prom_util as util
 import os
 import json
 import random
-
+import numpy as np
 
 class Bug_detection(util.ModelDefinition):
     def __init__(self,model=None,dataset=None,calibration_data=None,args=None):
@@ -153,6 +155,57 @@ class Model(nn.Module):
         label = torch.argmax(prob, dim=1)
         return label.detach().numpy()
 
+class BiLSTMModel(nn.Module):
+        def __init__(self, encoder, config, tokenizer, args):
+            super(BiLSTMModel, self).__init__()
+            self.config = config
+            self.tokenizer = tokenizer
+            self.args = args
+
+            self.embedding = nn.Embedding(config.vocab_size, config.hidden_size)
+            self.lstm = nn.LSTM(input_size=config.hidden_size,
+                                hidden_size=config.hidden_size,
+                                num_layers=2,
+                                bidirectional=True,
+                                batch_first=True)
+            self.fc = nn.Linear(config.hidden_size * 2, config.num_labels)  # *2 because it's bidirectional
+
+        def forward(self, input_ids=None, labels=None):
+            embedded = self.embedding(input_ids)  # embedding layer
+            lstm_out, _ = self.lstm(embedded)  # LSTM layer
+            logits = self.fc(lstm_out[:, -1, :])  # Fully connected layer, using the output of the last time step
+
+            prob = torch.softmax(logits, dim=1)
+            loss_function = nn.CrossEntropyLoss()
+            if labels is not None:
+                labels = torch.argmax(labels, dim=1)
+                loss = loss_function(prob, labels)
+                return loss, prob
+            else:
+                return prob
+
+        def predict_proba(self, input_ids=None):
+            input_ids = torch.tensor(input_ids)
+            embedded = self.embedding(input_ids)  # embedding layer
+            lstm_out, _ = self.lstm(embedded)  # LSTM layer
+            logits = self.fc(lstm_out[:, -1, :])  # Fully connected layer, using the output of the last time step
+
+            prob = torch.softmax(logits, dim=1)
+            return prob.detach().numpy()
+
+        def fit(self):
+            # Define your training loop here if needed
+            return
+
+        def predict(self, input_ids=None):
+            input_ids = torch.tensor(input_ids)
+            embedded = self.embedding(input_ids)  # embedding layer
+            lstm_out, _ = self.lstm(embedded)  # LSTM layer
+            logits = self.fc(lstm_out[:, -1, :])  # Fully connected layer, using the output of the last time step
+
+            prob = torch.softmax(logits, dim=1)
+            label = torch.argmax(prob, dim=1)
+            return label.detach().numpy()
     # def uq(self, input_ids=None, labels=None):
     #     outputs = self.encoder(input_ids, attention_mask=input_ids.ne(1))[0]
     #     logits = outputs
