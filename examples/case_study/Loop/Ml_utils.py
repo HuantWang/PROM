@@ -5,7 +5,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 from transformers import logging
 logging.set_verbosity_error()
 from transformers import AutoTokenizer
-from keras.utils import pad_sequences
+from keras_preprocessing.sequence import pad_sequences
 import nni
 import argparse
 from sklearn.metrics import f1_score, accuracy_score, precision_score, recall_score
@@ -31,7 +31,7 @@ import tensorflow as tf
 import os
 sys.path.append('/home/huanting/PROM/src')
 sys.path.append('/home/huanting/PROM/thirdpackage')
-import src.prom_util as util
+import src.prom.prom_util as util
 import clang.cindex
 from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import GridSearchCV, KFold

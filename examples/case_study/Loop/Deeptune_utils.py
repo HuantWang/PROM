@@ -5,7 +5,7 @@ os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 from transformers import logging
 logging.set_verbosity_error()
 from transformers import AutoTokenizer
-from keras.utils import pad_sequences
+from keras_preprocessing.sequence import pad_sequences
 import nni
 import argparse
 from sklearn.metrics import f1_score, accuracy_score, precision_score, recall_score
@@ -29,9 +29,11 @@ import matplotlib.pyplot as plt
 filterwarnings("ignore", category=ConvergenceWarning)
 import tensorflow as tf
 import os
+sys.path.append('./case_study/Loop')
 sys.path.append('/home/huanting/PROM/src')
 sys.path.append('/home/huanting/PROM/thirdpackage')
-import src.prom_util as util
+sys.path.append('/home/huanting/PROM')
+import src.prom.prom_util as util
 import clang.cindex
 
 class LoopT(util.ModelDefinition):
@@ -228,6 +230,7 @@ def deeptune_make_prediction(model=None, X_seq=None, y_1hot=None, time=None, tes
     """speed up"""
     p_speedup_all = []
     non_speedup_all = []
+    data_distri = []
     # oracle prediction
     for i, (o, p) in enumerate(zip(y_1hot[test_index], all_pre)):
         # get runtime without thread coarsening
@@ -247,9 +250,10 @@ def deeptune_make_prediction(model=None, X_seq=None, y_1hot=None, time=None, tes
         speedup_prediction = non_runtime / p_runtime
         percent = speedup_prediction / speedup_origin
         non_speedup_all.append(percent)
+        data_distri.append(percent)
     origin_speedup = sum(non_speedup_all) / len(non_speedup_all)
     # print("origin_speedup is", origin_speedup)
-    return origin_speedup, all_pre
+    return origin_speedup, all_pre, data_distri
 
 def deeptune_make_prediction_il(model_il=None, X_seq=None, y_1hot=None, time=None,
                        test_index=None,  origin_speedup=None):

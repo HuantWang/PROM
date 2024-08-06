@@ -285,7 +285,7 @@ class Prom_utils:
         np.random.seed(seed_value)
 
         # Select a portion of the test data for retraining
-        selected_count = max(int(len(self.y_test) * 0.05), 1)
+        selected_count = max(int(len(self.y_test) * 0.1), 1)
 
         try:
             random_element = random.sample(list(self.common_elements), selected_count)
@@ -315,6 +315,8 @@ class Prom_utils:
         for name, (method, include_last_label) in self.method_params.items():
             results_array = np.zeros((len(p_value[name]), len(self.alphas)), dtype=bool)
             #step1, use p-value to select
+            if significance_level is not "auto":
+                self.alphas = [significance_level]
             for i, alpha in enumerate(self.alphas):
                 results_array[:, i] = np.array([value > (1 - alpha) for value in p_value[name]])
             credibility_score[name] = results_array
@@ -327,7 +329,7 @@ class Prom_utils:
             coverages[name] = [classification_coverage_score(self.y_test, y_pss[name][:, :, i]) for i, _ in
                                enumerate(self.alphas)]
             confidence_sizes[name] = [y_pss[name][:, :, i].sum(axis=1).mean() for i, _ in enumerate(self.alphas)]
-            credibility_sizes[name] = [credibility_score[name][:, i].sum().mean() for i, _ in enumerate(self.alphas)]
+            credibility_sizes[name] = [credibility_score[name][i, :].sum().mean() for i, _ in enumerate(self.alphas)]
 
         # Find the index of confidence score near 1
         confidence_result = {key: min(range(len(lst)), key=lambda i: abs(lst[i] - 1)) for key, lst in confidence_sizes.items()}
@@ -449,8 +451,12 @@ class Prom_utils:
         for name, (method, include_last_label) in self.method_params.items():
             results_array = np.zeros((len(p_value[name]), len(self.alphas)), dtype=bool)
             #step1, use p-value to select
-            for i, alpha in enumerate(self.alphas):
-                results_array[:, i] = np.array([value > (1 - alpha) for value in p_value[name]])
+            if significance_level is "auto":
+                for i, alpha in enumerate(self.alphas):
+                    results_array[:, i] = np.array([value > (1 - alpha) for value in p_value[name]])
+            else:
+                for i, alpha in enumerate(self.alphas):
+                    results_array[:, i] = np.array([value > (1 - significance_level) for value in p_value[name]])
             credibility_score[name] = results_array
 
 
@@ -572,8 +578,12 @@ class Prom_utils:
         for name, (method, include_last_label) in self.method_params.items():
             results_array = np.zeros((len(p_value[name]), len(self.alphas)), dtype=bool)
             #step1, use p-value to select
-            for i, alpha in enumerate(self.alphas):
-                results_array[:, i] = np.array([value > (1 - alpha) for value in p_value[name]])
+            if significance_level is "auto":
+                for i, alpha in enumerate(self.alphas):
+                    results_array[:, i] = np.array([value > (1 - alpha) for value in p_value[name]])
+            else:
+                for i, alpha in enumerate(self.alphas):
+                    results_array[:, i] = np.array([value > (1 - significance_level) for value in p_value[name]])
             credibility_score[name] = results_array
 
 

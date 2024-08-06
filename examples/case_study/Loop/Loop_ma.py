@@ -9,10 +9,9 @@ import random
 sys.path.append('./case_study/Loop')
 sys.path.append('/home/huanting/PROM/src')
 sys.path.append('/home/huanting/PROM/thirdpackage')
-from Ml_utils import data_partitioning
-from Deeptune_utils import DeepTune,LoopT,deeptune_make_prediction,deeptune_make_prediction_il
+
 from Magni_utils import Magni,LoopT,make_prediction,make_prediction_il
-from Ml_utils import ml_make_prediction,ml_make_prediction_il
+
 
 import numpy as np
 import nni
@@ -20,7 +19,7 @@ import argparse
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC
-from src.prom_util import Prom_utils
+from src.prom.prom_util import Prom_utils
 
 def load_deeptune_args():
     # get parameters from tuner
@@ -39,7 +38,10 @@ def load_deeptune_args():
                         help="random seed for initialization")
     parser.add_argument("--batch_size", default=params['batch_size'], type=int,
                         help="Batch size per GPU/CPU for training.")
+    parser.add_argument('--mode', choices=['train', 'deploy'], help="Mode to run: train or deploy")
     args = parser.parse_args()
+    args.seed=int(args.seed)
+    print("seeds is", args.seed)
     # train the underlying model
     # deeptune_model = DeepTune()
     # deeptune_model.init(args)
@@ -63,8 +65,8 @@ def loop_main(tasks="deeptune"):
     print(f"Loading dataset")
     X_seq, y_1hot,time,train_index, valid_index, test_index = \
         prom_loop.data_partitioning(dataset=r'../../../benchmark/Loop/data_dict.pkl', calibration_ratio=0.1, args=args)
-    train_index=train_index[:600]
-    valid_index=valid_index[:300]
+    train_index=train_index[:100]
+    valid_index=valid_index[:100]
     test_index=test_index[:100]
     #  init the model
     print(f"Loading underlying model...")
@@ -143,13 +145,10 @@ def loop_main(tasks="deeptune"):
         f"Imroved mean speed up: {inproved_speedup}, "
     )
 
-def loop_main(tasks="mlp"):
+def loop_train_magni(args):
     # load args
-
     prom_loop = LoopT(model=Magni())
     Magni_model = Magni()
-
-    args = load_deeptune_args()
     origin_speedup_all = []
     speed_up_all = []
     improved_spp_all = []
@@ -161,9 +160,12 @@ def loop_main(tasks="mlp"):
     X_seq, y_1hot, time, train_index, valid_index, test_index = \
         prom_loop.data_partitioning(dataset=r'../../../benchmark/Loop/data_dict.pkl', calibration_ratio=0.1,
                                     args=args)
-    train_index = train_index[:600]
-    valid_index = valid_index[:300]
-    test_index = test_index[:100]
+    train_index = train_index[:1000]
+    valid_index = valid_index[:400]
+    test_index = test_index[:200]
+    # train_index = train_index[:100]
+    # valid_index = valid_index[:100]
+    # test_index = test_index[:100]
     #  init the model
     print(f"Loading underlying model...")
     prom_loop.model.init(args)
@@ -175,21 +177,110 @@ def loop_main(tasks="mlp"):
     )
 
     # save the model
-    model_path = f"models/loop/magni_{seed_value}.model"
-    try:
-        os.mkdir(os.save.dirname(model_path))
-    except:
-        pass
-    prom_loop.model.save(model_path)
+    # model_dir_path = "logs/train/models/ma/"
+    plot_figure_path = 'logs/train/figs/ma/plot'
+    plot_figuredata_path = 'logs/train/figs/ma/data'
+    # os.makedirs(os.path.dirname(model_dir_path), exist_ok=True)
+    os.makedirs(os.path.dirname(plot_figure_path), exist_ok=True)
+    os.makedirs(os.path.dirname(plot_figuredata_path), exist_ok=True)
+    # model_path = f"logs/train/models/ma/magni_{seed_value}.model"
+    # prom_loop.model.save(model_path)
 
     # load the model
     # prom_loop.model.restore(r'/home/huanting/PROM/examples/case_study/Loop/models/loop/123.model')
     # make prediction
-    origin_speedup, all_pre = make_prediction \
+    origin_speedup, all_pre, data_distri = make_prediction \
         (model=prom_loop.model, X_feature=X_seq, y_1hot=y_1hot,
          time=time, test_index=test_index)
-    print(f"Loading successful, the speedup is {origin_speedup:.2%}")
-    # origin = sum(speed_up_all) / len(speed_up_all)
+    print(f"Loading successful, the speedup is {origin_speedup}")
+
+    ######
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    import pandas as pd
+    plt.boxplot(data_distri)
+    data_df = pd.DataFrame({'Data': data_distri})
+    sns.violinplot(data=data_df, y='Data')
+    seed_save = str(int(seed_value))
+    plt.title('Box Plot Example ' + seed_save)
+    plt.ylabel('Values')
+
+    plt.savefig(plot_figure_path + str(origin_speedup) + '_' + str(
+        seed_save) + '.png')
+    data_df.to_pickle(
+        plot_figuredata_path + str(origin_speedup) + '_' + str(
+            seed_save) + '_data.pkl')
+    # plt.show()
+    print("training finished")
+    nni.report_final_result(origin_speedup)
+
+def loop_deploy_magni(args):
+    # load args
+    prom_loop = LoopT(model=Magni())
+    Magni_model = Magni()
+    origin_speedup_all = []
+    speed_up_all = []
+    improved_spp_all = []
+    Magni_model.init(args)
+
+    # Load dataset
+    # print(f"*****************{platform}***********************")
+    print(f"Loading dataset")
+    X_seq, y_1hot, time, train_index, valid_index, test_index = \
+        prom_loop.data_partitioning(dataset=r'../../../benchmark/Loop/data_dict.pkl', calibration_ratio=0.1,
+                                    args=args)
+    train_index = train_index[:1000]
+    valid_index = valid_index[:400]
+    test_index = test_index[:200]
+    # train_index = train_index[:100]
+    # valid_index = valid_index[:100]
+    # test_index = test_index[:100]
+    #  init the model
+    print(f"Loading underlying model...")
+    prom_loop.model.init(args)
+    seed_value = int(args.seed)
+    prom_loop.model.train(
+        cascading_features=X_seq[train_index],
+        cascading_y=y_1hot[train_index],
+        verbose=True,
+    )
+
+    # save the model
+    # model_dir_path = "logs/train/models/ma/"
+    plot_figure_path = 'logs/train/figs/de/plot'
+    plot_figuredata_path = 'logs/train/figs/de/data'
+    # os.makedirs(os.path.dirname(model_dir_path), exist_ok=True)
+    os.makedirs(os.path.dirname(plot_figure_path), exist_ok=True)
+    os.makedirs(os.path.dirname(plot_figuredata_path), exist_ok=True)
+    # model_path = f"logs/train/models/ma/magni_{seed_value}.model"
+    # prom_loop.model.save(model_path)
+
+    # load the model
+    # prom_loop.model.restore(r'/home/huanting/PROM/examples/case_study/Loop/models/loop/123.model')
+    # make prediction
+    origin_speedup, all_pre, data_distri = make_prediction \
+        (model=prom_loop.model, X_feature=X_seq, y_1hot=y_1hot,
+         time=time, test_index=test_index)
+    print(f"Loading successful, the speedup is {origin_speedup}")
+
+    ######
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+    import pandas as pd
+    plt.boxplot(data_distri)
+    data_df = pd.DataFrame({'Data': data_distri})
+    sns.violinplot(data=data_df, y='Data')
+    seed_save = str(int(seed_value))
+    plt.title('Box Plot Example ' + seed_save)
+    plt.ylabel('Values')
+
+    plt.savefig(plot_figure_path + str(origin_speedup) + '_' + str(
+        seed_save) + '.png')
+    data_df.to_pickle(
+        plot_figuredata_path + str(origin_speedup) + '_' + str(
+            seed_save) + '_data.pkl')
+    # plt.show()
+    print("training finished")
     # print("final percent:", origin)
     # nni.report_final_result(origin)
 
@@ -219,7 +310,16 @@ def loop_main(tasks="mlp"):
         cal_x=calibration_data, cal_y=cal_y, test_x=test_x, test_y=test_y, significance_level="auto")
 
     # evaluate conformal prediction
-    index_all_right, index_list_right, Acc_all, F1_all, Pre_all, Rec_all \
+    # MAPIE
+    Prom_thread.evaluate_mapie \
+        (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y,
+         significance_level=0.05)
+
+    Prom_thread.evaluate_rise \
+        (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y,
+         significance_level=0.05)
+
+    index_all_right, index_list_right, Acc_all, F1_all, Pre_all, Rec_all,_,_ \
         = Prom_thread.evaluate_conformal_prediction \
         (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y)
 
@@ -245,7 +345,18 @@ def loop_main(tasks="mlp"):
         f"Imroved mean speed up: {inproved_speedup}, "
     )
 
-loop_main(tasks="mlp")
+    nni.report_final_result(inproved_speedup)
+
+
+if __name__=='__main__':
+    args = load_deeptune_args()
+    if args.mode == 'train':
+        loop_train_magni(args=args)
+    elif args.mode == 'deploy':
+        loop_deploy_magni(args=args)
+    # loop_train_magni(args)
+    # loop_deploy_magni(args)
+    # nnictl create --config /home/huanting/PROM/examples/case_study/Loop/config.yaml --port 8088
 # if __name__=='__main__':
 #     # load args
 #     args = load_deeptune_args()
