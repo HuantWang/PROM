@@ -15,7 +15,7 @@ import argparse
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC
-from src.prom_util import Prom_utils
+from src.prom.prom_util import Prom_utils
 
 import numpy as np
 import nni
@@ -148,12 +148,12 @@ if __name__ == '__main__':
     # Explore combinations
     combinations = [
         # CGO 20: AST+DF, CDFG
-        # (R.ASTGraphBuilder, R.ASTDataVisitor, M.GnnPytorchGeomModel),
+        (R.ASTGraphBuilder, R.ASTDataVisitor, M.GnnPytorchGeomModel),
         #meiyongdao (R.LLVMGraphBuilder, R.LLVMCDFGVisitor, M.GnnPytorchGeomModel),
         # Arxiv 20: ProGraML
         # (R.LLVMGraphBuilder, R.LLVMProGraMLVisitor, M.GnnPytorchGeomModel),
         # PACT 17: DeepTune
-        (R.SyntaxSeqBuilder, R.SyntaxTokenkindVariableVisitor, M.RnnTfModel),
+        # (R.SyntaxSeqBuilder, R.SyntaxTokenkindVariableVisitor, M.RnnTfModel),
         # Extra
         # (R.ASTGraphBuilder, R.ASTDataCFGVisitor, M.GnnPytorchGeomModel),
         # (R.LLVMGraphBuilder, R.LLVMCDFGCallVisitor, M.GnnPytorchGeomModel),
@@ -220,10 +220,10 @@ if __name__ == '__main__':
     print("Train/Load the model...")
 
     # train the model
-    # train(suite_train,suite_test,dataset_ori,combinations,random_seed)
+    train(suite_train,suite_test,dataset_ori,combinations,random_seed)
     # load the model
-    model_path = \
-        r'/home/huanting/PROM/examples/case_study/DeviceM/compy/save_model/3407_0.8922865142803728.pkl'
+    # model_path = \
+    #     r'/home/huanting/PROM/examples/case_study/DeviceM/compy/save_model/3407_0.8922865142803728.pkl'
     # load_pickle(suite_train, suite_test, dataset, combinations,
     #             random_seed,
     #             model_path)

@@ -40,7 +40,7 @@ def load_deeptune_args():
                         help="Batch size per GPU/CPU for training.")
     parser.add_argument('--mode', choices=['train', 'deploy'], help="Mode to run: train or deploy")
     args = parser.parse_args()
-    args.seed=2453
+    args.seed=int(args.seed)
     print("seeds is", args.seed)
     # train the underlying model
     # deeptune_model = DeepTune()

@@ -285,7 +285,7 @@ class Prom_utils:
         np.random.seed(seed_value)
 
         # Select a portion of the test data for retraining
-        selected_count = max(int(len(self.y_test) * 0.1), 1)
+        selected_count = max(int(len(self.y_test) * 0.05), 1)
 
         try:
             random_element = random.sample(list(self.common_elements), selected_count)
