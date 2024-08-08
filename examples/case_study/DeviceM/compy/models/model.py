@@ -10,7 +10,7 @@ class Model(object):
 
         self.config = config
 
-    def train(self, data_train, data_valid,data_test, random_seed):
+    def train(self, data_train, data_valid,data_test, args):
         train_summary = []
         best_speedup= [0]
 
@@ -21,7 +21,7 @@ class Model(object):
 
         for epoch in range(self.config["num_epochs"]):
             batch_size = self.config["batch_size"]
-            np.random.seed(random_seed)
+            np.random.seed(args.seed)
             np.random.shuffle(data_train)
             train_batches = [
                 data_train[i * batch_size : (i + 1) * batch_size]
@@ -44,7 +44,7 @@ class Model(object):
             # print("origin speedup is: ",train_speed_up_geomean)
             # Valid
             self._test_init()
-            np.random.seed(random_seed)
+            np.random.seed(args.seed)
             np.random.shuffle(data_valid)
             valid_batches = [
                 data_valid[i * batch_size : (i + 1) * batch_size]
@@ -64,7 +64,7 @@ class Model(object):
             valid_accuracy = valid_count / len(data_valid)
             # print("origin valid speedup is: ", train_speed_up_geomean)
             #make prediction
-            np.random.seed(random_seed)
+            np.random.seed(args.seed)
             np.random.shuffle(data_test)
             self._test_init()
             test_batches = [
@@ -170,11 +170,23 @@ class Model(object):
 
 
         impoved_sp = 0
-
-        model_path = f'/home/huanting/PROM/examples/case_study/DeviceM/compy/save_model/' \
-                     f'{random_seed}_{percent_mean}.pkl'
-        print("model have been saved in ",model_path)
-        self._model_save(name=model_path)
+        model_path = ''
+        import os
+        if args.method == 'Deeptune':
+            model_dir_path = f'/home/huanting/PROM/examples/case_study/DeviceM/save_model/De/'
+            os.makedirs(os.path.dirname(model_dir_path), exist_ok=True)
+            model_path = model_dir_path+ \
+                         f'{args.seed}_{percent_mean}.pkl'
+        elif args.method == 'Programl':
+            model_dir_path = f'/home/huanting/PROM/examples/case_study/DeviceM/save_model/Programl/'
+            model_path = model_dir_path + \
+                            f'{args.seed}_{percent_mean}.pkl'
+        elif args.method == 'Inst2vec':
+            model_dir_path = f'/home/huanting/PROM/examples/case_study/DeviceM/save_model/Inst2vec/'
+            model_path = model_dir_path+ \
+                            f'{args.seed}_{percent_mean}.pkl'
+        self._model_save(model_path)
+        print("Model save suceessfully")
 
         return impoved_sp,best_speedup,model_path,percent_mean
 
@@ -266,6 +278,7 @@ class Model(object):
         return train_batches, test_batches
 
     def Incremental_train(self, train_batches, test_batches, test_percent_mean, random_seed=1234, batch_size=64):
+
         data_train = train_batches
         data_test = test_batches
         # data_train = self._test_data_init(data_train)

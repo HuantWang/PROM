@@ -210,11 +210,10 @@ class RnnTfModel(Model):
         clf = TensorflowToMapie(self.model)
 
         method_params = {
-            "naive": ("naive", False),
-            # "score": ("score", False),
-            # "cumulated_score": ("cumulated_score", True),
-            # "random_cumulated_score": ("cumulated_score", "randomized"),
-            # "top_k": ("top_k", False),
+            "lac": ("score", True),
+            "top_k": ("top_k", True),
+            "aps": ("cumulated_score", True),
+            "raps": ("raps", True)
         }
         y_preds, y_pss, y_pred_merged,p_value = {}, {}, {},{}
         import math

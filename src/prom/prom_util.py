@@ -63,6 +63,8 @@ class Prom_utils:
             self.cfs = list(range(35))
         if self.task== "bug":
             self.cfs = list(range(8))
+        if self.task== "bug":
+            self.cfs = list(range(2))
 
     def find_alpha_range(self,n):
         """

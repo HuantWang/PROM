@@ -52,6 +52,6 @@ for exp in experiments:
 
 
     print(f"Waiting for experiment to complete...")
-    time.sleep(5*60)
+    time.sleep(4*60*60)
 
 # subprocess.run(["nnictl", "stop", "-a"], capture_output=True, text=True)

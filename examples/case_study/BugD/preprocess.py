@@ -63,7 +63,7 @@ def pre(
     # 设置文件夹路径和目标数量
     # folder_path = "/home/huanting/model/bug_detect/CodeXGLUE-main/Defect-detection/data"  # 文件夹的路径
 
-    num_files_per_folder = 100  # 每个文件夹中需要选择的文本文件数量
+    num_files_per_folder = 150  # 每个文件夹中需要选择的文本文件数量
 
     # 获取文件夹列表
     folders = [

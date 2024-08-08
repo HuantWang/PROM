@@ -550,13 +550,13 @@ def train(args, train_dataset, model, tokenizer):
                             print(
                                 f"The current best accuracy is: {round(best_f1, 4)}")
 
-                            checkpoint_prefix = 'TrainedModel_'+str(best_f1)
+                            checkpoint_prefix = 'checkpoint-best-acc'
                             output_dir = os.path.join(args.output_dir, '{}'.format(checkpoint_prefix),)
                             if not os.path.exists(output_dir):
                                 os.makedirs(output_dir)
                             model_to_save = model.module if hasattr(model, 'module') else model
                             output_dir = os.path.join(output_dir, '{}'.format('model.bin'))
-                            # torch.save(model_to_save.state_dict(), output_dir)
+                            torch.save(model_to_save.state_dict(), output_dir)
                             # logger.info("Saving model checkpoint to %s", output_dir)
                             # print("Saving model checkpoint to {}".format(output_dir))
 
@@ -691,13 +691,13 @@ def deploy(args, train_dataset, model, tokenizer):
                             print(
                                 f"The current accuracy is: {round(best_f1, 4)}")
 
-                            checkpoint_prefix = 'TrainedModel_'+str(best_f1)
+                            checkpoint_prefix = 'checkpoint-best-acc'
                             output_dir = os.path.join(args.output_dir, '{}'.format(checkpoint_prefix),)
                             if not os.path.exists(output_dir):
                                 os.makedirs(output_dir)
                             model_to_save = model.module if hasattr(model, 'module') else model
                             output_dir = os.path.join(output_dir, '{}'.format('model.bin'))
-                            # torch.save(model_to_save.state_dict(), output_dir)
+                            torch.save(model_to_save.state_dict(), output_dir)
                             # logger.info("Saving model checkpoint to %s", output_dir)
                             # print("Saving model checkpoint to {}".format(output_dir))
 
@@ -729,7 +729,7 @@ def deploy(args, train_dataset, model, tokenizer):
                                     os.makedirs(output_dir)
                                 model_to_save = model.module if hasattr(model, 'module') else model
                                 output_dir = os.path.join(output_dir, '{}'.format('model.bin'))
-                                # torch.save(model_to_save.state_dict(), output_dir)
+                                torch.save(model_to_save.state_dict(), output_dir)
                                 # logger.info("Saving the retrained model checkpoint to %s", output_dir)
                                 # 将 logger.info 语句改为 print 语句
                                 # print(f"Saving the retrained model checkpoint to {output_dir}")
@@ -1415,7 +1415,7 @@ def model_initial():
             "epoch": 3,
             "train_batch_size": 64,
             "eval_batch_size": 64,
-            "seed": 123,
+            "seed": 7959,
             "method": 'top_k'
         }
 

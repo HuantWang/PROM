@@ -549,10 +549,10 @@ def train(args, train_dataset, model, tokenizer):
                             print(
                                 f"The current best accuracy is: {round(best_f1, 4)}")
 
-                            checkpoint_prefix = 'TrainedModel_'+str(best_f1)
-                            output_dir = os.path.join(args.output_dir, '{}'.format(checkpoint_prefix),)
-                            if not os.path.exists(output_dir):
-                                os.makedirs(output_dir)
+                            checkpoint_prefix = 'checkpoint-best-acc'
+                            # output_dir = os.path.join(args.output_dir, '{}'.format(checkpoint_prefix),)
+                            # if not os.path.exists(output_dir):
+                            #     os.makedirs(output_dir)
                             model_to_save = model.module if hasattr(model, 'module') else model
                             output_dir = os.path.join(output_dir, '{}'.format('model.bin'))
                             # torch.save(model_to_save.state_dict(), output_dir)
@@ -690,15 +690,15 @@ def deploy(args, train_dataset, model, tokenizer):
                             print(
                                 f"The current accuracy is: {round(best_f1, 4)}")
 
-                            checkpoint_prefix = 'TrainedModel_'+str(best_f1)
+                            checkpoint_prefix = 'checkpoint-best-acc'
                             output_dir = os.path.join(args.output_dir, '{}'.format(checkpoint_prefix),)
                             if not os.path.exists(output_dir):
                                 os.makedirs(output_dir)
                             model_to_save = model.module if hasattr(model, 'module') else model
                             output_dir = os.path.join(output_dir, '{}'.format('model.bin'))
-                            # torch.save(model_to_save.state_dict(), output_dir)
+                            torch.save(model_to_save.state_dict(), output_dir)
                             # logger.info("Saving model checkpoint to %s", output_dir)
-                            # print("Saving model checkpoint to {}".format(output_dir))
+                            print("Saving model checkpoint to {}".format(output_dir))
 
                         if results['eval_acc'] >= 0.2 and results['eval_acc'] <= 0.9:
                             print(
@@ -728,8 +728,8 @@ def deploy(args, train_dataset, model, tokenizer):
                                     os.makedirs(output_dir)
                                 model_to_save = model.module if hasattr(model, 'module') else model
                                 output_dir = os.path.join(output_dir, '{}'.format('model.bin'))
-                                # torch.save(model_to_save.state_dict(), output_dir)
-                                # logger.info("Saving the retrained model checkpoint to %s", output_dir)
+                                torch.save(model_to_save.state_dict(), output_dir)
+                                logger.info("Saving the retrained model checkpoint to %s", output_dir)
                                 # 将 logger.info 语句改为 print 语句
                                 # print(f"Saving the retrained model checkpoint to {output_dir}")
                                 """increment learning"""
@@ -1414,7 +1414,7 @@ def model_initial():
             "epoch": 3,
             "train_batch_size": 64,
             "eval_batch_size": 64,
-            "seed": 123,
+            "seed": 4137,
             "method": 'top_k'
         }
 
@@ -1648,7 +1648,7 @@ if __name__ == "__main__":
     elif args.mode == 'deploy':
         codebert_deploy(model_pre, config, tokenizer, args)
     # codebert_train(model_pre, config, tokenizer, args)
-    # codebert_deploy(model_pre, config, tokenizer, args)
+    codebert_deploy(model_pre, config, tokenizer, args)
     """
     --output_dir=./saved_models     --model_type=roberta     --tokenizer_name=microsoft/codebert-base     --model_name_or_path=microsoft/codebert-base   --do_train  --do_eval     --do_test     --train_data_file=../../../benchmark/Bug/train.jsonl     --eval_data_file=../../../benchmark/Bug/valid.jsonl     --test_data_file=../../../benchmark/Bug/test.jsonl --evaluate_during_training
     """
