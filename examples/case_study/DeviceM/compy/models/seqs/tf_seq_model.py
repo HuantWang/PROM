@@ -50,14 +50,14 @@ class RnnTfModel(Model):
             config = {
                 "learning_rate": 0.001,
                 "batch_size": 64,
-                "num_epochs": 1,
+                "num_epochs": 5,
             }
             # nni
-            tuner_params = nni.get_next_parameter()  # 这会获得一组搜索空间中的参数
-            try:
-                config.update(tuner_params)
-            except:
-                pass
+            # tuner_params = nni.get_next_parameter()  # 这会获得一组搜索空间中的参数
+            # try:
+            #     config.update(tuner_params)
+            # except:
+            #     pass
         super().__init__(config)
 
         self.__num_types = num_types

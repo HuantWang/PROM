@@ -4,13 +4,13 @@ import warnings
 # from sklearn.metrics import accuracy_score
 warnings.filterwarnings("ignore")
 import random
+sys.path.append('/home/huanting/PROM')
 sys.path.append('./case_study/DeviceM')
 sys.path.append('/home/huanting/PROM/src')
 sys.path.append('/home/huanting/PROM/thirdpackage')
 from compy.models.graphs.pytorch_geom_model import Dev_gnn
 
 import numpy as np
-import nni
 import argparse
 from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
@@ -30,8 +30,29 @@ import sys
 import torch
 warnings.filterwarnings('ignore')
 
+def load_args():
+    # get parameters from tuner
+    params = nni.get_next_parameter()
+
+    if params == {}:
+        params = {
+            "seed": 123,
+        }
+
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--seed', type=int, default=123,
+                        help="random seed for initialization")
+    parser.add_argument('--method', choices=['Deeptune', 'Programl','Inst2vec'],default='Deeptune',
+                        help="The baseline method to run")
+    parser.add_argument('--mode', choices=['train', 'deploy'], default='train', help="Mode to run: train or deploy")
+    args = parser.parse_args()
+    torch.manual_seed(args.seed)
+    dataset = D.OpenCLDevmapDataset()
+
+    return args,dataset
+
 # Load dataset
-def train(suite_train,suite_test,dataset,combinations,args):
+def train(suite_train,suite_test,dataset,combinations,args=None):
     for builder, visitor, model in combinations:
         print("Processing %s-%s-%s" % (builder.__name__, visitor.__name__, model.__name__))
 
@@ -46,7 +67,7 @@ def train(suite_train,suite_test,dataset,combinations,args):
         data_test = dataset.preprocess(builder(clang_driver), visitor, suite_test)
 
         # Train and test
-        kf = StratifiedKFold(n_splits=3, shuffle=True, random_state=args.seed) #
+        kf = StratifiedKFold(n_splits=2, shuffle=True, random_state=args.seed) #
         split = kf.split(data_train["samples"], [sample["info"][5] for sample in data_train["samples"]])
 
 
@@ -65,18 +86,13 @@ def train(suite_train,suite_test,dataset,combinations,args):
                 list(np.array(data_test["samples"])[test_idx]),
                 args
             )
-            best_speedup=np.max(il_speed_up)
+
             break
 
         # print("best improved speed up is : ", best_speedup)
-
-        nni.report_final_result(percent_mean)
-
-    return model_path
+    return model_path,percent_mean
 
 def load_pickle( suite_train, suite_test, dataset,combinations,random_seed,model_path):
-
-
     for builder, visitor, model in combinations:
         print("Processing %s-%s-%s" % (builder.__name__, visitor.__name__, model.__name__))
 
@@ -136,36 +152,8 @@ def load_pickle( suite_train, suite_test, dataset,combinations,random_seed,model
         print("uq_accuracy:"" %.4f" % (uq_acc))
         print("uq_speed_up:"" %.4f"% (uq_speed_up))
 
-# def load_args():
-#     # random_seed = random.randint(0, 9999)
-#     random_seed=3407
-#     torch.manual_seed(random_seed)
-#     dataset = D.OpenCLDevmapDataset()
-#     return random_seed,dataset
 
-def load_args():
-    # get parameters from tuner
-    params = nni.get_next_parameter()
-    if params == {}:
-        params = {
-            "seed": 123,
-            "method": "Deeptune",
-            "mode": "train"
-        }
 
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--seed', type=int, default=params['seed'],
-                        help="random seed for initialization")
-    parser.add_argument('--method', choices=['Deeptune', 'Programl','Inst2vec'],default='Deeptune',
-                        help="The baseline method to run")
-    parser.add_argument('--mode', choices=['train', 'deploy'], default='train', help="Mode to run: train or deploy")
-    args = parser.parse_args()
-    torch.manual_seed(args.seed)
-    dataset = D.OpenCLDevmapDataset()
-    # train the underlying model
-    # deeptune_model = DeepTune()
-    # deeptune_model.init(args)
-    return args,dataset
 
 def train_phase(args, dataset_ori):
     print("Prepare the parameters")
@@ -184,10 +172,10 @@ def train_phase(args, dataset_ori):
         # (R.LLVMGraphBuilder, R.LLVMCDFGPlusVisitor, M.GnnPytorchGeomModel),
     ]
     suite = {
-        "amd-app-sdk-3.0": {"subdir": "samples/opencl/cl/1.x"},  # 16
+        # "amd-app-sdk-3.0": {"subdir": "samples/opencl/cl/1.x"},  # 16
         # "npb-3.3": {"subdir": ""}, #527
-        "nvidia-4.2": {"subdir": "OpenCL/src", "benchmark_name_prefix": "ocl"},  # 12
-        "parboil-0.2": {"subdir": "benchmarks"},  # 19
+        # "nvidia-4.2": {"subdir": "OpenCL/src", "benchmark_name_prefix": "ocl"},  # 12
+        # "parboil-0.2": {"subdir": "benchmarks"},  # 19
         "polybench-gpu-1.0": {
             "subdir": "OpenCL",
             "remappings": {
@@ -207,8 +195,8 @@ def train_phase(args, dataset_ori):
                 "syrk": "SYRK",
             },
         },  # 27
-        # "rodinia-3.1": {"subdir": "opencl", }, #28
-        # "shoc-1.1.5": {"subdir": "src/opencl/level1"}, #48
+        "rodinia-3.1": {"subdir": "opencl", }, #28
+        "shoc-1.1.5": {"subdir": "src/opencl/level1"}, #48
     }
     # suite_test = {
     #     "nvidia-4.2": {"subdir": "OpenCL/src", "benchmark_name_prefix": "ocl"},
@@ -244,7 +232,10 @@ def train_phase(args, dataset_ori):
     print("Train/Load the model...")
 
     # train the model
-    train(suite_train, suite_test, dataset_ori, combinations, args)
+    model_path,percent_mean=train(suite_train, suite_test, dataset_ori, combinations, args=args)
+
+    nni.report_final_result(percent_mean)
+
 
 
 
@@ -267,7 +258,7 @@ def deploy(args, dataset_ori):
     ]
     suite = {
         "amd-app-sdk-3.0": {"subdir": "samples/opencl/cl/1.x"},  # 16
-        # "npb-3.3": {"subdir": ""}, #527
+        "npb-3.3": {"subdir": ""}, #527
         "nvidia-4.2": {"subdir": "OpenCL/src", "benchmark_name_prefix": "ocl"},  # 12
         "parboil-0.2": {"subdir": "benchmarks"},  # 19
         "polybench-gpu-1.0": {
@@ -289,8 +280,8 @@ def deploy(args, dataset_ori):
                 "syrk": "SYRK",
             },
         },  # 27
-        # "rodinia-3.1": {"subdir": "opencl", }, #28
-        # "shoc-1.1.5": {"subdir": "src/opencl/level1"}, #48
+        "rodinia-3.1": {"subdir": "opencl", }, #28
+        "shoc-1.1.5": {"subdir": "src/opencl/level1"}, #48
     }
     # suite_test = {
     #     "nvidia-4.2": {"subdir": "OpenCL/src", "benchmark_name_prefix": "ocl"},
@@ -326,7 +317,7 @@ def deploy(args, dataset_ori):
     print("Train/Load the model...")
 
     # train the model
-    model_path = train(suite_train, suite_test, dataset_ori, combinations, args)
+    model_path,_ = train(suite_train, suite_test, dataset_ori, combinations, args)
     # load the model
     # model_path = \
     #     r'/home/huanting/PROM/examples/case_study/DeviceM/compy/save_model/3407_0.8922865142803728.pkl'
@@ -401,6 +392,7 @@ def deploy(args, dataset_ori):
         # model_il = model(num_types=num_types)
         il_speed_up, impoved_sp = \
             model_test.Incremental_train(train_batches, test_batches, test_percent_mean, random_seed=args.seed)
+        nni.report_final_result(impoved_sp)
     # print("suite_train", suite_train)
     # print("test_dict", suite_test)
 
@@ -409,10 +401,10 @@ def deploy(args, dataset_ori):
 
 if __name__ == '__main__':
     args, dataset_ori = load_args()
-    # if args.mode == 'train':
-    #     train_phase(args, dataset_ori)
-    # elif args.mode == 'deploy':
-    #     deploy(args, dataset_ori)
-
-    train_phase(args, dataset_ori)
-    deploy(args, dataset_ori)
+    if args.mode == 'train':
+        train_phase(args, dataset_ori)
+    elif args.mode == 'deploy':
+        deploy(args, dataset_ori)
+    # nnictl create --config /home/huanting/PROM/examples/case_study/DeviceM/config.yml --port 8088
+    # train_phase(args, dataset_ori)
+    # deploy(args, dataset_ori)

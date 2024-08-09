@@ -1,7 +1,6 @@
 import pprint
 import time
 import numpy as np
-import nni
 
 class Model(object):
     def __init__(self, config):
@@ -181,10 +180,7 @@ class Model(object):
             model_dir_path = f'/home/huanting/PROM/examples/case_study/DeviceM/save_model/Programl/'
             model_path = model_dir_path + \
                             f'{args.seed}_{percent_mean}.pkl'
-        elif args.method == 'Inst2vec':
-            model_dir_path = f'/home/huanting/PROM/examples/case_study/DeviceM/save_model/Inst2vec/'
-            model_path = model_dir_path+ \
-                            f'{args.seed}_{percent_mean}.pkl'
+
         self._model_save(model_path)
         print("Model save suceessfully")
 

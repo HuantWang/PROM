@@ -6,6 +6,7 @@
 # This software is available under the BSD 4-Clause License. Please see LICENSE
 # file in the top-level directory for more details.
 #
+import nni
 import xgboost as xgb
 import pandas as pd
 import numpy as np
@@ -13,25 +14,11 @@ import sys, re
 from sklearn.model_selection import KFold
 import os
 from scipy.stats.mstats import gmean
-
-#%%
-
-# assert (
-#     os.path.exists("data/kernels_ir")
-#     and os.path.exists("data/cgo17-amd.csv")
-#     and os.path.exists("data/cgo17-nvidia.csv")
-# ), "Dataset is not present. Please download"
-
-#%%
-
-# assert os.path.exists("output/embeddings"), "Embeddings are not generated"
-
-#%% md
-
-# Read data from input file
-
-#%%
-
+sys.path.append('/home/huanting/PROM')
+sys.path.append('./case_study/DeviceM')
+sys.path.append('/home/huanting/PROM/src')
+sys.path.append('/home/huanting/PROM/thirdpackage')
+from src.prom.prom_util import Prom_utils
 def readEmd_program(filename):
     lines = [line.strip("\n\t") for line in open(filename)]
     entity = []
@@ -46,44 +33,25 @@ def readEmd_program(filename):
         rep.append(res_double)
     return rep, targetLabel
 
-#%% md
-
-# Results from other works
-
-# The accuracies and speedups are taken from the results quoted by NCC in their work for the purpose of comparison. For detailed analysis (discussed later), we run these models and the obtained results are stored as pickle files in ./data/prior_art_results.
-
-#%%
 
 static_pred_vals = [58.823529, 56.911765]
 static_pred_mean = [57.867647]
 static_sp_vals = [1.0, 1.0]
 static_sp_mean = [1.0]
-grewe_pred_vals = [73.382353, 72.941176]
-grewe_pred_mean = [73.161765]
-grewe_sp_vals = [2.905822, 1.264801]
-grewe_sp_mean = [2.085312]
-deeptune_pred_vals = [83.676471, 80.294118]
-deeptune_pred_mean = [81.985294]
-deeptune_sp_vals = [3.335612, 1.412222]
-deeptune_sp_mean = [2.373917]
-ncc_pred_vals = [82.79, 81.76]
-ncc_pred_mean = [82.275]
-ncc_sp_vals = [3.42, 1.39]
-ncc_sp_mean = [2.405]
 
 llfiles = pd.read_csv("../../../benchmark/DeviceM/all.txt", sep="\s+")
 fileNum = llfiles["FileNum"]
 filesname = llfiles["ProgramName"]
 
-device_dict = {"amd": "AMD Tahiti 7970", "nvidia": "NVIDIA GTX 970"}
-
+# device_dict = {"amd": "AMD Tahiti 7970", "nvidia": "NVIDIA GTX 970"}
+device_dict = {"amd": "AMD Tahiti 7970"}
 #%% md
 
 # Classification Model
 
 #%%
 
-def evaluate(max_depth=4, learning_rate=0.1, n_estimators=200, seed=204):
+def train(max_depth=4, learning_rate=0.1, n_estimators=200, args=None):
     data = []
     rt_label_dict = {"amd": "runtime_cpu", "nvidia": "runtime_gpu"}
 
@@ -144,335 +112,396 @@ def evaluate(max_depth=4, learning_rate=0.1, n_estimators=200, seed=204):
 
         from sklearn.model_selection import StratifiedKFold
 
+
+        # 假设 total_length 是数据集的总长度
+        total_length = len(targetLabel)  # 示例长度
+
+        # 计算每个部分的长度
+        train_length = int(0.6 * total_length)
+        val_length = int(0.2 * total_length)
+        test_length = total_length - train_length - val_length  # 防止精度丢失
         # 10-fold cross-validation
-        n_splits = 10
-        kf = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=seed)
-        for j, (train, test) in enumerate(kf.split(embeddings, targetLabel)):
+        train_indices = int(0.6 * total_length)
+        val_indices = int(0.2 * total_length)
+        test_indices = total_length - train_length - val_length  # 防止精度丢失
 
-            model = xgb.XGBClassifier(
-                max_depth=max_depth,
-                learning_rate=learning_rate,
-                n_estimators=n_estimators,
-                n_jobs=10,
+        indices = np.arange(total_length)
+        np.random.seed(args.seed)
+        np.random.shuffle(indices)
+        train = indices[:train_indices]
+        val = indices[train_indices:train_indices + val_indices]
+        test = indices[train_indices + val_indices:]
+
+        model = xgb.XGBClassifier(
+            max_depth=max_depth,
+            learning_rate=learning_rate,
+            n_estimators=n_estimators,
+            n_jobs=10,
+            random_state=args.seed
+        )
+        model.fit(embeddings[train], targetLabel[train])
+        predictions = model.predict(embeddings[test])
+
+        predictions = [
+            "CPU" if prediction == 0 else "GPU" for prediction in predictions
+        ]
+        test_df = df.iloc[test].reset_index()
+        assert test_df.shape[0] == len(predictions)
+        test_df = pd.concat(
+            [test_df, pd.DataFrame(predictions, columns=["predictions"])], axis=1
+        )
+
+        rt_label = rt_label_dict[platform]
+        for idx, row in test_df.iterrows():
+            oracle = row["oracle"]
+            pred = row["predictions"]
+            rt_baseline = row[rt_label]
+            rt_oracle = (
+                row["runtime_cpu"] if oracle == "CPU" else row["runtime_gpu"]
             )
-            model.fit(embeddings[train], targetLabel[train])
-            predictions = model.predict(embeddings[test])
-
-            predictions = [
-                "CPU" if prediction == 0 else "GPU" for prediction in predictions
-            ]
-            test_df = df.iloc[test].reset_index()
-            assert test_df.shape[0] == len(predictions)
-            test_df = pd.concat(
-                [test_df, pd.DataFrame(predictions, columns=["predictions"])], axis=1
+            rt_pred = row["runtime_cpu"] if pred == "CPU" else row["runtime_gpu"]
+            data.append(
+                {
+                    "Model": "IR2vec",
+                    "Platform": platform_name,
+                    "Oracle Mapping": oracle,
+                    "Predicted Mapping": pred,
+                    "Correct?": oracle == pred,
+                    "Speedup": rt_oracle / rt_pred,
+                    "OracleSpeedUp": rt_oracle / rt_pred,
+                }
             )
-
-            rt_label = rt_label_dict[platform]
-            for idx, row in test_df.iterrows():
-                oracle = row["oracle"]
-                pred = row["predictions"]
-                rt_baseline = row[rt_label]
-                rt_oracle = (
-                    row["runtime_cpu"] if oracle == "CPU" else row["runtime_gpu"]
-                )
-                rt_pred = row["runtime_cpu"] if pred == "CPU" else row["runtime_gpu"]
-                data.append(
-                    {
-                        "Model": "IR2vec",
-                        "Platform": platform_name,
-                        "Oracle Mapping": oracle,
-                        "Predicted Mapping": pred,
-                        "Correct?": oracle == pred,
-                        "Speedup": rt_baseline / rt_pred,
-                        "OracleSpeedUp": rt_baseline / rt_oracle,
-                    }
-                )
         ir2vec = pd.DataFrame(data, index=range(1, len(data) + 1))
 
-    # print("Accuracy Matrix: IR2Vec Vs. others\n")
-    # ir2vec_pred_vals = ir2vec.groupby(["Platform"])["Correct?"].mean().values * 100
-    # ir2vec_pred_mean = ir2vec_pred_vals.mean()
-    # accuracy_df = pd.DataFrame(
-    #     {
-    #         "Static Mapping": static_pred_vals + static_pred_mean,
-    #         "Grewe et al.": grewe_pred_vals + grewe_pred_mean,
-    #         "DeepTune": deeptune_pred_vals + deeptune_pred_mean,
-    #         "NCC": ncc_pred_vals + ncc_pred_mean,
-    #         "IR2Vec": list(ir2vec_pred_vals) + [ir2vec_pred_mean],
-    #     },
-    #     index=["AMD Tahiti 7970", "NVIDIA GTX 970", "Average"],
-    # )
-    # print(accuracy_df)
-
     print("\nSpeedup Matrix: IR2Vec Vs. others\n")
-    ir2vec_sp_vals = ir2vec.groupby(["Platform"])["Speedup"].mean().values
+    ir2vec_sp_vals = ir2vec.groupby(["Platform"])["Speedup"].apply(lambda x: gmean(x)).values
     ir2vec_sp_mean = ir2vec_sp_vals.mean()
     sp_df = pd.DataFrame(
         {
-            "Static Mapping": static_sp_vals + static_sp_mean,
-            "Grewe et al.": grewe_sp_vals + grewe_sp_mean,
-            "DeepTune": deeptune_sp_vals + deeptune_sp_mean,
-            "NCC": ncc_sp_vals + ncc_sp_mean,
             "IR2Vec": list(ir2vec_sp_vals) + [ir2vec_sp_mean],
         },
-        index=["AMD Tahiti 7970", "NVIDIA GTX 970", "Average"],
+        index=["AMD Tahiti 7970", "Average"],
     )
-    print(sp_df)
+    print("The performance is:", ir2vec_sp_mean)
+    # print(sp_df)
+    nni.report_final_result(ir2vec_sp_mean)
 
-    return ir2vec
 
-#%% md
 
-# IR2Vec Symbolic Vs. Others
+def deploy(max_depth=4, learning_rate=0.1, n_estimators=200, args=None):
+    data = []
+    rt_label_dict = {"amd": "runtime_cpu", "nvidia": "runtime_gpu"}
+    np.random.seed(args.seed)
+    for i, platform in enumerate(device_dict.keys()):
+        platform_name = device_dict[platform]
 
-#%%
+        # Load runtime data
+        df = pd.read_csv("../../../benchmark/DeviceM/cgo17-{}.csv".format(platform))
+        df["bench_data"] = (
+            df.loc[df["dataset"] != "default", "benchmark"]
+            + str("_")
+            + df.loc[df["dataset"] != "default", "dataset"]
+        )
 
-raw_embeddings, fileIndexNum = readEmd_program(
-    "../../../benchmark/DeviceM/output/embeddings/Device_Mapping_FlowAware_llvm17.txt"
-)
-ir2vec_sym = evaluate(max_depth=10, learning_rate=0.5, n_estimators=70, seed=104)
+        df.loc[df["dataset"] == "default", "bench_data"] = df.loc[
+            df["dataset"] == "default", "benchmark"
+        ]
+        df["bench_data_path"] = str("./") + df["bench_data"] + str(".ll")
 
-# #%% raw
-# # Expected Results
-# Accuracy Matrix: IR2Vec Vs. others
-#
-#                  Static Mapping  Grewe et al.   DeepTune     NCC     IR2Vec
-# AMD Tahiti 7970       58.823529     73.382353  83.676471  82.790  90.284006
-# NVIDIA GTX 970        56.911765     72.941176  80.294118  81.760  87.144993
-# Average               57.867647     73.161765  81.985294  82.275  88.714499
-#
-# Speedup Matrix: IR2Vec Vs. others
-#
-#                  Static Mapping  Grewe et al.  DeepTune    NCC    IR2Vec
-# AMD Tahiti 7970             1.0      2.905822  3.335612  3.420  3.471963
-# NVIDIA GTX 970              1.0      1.264801  1.412222  1.390  1.433372
-# Average                     1.0      2.085312  2.373917  2.405  2.452667
-#%% md
+        raw_embeddings_pd = pd.DataFrame(raw_embeddings, columns=range(1, 301))
+        efileNum = pd.DataFrame(fileIndexNum)
+        embeddings = raw_embeddings_pd
+        embeddingsData = pd.concat([efileNum, embeddings], axis=1)
+        embeddingsData = embeddingsData.merge(llfiles, left_on=0, right_on="FileNum")
 
-# IR2Vec Flow-Aware Vs. Others
+        df = pd.merge(
+            embeddingsData, df, left_on="ProgramName", right_on="bench_data_path"
+        )
+        targetLabel = np.array([1 if x == "GPU" else 0 for x in df["oracle"].values])
 
-#%%
+        embeddings = df.drop(
+            columns=[
+                "dataset",
+                "comp",
+                "rational",
+                "mem",
+                "localmem",
+                "coalesced",
+                "atomic",
+                "runtime_cpu",
+                "runtime_gpu",
+                0,
+                "src",
+                "seq",
+                "bench_data",
+                "bench_data_path",
+                "ProgramName",
+                "FileNum",
+                "Unnamed: 0",
+                "benchmark",
+                "oracle",
+            ]
+        )
+        embeddings = (embeddings - embeddings.min()) / (
+            embeddings.max() - embeddings.min()
+        )
+        embeddings = np.array(embeddings)
 
-raw_embeddings, fileIndexNum = readEmd_program(
-    "../../../benchmark/DeviceM/output/embeddings/Device_Mapping_FlowAware_llvm17.txt"
-)
-ir2vec_fa = evaluate(max_depth=10, learning_rate=0.5, n_estimators=70, seed=104)
+        from sklearn.model_selection import StratifiedKFold
 
-#%% raw
-# Expected Results
-# Accuracy Matrix: IR2Vec Vs. others
-#
-#                  Static Mapping  Grewe et al.   DeepTune     NCC     IR2Vec
-# AMD Tahiti 7970       58.823529     73.382353  83.676471  82.790  92.825112
-# NVIDIA GTX 970        56.911765     72.941176  80.294118  81.760  89.686099
-# Average               57.867647     73.161765  81.985294  82.275  91.255605
-#
-# Speedup Matrix: IR2Vec Vs. others
-#
-#                  Static Mapping  Grewe et al.  DeepTune    NCC    IR2Vec
-# AMD Tahiti 7970             1.0      2.905822  3.335612  3.420  3.510104
-# NVIDIA GTX 970              1.0      1.264801  1.412222  1.390  1.467221
-# Average                     1.0      2.085312  2.373917  2.405  2.488663
-#
-# #%% md
-#
-# # Other related observations
-# For the comparison, we use the results obtained on training the earlier works
+        ###############
+        # 创建一个 defaultdict，用于存储分组后的索引
+        from collections import defaultdict
+        index_dict = defaultdict(list)
 
-#%%
+        # 遍历 DataFrame 的每一行，根据第一个'-'之前的部分进行分组
+        for idx, value in enumerate(df['bench_data']):
+            key = value.split('-')[0]  # 取第一个'-'之前的部分作为键
+            index_dict[key].append(idx)  # 将索引添加到相应的分组中
 
-# deeptune_res = pd.read_pickle("data/prior_art_results/deeptune_dm.results")
-# grewe_res = pd.read_pickle("data/prior_art_results/grewe_dm.results")
-# static_res = pd.read_pickle("data/prior_art_results/static_dm.results")
-# ncc_res = pd.read_pickle("data/prior_art_results/ncc_fix_DM.results")
+        # 将 defaultdict 转换为普通字典
+        index_dict = dict(index_dict)
+        # 获取所有的 keys
+        keys = list(index_dict.keys())
+        # 设置随机种子以确保可重复性
+        random_seed = 42
+        np.random.seed(random_seed)
 
-#%% md
+        # 打乱 keys 的顺序
+        np.random.shuffle(keys)
 
-## Speedup comparisons
+        # 按照60:20:20的比例分配 keys
+        n_total = len(keys)
+        n_train = int(0.6 * n_total)
+        n_val = int(0.2 * n_total)
+        n_test = n_total - n_train - n_val
 
-#%%
+        train_keys = keys[:n_train]
+        val_keys = keys[n_train:n_train + n_val]
+        test_keys = keys[n_train + n_val:]
 
-def calcSpeedup(platform):
-    # grewe_geomean = gmean(
-    #     grewe_res[grewe_res["Platform"] == platform]["Speedup"].values
-    # )
-    # deeptune_geomean = gmean(
-    #     deeptune_res[deeptune_res["Platform"] == platform]["Speedup"].values
-    # )
-    # ncc_geomean = gmean(ncc_res[ncc_res["Platform"] == platform]["Speedup"].values)
-    ir2vec_sym_geomean = gmean(
-        ir2vec_sym[ir2vec_sym["Platform"] == platform]["Speedup"].values
+        # 创建用于存储最终的索引的列表
+        train = []
+        val = []
+        test = []
+
+        # 将分配好的 keys 对应的索引列表拼接起来
+        for key in train_keys:
+            train.extend(index_dict[key])
+
+        for key in val_keys:
+            val.extend(index_dict[key])
+
+        for key in test_keys:
+            test.extend(index_dict[key])
+
+
+        model = xgb.XGBClassifier(
+            max_depth=max_depth,
+            learning_rate=learning_rate,
+            n_estimators=n_estimators,
+            n_jobs=10,
+            random_state=args.seed
+        )
+        model.fit(embeddings[train], targetLabel[train])
+        predictions = model.predict(embeddings[test])
+        all_pre = predictions
+        predictions = [
+            "CPU" if prediction == 0 else "GPU" for prediction in predictions
+        ]
+        test_df = df.iloc[test].reset_index()
+        assert test_df.shape[0] == len(predictions)
+        test_df = pd.concat(
+            [test_df, pd.DataFrame(predictions, columns=["predictions"])], axis=1
+        )
+
+        rt_label = rt_label_dict[platform]
+        for idx, row in test_df.iterrows():
+            oracle = row["oracle"]
+            pred = row["predictions"]
+            rt_baseline = row[rt_label]
+            rt_oracle = (
+                row["runtime_cpu"] if oracle == "CPU" else row["runtime_gpu"]
+            )
+            rt_pred = row["runtime_cpu"] if pred == "CPU" else row["runtime_gpu"]
+            data.append(
+                {
+                    "Model": "IR2vec",
+                    "Platform": platform_name,
+                    "Oracle Mapping": oracle,
+                    "Predicted Mapping": pred,
+                    "Correct?": oracle == pred,
+                    "Speedup": rt_oracle / rt_pred,
+                    "OracleSpeedUp": rt_oracle / rt_pred,
+                }
+            )
+        ir2vec = pd.DataFrame(data, index=range(1, len(data) + 1))
+
+    print("\nSpeedup Matrix: IR2Vec Vs. others\n")
+    ir2vec_sp_vals = ir2vec.groupby(["Platform"])["Speedup"].apply(lambda x: gmean(x)).values
+    ir2vec_sp_mean = ir2vec_sp_vals.mean()
+    sp_df = pd.DataFrame(
+        {
+            "IR2Vec": list(ir2vec_sp_vals) + [ir2vec_sp_mean],
+        },
+        index=["AMD Tahiti 7970", "Average"],
     )
-    ir2vec_fa_geomean = gmean(
-        ir2vec_fa[ir2vec_fa["Platform"] == platform]["Speedup"].values
+    original_performance = ir2vec_sp_mean
+    print("Original perf. is", ir2vec_sp_mean)
+
+    """conformal prediction"""
+    # Conformal Prediction
+    # the underlying model
+    print(f"Start conformal prediction on {platform}...")
+    clf = model
+    # the prom parameters
+    method_params = {
+        "lac": ("score", True),
+        "top_k": ("top_k", True),
+        "aps": ("cumulated_score", True),
+        "raps": ("raps", True)
+    }
+    # the prom object
+
+    calibration_data=embeddings[val]
+    cal_y=targetLabel[val]
+    test_x = embeddings[test]
+    test_y = targetLabel[test]
+
+    Prom_thread = Prom_utils(clf, method_params, task="thread")
+    # conformal prediction
+    y_preds, y_pss, p_value = Prom_thread.conformal_prediction(
+        cal_x=calibration_data, cal_y=cal_y, test_x=test_x, test_y=test_y, significance_level="auto")
+
+    # evaluate conformal prediction
+    Prom_thread.evaluate_mapie \
+        (y_preds=y_preds,
+         y_pss=y_pss,
+         p_value=p_value,
+         all_pre=all_pre,
+         y=test_y,
+         significance_level=0.05)
+
+    Prom_thread.evaluate_rise \
+        (y_preds=y_preds,
+         y_pss=y_pss,
+         p_value=p_value,
+         all_pre=all_pre,
+         y=test_y,
+         significance_level=0.05)
+
+    # evaluate conformal prediction
+    index_all_right, index_list_right, Acc_all, F1_all, Pre_all, Rec_all, _, _ \
+        = Prom_thread.evaluate_conformal_prediction \
+        (y_preds=y_preds,
+         y_pss=y_pss,
+         p_value=p_value,
+         all_pre=all_pre,
+         y=test_y,
+         significance_level=0.05)
+
+    # Increment learning
+    print("Finding the most valuable instances for incremental learning...")
+    train_index, test_index = Prom_thread.incremental_learning \
+        (args.seed, test, train)
+    # 保存列表到文件
+    # import pickle
+    # with open('/home/huanting/PROM/examples/case_study/Thread/logs/file.pkl', 'wb') as f:
+    #     pickle.dump(train_index, f)
+
+    # 从文件加载列表
+    # with open('/home/huanting/PROM/examples/case_study/Thread/logs/file.pkl', 'rb') as f:
+    #     loaded_list = pickle.load(f)
+    # print(loaded_list == train_index)
+    # retrain the model
+    print(f"Retraining the model on {platform}...")
+
+
+    model.fit(embeddings[train_index], targetLabel[train_index])
+
+    # test
+    predictions = model.predict(embeddings[test])
+    all_pre = predictions
+    predictions = [
+        "CPU" if prediction == 0 else "GPU" for prediction in predictions
+    ]
+    test_df = df.iloc[test].reset_index()
+    assert test_df.shape[0] == len(predictions)
+    test_df = pd.concat(
+        [test_df, pd.DataFrame(predictions, columns=["predictions"])], axis=1
     )
 
-    # print(f"Geometric mean of Grewe et al. {grewe_geomean:.2f}x")
-    # print(f"Geometric mean of DeepTune {deeptune_geomean:.2f}x")
-    # print(f"Geometric mean of Inst2Vec {ncc_geomean:.2f}x")
-    # print(f"Geometric mean of IR2Vec Symbolic {ir2vec_sym_geomean:.3f}x")
-    # print(f"Geometric mean of IR2Vec Flow-Aware {ir2vec_fa_geomean:.3f}x")
+    rt_label = rt_label_dict[platform]
+    for idx, row in test_df.iterrows():
+        oracle = row["oracle"]
+        pred = row["predictions"]
+        rt_baseline = row[rt_label]
+        rt_oracle = (
+            row["runtime_cpu"] if oracle == "CPU" else row["runtime_gpu"]
+        )
+        rt_pred = row["runtime_cpu"] if pred == "CPU" else row["runtime_gpu"]
+        data.append(
+            {
+                "Model": "IR2vec",
+                "Platform": platform_name,
+                "Oracle Mapping": oracle,
+                "Predicted Mapping": pred,
+                "Correct?": oracle == pred,
+                "Speedup": rt_oracle / rt_pred,
+                "OracleSpeedUp": rt_oracle / rt_pred,
+            }
+        )
+    ir2vec = pd.DataFrame(data, index=range(1, len(data) + 1))
 
-    return (
-        # grewe_geomean,
-        # deeptune_geomean,
-        # ncc_geomean,
-        ir2vec_sym_geomean,
-        ir2vec_fa_geomean,
+    # print("\nSpeedup Matrix: IR2Vec Vs. others\n")
+    ir2vec_sp_vals = ir2vec.groupby(["Platform"])["Speedup"].apply(lambda x: gmean(x)).values
+    ir2vec_sp_mean = ir2vec_sp_vals.mean()
+    sp_df = pd.DataFrame(
+        {
+            "IR2Vec": list(ir2vec_sp_vals) + [ir2vec_sp_mean],
+        },
+        index=["AMD Tahiti 7970", "Average"],
     )
+    # print(sp_df)
+    current_performance = ir2vec_sp_mean
+    print("The current performance is", current_performance)
+    improved_performance = original_performance - current_performance
+    print("Improved perf. is", improved_performance)
 
-#%% md
-
-### On AMD Tahiti 7970
-
-#%%
-
-tah_ir2vSym, tah_ir2vFA = calcSpeedup("AMD Tahiti 7970")
-
-#%% md
-
-### On NVIDIA GTX 970
-
-#%%
-
-gtx_ir2vSym, gtx_ir2vFA = calcSpeedup("NVIDIA GTX 970")
-
-#%% md
-
-### On both the platforms
-
-#%%
-
-# grewe_geomean = gmean(grewe_res["Speedup"].values)
-# deeptune_geomean = gmean(deeptune_res["Speedup"].values)
-# ncc_geomean = gmean(ncc_res["Speedup"].values)
-# ir2vec_sym_geomean = gmean(ir2vec_sym["Speedup"].values)
-ir2vec_fa_geomean = gmean(ir2vec_fa["Speedup"].values)
-
-# print(f"Geometric mean of Grewe et al. - {grewe_geomean:.2f}x")
-# print(f"Geometric mean of DeepTune - {deeptune_geomean:.2f}x")
-# print(f"Geometric mean of Inst2Vec - {ncc_geomean:.2f}x")
-# print(f"Geometric mean of IR2Vec Symbolic {ir2vec_sym_geomean:.2f}x")
-print(f"Geometric mean of IR2Vec Flow-Aware {ir2vec_fa_geomean:.2f}x")
-
-#%% md
-
-# Percentage of increase in speedup by IR2Vec Flow-Aware encodings over others
-
-#%%
-
-def slowDown(value1, value2):
-    return round(np.abs(((value2 - value1) / value2) * 100), 2)
-
-#%%
-
-print("\nAMD Tahiti 7970")
-# print(" % Increase in SpeedUp over Grewe et al - ", slowDown(tah_ir2vFA, tah_grewe))
-# print(" % Increase in SpeedUp over DeepTune - ", slowDown(tah_ir2vFA, tah_dt))
-# print(" % Increase in SpeedUp over Inst2Vec - ", slowDown(tah_ir2vFA, tah_ncc))
-print(
-    " % Increase in SpeedUp over IR2Vec Symbolic - ",
-    slowDown(tah_ir2vFA, tah_ir2vSym),
-)
-
-print("\nNVIDIA GTX 970")
-# print(" % Increase in SpeedUp over Grewe et al - ", slowDown(gtx_ir2vFA, gtx_grewe))
-# print(" % Increase in SpeedUp over DeepTune - ", slowDown(gtx_ir2vFA, gtx_dt))
-# print(" % Increase in SpeedUp over Inst2Vec - ", slowDown(gtx_ir2vFA, gtx_ncc))
-print(
-    " % Increase in SpeedUp over IR2Vec Symbolic - ",
-    slowDown(gtx_ir2vFA, gtx_ir2vSym),
-)
-
-#%% md
-
-## Accuracy Comparisons
-
-#%%
-
-#%% md
-
-### On AMD Tahiti 7970
-
-#%%
+    nni.report_final_result(improved_performance)
 
 
-#%% md
+import nni
+import argparse
+def load_args():
+    # get parameters from tuner
+    params = nni.get_next_parameter()
+    if params == {}:
+        params = {
+            "seed": 11,
+        }
 
-### On NVIDIA GTX 970
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--seed', type=int, default=params['seed'],
+                        help="random seed for initialization")
+    parser.add_argument('--mode', choices=['train', 'deploy'],  help="Mode to run: train or deploy")
+    args = parser.parse_args()
 
-#%%
+    # train the underlying model
+    # deeptune_model = DeepTune()
+    # deeptune_model.init(args)
+    return args
 
-#%% md
+if __name__ == '__main__':
+    args=load_args()
+    raw_embeddings, fileIndexNum = readEmd_program(
+        "../../../benchmark/DeviceM/output/embeddings/Device_Mapping_FlowAware_llvm17.txt"
+    )
+    if args.mode == 'train':
+        train(max_depth=10, learning_rate=0.5, n_estimators=70,args=args)
+    elif args.mode == 'deploy':
+        deploy(max_depth=10, learning_rate=0.5, n_estimators=70,args=args)
+    # train(max_depth=10, learning_rate=0.5, n_estimators=70, args=args)
+    # deploy(max_depth=10, learning_rate=0.5, n_estimators=70, args=args)
 
-## Percentage of improvement in accuracy obtained by Flow Aware embeddings when compared to other methods
-
-# Calculated based on the reference values taken from https://github.com/spcl/ncc/blob/master/train_task_devmap.py
-
-#%% md
-
-### On AMD Tahiti 7970
-
-#%%
-
-# AMD Tahiti 7970
-tah_grewe = 73.382353
-tah_dt = 83.676471
-tah_ncc = 82.790
-tah_nccimm = 88.09
-
-print("\nAMD Tahiti 7970")
-# print(" % Increase in SpeedUp over Grewe et al - ", slowDown(tah_ir2vFA, tah_grewe))
-# print(" % Increase in SpeedUp over DeepTune - ", slowDown(tah_ir2vFA, tah_dt))
-# print(" % Increase in SpeedUp over Inst2Vec - ", slowDown(tah_ir2vFA, tah_ncc))
-print(" % Increase in SpeedUp over Inst2Vec-imm - ", slowDown(tah_ir2vFA, tah_nccimm))
-print(
-    " % Increase in SpeedUp over IR2Vec Symbolic - ",
-    slowDown(tah_ir2vFA, tah_ir2vSym),
-)
-
-#%% md
-
-### On NVIDIA GTX 970
-
-#%%
-
-# NVIDIA GTX 970
-static = 56.911765
-gtx_grewe = 72.941176
-gtx_dt = 80.294118
-gtx_ncc = 81.760
-gtx_nccimm = 86.62
-
-
-print("\nNVIDIA GTX 970")
-# print(" % Increase in SpeedUp over Grewe et al - ", slowDown(gtx_ir2vFA, gtx_grewe))
-# print(" % Increase in SpeedUp over DeepTune - ", slowDown(gtx_ir2vFA, gtx_dt))
-# print(" % Increase in SpeedUp over Inst2Vec - ", slowDown(gtx_ir2vFA, gtx_ncc))
-print(" % Increase in SpeedUp over Inst2Vec - ", slowDown(gtx_ir2vFA, gtx_nccimm))
-print(
-    " % Increase in SpeedUp over IR2Vec Symbolic - ",
-    slowDown(gtx_ir2vFA, gtx_ir2vSym),
-)
-
-#%% md
-
-### On both the platforms
-
-#%%
-
-dt = 81.99
-ncc = 82.275
-nccimm = (88.09 + 86.62) / 2
-ir2vSym = ir2vec_sym["Correct?"].mean() * 100
-ir2vFA = ir2vec_fa["Correct?"].mean() * 100
-
-# print(" % Increase in SpeedUp over DeepTune - ", slowDown(ir2vFA, dt))
-# print(" % Increase in SpeedUp over Inst2Vec - ", slowDown(ir2vFA, ncc))
-print("")
-print("On both the platforms")
-print(" % Increase in SpeedUp over Inst2Vec - ", slowDown(ir2vFA, nccimm))
-print(
-    " % Increase in SpeedUp over IR2Vec Symbolic - ",
-    slowDown(ir2vFA, ir2vSym),
-)
+    # nnictl create --config /home/huanting/PROM/examples/case_study/DeviceM/config.yml --port 8088

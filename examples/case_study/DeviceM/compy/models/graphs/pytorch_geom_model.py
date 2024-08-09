@@ -179,11 +179,11 @@ class GnnPytorchGeomModel(Model):
                 "num_epochs": 5,
             }
             # nni
-            tuner_params = nni.get_next_parameter()  # 这会获得一组搜索空间中的参数
-            try:
-                config.update(tuner_params)
-            except:
-                pass
+            # tuner_params = nni.get_next_parameter()  # 这会获得一组搜索空间中的参数
+            # try:
+            #     config.update(tuner_params)
+            # except:
+            #     pass
         super().__init__(config)
 
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -678,8 +678,7 @@ class GnnPytorchGeomModel(Model):
         # F1_all.append(F1_best)
         # Pre_all.append(pre_best)
         # Rec_all.append(rec_best)
-        # nni.report_final_result(F1_all)
-        nni.report_intermediate_result(F1_all)
+
         """"IL"""
         selected_count = max(int(len(y_test) * 0.05), 1)
         np.random.seed(random_seed)
