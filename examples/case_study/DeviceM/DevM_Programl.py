@@ -185,10 +185,10 @@ def train_phase(args, dataset_ori):
         # (R.LLVMGraphBuilder, R.LLVMCDFGPlusVisitor, M.GnnPytorchGeomModel),
     ]
     suite = {
-        # "amd-app-sdk-3.0": {"subdir": "samples/opencl/cl/1.x"},  # 16
-        # "npb-3.3": {"subdir": ""}, #527
-        # "nvidia-4.2": {"subdir": "OpenCL/src", "benchmark_name_prefix": "ocl"},  # 12
-        # "parboil-0.2": {"subdir": "benchmarks"},  # 19
+        "amd-app-sdk-3.0": {"subdir": "samples/opencl/cl/1.x"},  # 16
+        "npb-3.3": {"subdir": ""}, #527
+        "nvidia-4.2": {"subdir": "OpenCL/src", "benchmark_name_prefix": "ocl"},  # 12
+        "parboil-0.2": {"subdir": "benchmarks"},  # 19
         "polybench-gpu-1.0": {
             "subdir": "OpenCL",
             "remappings": {
@@ -267,10 +267,10 @@ def deploy(args, dataset_ori):
         # (R.LLVMGraphBuilder, R.LLVMCDFGPlusVisitor, M.GnnPytorchGeomModel),
     ]
     suite = {
-        # "amd-app-sdk-3.0": {"subdir": "samples/opencl/cl/1.x"},  # 16
-        # "npb-3.3": {"subdir": ""}, #527
-        # "nvidia-4.2": {"subdir": "OpenCL/src", "benchmark_name_prefix": "ocl"},  # 12
-        # "parboil-0.2": {"subdir": "benchmarks"},  # 19
+        "amd-app-sdk-3.0": {"subdir": "samples/opencl/cl/1.x"},  # 16
+        "npb-3.3": {"subdir": ""}, #527
+        "nvidia-4.2": {"subdir": "OpenCL/src", "benchmark_name_prefix": "ocl"},  # 12
+        "parboil-0.2": {"subdir": "benchmarks"},  # 19
         "polybench-gpu-1.0": {
             "subdir": "OpenCL",
             "remappings": {

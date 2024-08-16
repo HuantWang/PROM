@@ -264,8 +264,7 @@ def deploy(max_depth=4, learning_rate=0.1, n_estimators=200, args=None):
         # 获取所有的 keys
         keys = list(index_dict.keys())
         # 设置随机种子以确保可重复性
-        random_seed = 42
-        np.random.seed(random_seed)
+        np.random.seed(args.seed)
 
         # 打乱 keys 的顺序
         np.random.shuffle(keys)
@@ -273,7 +272,7 @@ def deploy(max_depth=4, learning_rate=0.1, n_estimators=200, args=None):
         # 按照60:20:20的比例分配 keys
         n_total = len(keys)
         n_train = int(0.6 * n_total)
-        n_val = int(0.2 * n_total)
+        n_val = int(0.3 * n_total)
         n_test = n_total - n_train - n_val
 
         train_keys = keys[:n_train]
@@ -465,7 +464,7 @@ def deploy(max_depth=4, learning_rate=0.1, n_estimators=200, args=None):
     # print(sp_df)
     current_performance = ir2vec_sp_mean
     print("The current performance is", current_performance)
-    improved_performance = original_performance - current_performance
+    improved_performance = current_performance - original_performance
     print("Improved perf. is", improved_performance)
 
     nni.report_final_result(improved_performance)
@@ -497,11 +496,11 @@ if __name__ == '__main__':
     raw_embeddings, fileIndexNum = readEmd_program(
         "../../../benchmark/DeviceM/output/embeddings/Device_Mapping_FlowAware_llvm17.txt"
     )
-    if args.mode == 'train':
-        train(max_depth=10, learning_rate=0.5, n_estimators=70,args=args)
-    elif args.mode == 'deploy':
-        deploy(max_depth=10, learning_rate=0.5, n_estimators=70,args=args)
+    # if args.mode == 'train':
+    #     train(max_depth=10, learning_rate=0.5, n_estimators=70,args=args)
+    # elif args.mode == 'deploy':
+    #     deploy(max_depth=10, learning_rate=0.5, n_estimators=70,args=args)
     # train(max_depth=10, learning_rate=0.5, n_estimators=70, args=args)
-    # deploy(max_depth=10, learning_rate=0.5, n_estimators=70, args=args)
+    deploy(max_depth=10, learning_rate=0.5, n_estimators=70, args=args)
 
     # nnictl create --config /home/huanting/PROM/examples/case_study/DeviceM/config.yml --port 8088

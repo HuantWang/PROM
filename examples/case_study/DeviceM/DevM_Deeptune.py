@@ -40,12 +40,13 @@ def load_args():
         }
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('--seed', type=int, default=123,
+    parser.add_argument('--seed', type=int, default=params['seed'],
                         help="random seed for initialization")
     parser.add_argument('--method', choices=['Deeptune', 'Programl','Inst2vec'],default='Deeptune',
                         help="The baseline method to run")
     parser.add_argument('--mode', choices=['train', 'deploy'], default='train', help="Mode to run: train or deploy")
     args = parser.parse_args()
+    print("seed: ", args.seed)
     torch.manual_seed(args.seed)
     dataset = D.OpenCLDevmapDataset()
 
@@ -172,10 +173,10 @@ def train_phase(args, dataset_ori):
         # (R.LLVMGraphBuilder, R.LLVMCDFGPlusVisitor, M.GnnPytorchGeomModel),
     ]
     suite = {
-        # "amd-app-sdk-3.0": {"subdir": "samples/opencl/cl/1.x"},  # 16
-        # "npb-3.3": {"subdir": ""}, #527
-        # "nvidia-4.2": {"subdir": "OpenCL/src", "benchmark_name_prefix": "ocl"},  # 12
-        # "parboil-0.2": {"subdir": "benchmarks"},  # 19
+        "amd-app-sdk-3.0": {"subdir": "samples/opencl/cl/1.x"},  # 16
+        "npb-3.3": {"subdir": ""}, #527
+        "nvidia-4.2": {"subdir": "OpenCL/src", "benchmark_name_prefix": "ocl"},  # 12
+        "parboil-0.2": {"subdir": "benchmarks"},  # 19
         "polybench-gpu-1.0": {
             "subdir": "OpenCL",
             "remappings": {
@@ -228,6 +229,7 @@ def train_phase(args, dataset_ori):
     prom_dev = Dev_gnn()
 
     print("Split the data to train, calibration and test set...")
+    print("args.seed",args.seed)
     suite_train, suite_test = prom_dev.data_partitioning(dataset=suite, test_ratio=0.5, random_seed=args.seed)
     print("Train/Load the model...")
 
