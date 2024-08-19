@@ -906,75 +906,12 @@ def train(train_loader, val_dataloader, device):
                 epoch, batch, loss_msg, len(train_loader) / train_time,))
 
 
-        model_save_file_name = '%s/tlp_model_%d.pkl' % (args.save_folder, valid_loss)
+        model_save_file_name = '%s/tlp_model_%d.pkl' % (args.save_folder, epoch)
 
     with open(model_save_file_name, 'wb') as f:
         pickle.dump(net.cpu(), f)
     net = net.to(device)
     return model_save_file_name
-
-
-def il(test_loader, device, pre_trained_model,aug_data, args):
-    # 加载预训练模型
-    if pre_trained_model:
-        with open(pre_trained_model, 'rb') as f:
-            net = pickle.load(f)
-            print("Loaded pre-trained model for fine-tuning.")
-    else:
-        raise ValueError("No pre-trained model path provided")
-
-    datas_new = []
-    for data_idx, data in enumerate(test_loader):
-        file, file_idx, workloadkey_idx, workloadkey, workload_args, flop_ct, line_vecs = data
-        datas_new.extend(line_vecs)
-
-    il_dataset = [datas_new[i] for i in aug_data]
-    test_dataset = [datas_new[i] for i in range(len(datas_new)) if i not in aug_data]
-
-    il_dataset_loader = SegmentDataLoader(il_dataset, 128, False)
-    test_dataset_loader = SegmentDataLoader(test_dataset, 128, False)
-
-    # 设置损失函数
-    if args.rank_mse == 'rank':
-        loss_func = LambdaRankLoss(device)  # 假设 LambdaRankLoss 是已经定义好的类
-    else:
-        loss_func = nn.MSELoss()
-
-    # 配置优化器和学习率调度器
-    optimizer = optim.Adam(net.parameters(), lr=args.lr * 0.1, weight_decay=args.weight_decay)
-    lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.n_epoch // 3, gamma=0.8)
-
-    # Fine-tuning 的训练循环
-    print('Start fine-tuning...')
-    for epoch in range(args.n_epoch):
-        net.train()
-        train_loss = 0
-        tic = time.time()
-        for batch_idx, (inputs, targets) in enumerate(il_dataset_loader):
-            inputs, targets = inputs.to(device), targets.to(device)
-            optimizer.zero_grad()
-            outputs = net(inputs)
-            loss = loss_func(outputs, targets)
-            loss.backward()
-            nn.utils.clip_grad_norm_(net.parameters(), 0.5)
-            optimizer.step()
-            train_loss += loss.item()
-
-        lr_scheduler.step()
-
-        # 打印进度和验证
-        if epoch % 5 == 0 or epoch == args.n_epoch - 1:
-            valid_loss = validate(net, test_dataset_loader, loss_func, device)
-            print(f"Epoch: {epoch} Train Loss: {train_loss:.4f} Valid Loss: {valid_loss:.4f}")
-
-        # 保存模型
-    model_save_file_name = f'{args.save_folder}/tlp_model_{valid_loss}.pkl'
-    with open(model_save_file_name, 'wb') as f:
-        pickle.dump(net.cpu(), f)
-    net.to(device)
-
-    return model_save_file_name
-
 
 def set_seed(seed):
     np.random.seed(seed)
@@ -1022,8 +959,8 @@ def conformal_prediction(datas, task_pred_dict, model,mapie,task_drift_dict,task
     # a=test_loader.min_latency.min()
     percentage_difference = np.abs((test_loader.min_latency.min() - labels_all) / labels_all) * 100
     # 找到差异大于 20% 的索引
-    indices_real = np.where(percentage_difference > 5)[0]
-    print("The size of indices is :",indices_real.size)
+    indices_real = np.where(percentage_difference > 20)[0]
+
     """cp"""
     data_test = torch.cat(data_test, dim=0)
     y_test = labels_all
@@ -1041,8 +978,7 @@ def conformal_prediction(datas, task_pred_dict, model,mapie,task_drift_dict,task
     # 创建一个字典来存储每个 alpha 的结果
     indices_detec_dict = {}
     indices_not_detec_dict = {}
-    best_f1=0
-    best_indices_detec=[]
+
     for index,pvalue in enumerate(alphas):
         # if index==num_set:
         #     if all(pvalue) or not any(pvalue):
@@ -1052,7 +988,7 @@ def conformal_prediction(datas, task_pred_dict, model,mapie,task_drift_dict,task
         indices_cre = np.where(credibility_result[:, index] == True)[0]
         indices_con = np.where(confidence_result[:, index] == True)[0]
 
-        indices_detec = np.union1d(indices_cre, indices_con) # np.intersect1d 交
+        indices_detec = np.union1d(indices_cre, indices_con) # np.intersect1d 交际
         indices_detec_dict[pvalue] = indices_detec
         # 获取所有索引中不在 indices_detec 中的索引
         indices_not_detec = np.setdiff1d(all_indices, indices_detec)
@@ -1079,9 +1015,6 @@ def conformal_prediction(datas, task_pred_dict, model,mapie,task_drift_dict,task
 
         # 计算 F1 分数
         f1_score = 2 * (precision * recall) / (precision + recall)
-        if best_f1<f1_score:
-            best_f1 = f1_score
-            best_indices_detec=indices_detec
         print("The alpha is:",pvalue)
         print(f"Detection f1_score is: {f1_score:.2%}, "
               f"accuracy is: {accuracy:.2%}, "
@@ -1098,7 +1031,7 @@ def conformal_prediction(datas, task_pred_dict, model,mapie,task_drift_dict,task
                                     labels_all[indices_not_detec].numpy()
                                     )
 
-    return best_indices_detec
+    return 0
 
 
 def cp(train_loader, val_dataloader, test_datasets, underlying_path,file_pattern):
@@ -1158,12 +1091,22 @@ def cp(train_loader, val_dataloader, test_datasets, underlying_path,file_pattern
     task_after_dict = {}
     top_1_total = []
     top_5_total = []
+    top_1_total_drift = []
+    top_5_total_drift = []
+    top_1_total_after = []
+    top_5_total_after = []
     top_10_total = []
     top_20_total = []
     best_latency_total_list = []
     best_latency_total = 0
+    best_latency_total_drift = 0
+    best_latency_total_after = 0
     top1_total = 0
     top5_total = 0
+    top1_total_drift = 0
+    top5_total_drift = 0
+    top1_total_after = 0
+    top5_total_after = 0
     top10_total = 0
     top20_total = 0
     # try:
@@ -1172,42 +1115,116 @@ def cp(train_loader, val_dataloader, test_datasets, underlying_path,file_pattern
     for file in files:
         tasks, task_weights = pickle.load(open(file, "rb"))
         latencies = [0] * len(top_ks)
+        latencies_drift = [0] * len(top_ks)
+        latencies_after = [0] * len(top_ks)
         best_latency = 0
+        best_latency_drift = 0
+        best_latency_after = 0
         for task, weight in zip(tasks, task_weights):
             if task.workload_key not in pred_a_dataset_dict:
                 # print('error task.workload_key not in pred_a_dataset_dict')
                 continue
-            indices_detec=conformal_prediction(
+            conformal_prediction(
                 pred_a_dataset_dict[task.workload_key], task_pred_dict,
                 net,mapie,task_drift_dict,task_after_dict)
-    return indices_detec
             # p-value
-    #         preds, min_latency, labels = task_pred_dict[task.workload_key]
-    #         real_values = labels[np.argsort(-preds)]
-    #         real_latency = min_latency / np.maximum(real_values, 1e-5)
-    #         for i, top_k in enumerate(top_ks):
-    #             latencies[i] += np.min(real_latency[:top_k]) * weight
-    #         best_latency += min_latency * weight
-    #
-    #     best_latency_total += best_latency
-    #     top1_total += latencies[0]
-    #     top5_total += latencies[1]
-    #
-    # if top1_total == 0:
-    #     print(f"average top 1 score is {0}")
-    #     top_1_total.append(0)
-    # else:
-    #     print(f"average top 1 score is {best_latency_total / top1_total}")
-    #     top_1_total.append(best_latency_total / top1_total)
-    #
-    # if top5_total == 0:
-    #     print(f"average top 5 score is {0}")
-    #     top_5_total.append(0)
-    # else:
-    #     print(f"average top 5 score is {best_latency_total / top5_total}")
-    #     top_5_total.append(best_latency_total / top5_total)
+            preds, min_latency, labels = task_pred_dict[task.workload_key]
+            real_values = labels[np.argsort(-preds)]
+            real_latency = min_latency / np.maximum(real_values, 1e-5)
+            for i, top_k in enumerate(top_ks):
+                latencies[i] += np.min(real_latency[:top_k]) * weight
+            best_latency += min_latency * weight
+            #drift
+            preds_drift, min_latency_drift, labels_drift = task_drift_dict[task.workload_key]
+            real_values_drift = labels_drift[np.argsort(-preds_drift)]
+            real_latency_drift = min_latency_drift / np.maximum(real_values_drift, 1e-5)
+            for i, top_k in enumerate(top_ks):
+                latencies_drift[i] += np.min(real_latency_drift[:top_k]) * weight
+            best_latency_drift += min_latency_drift * weight
+            # after
+            preds_after, min_latency_after, labels_after = task_after_dict[task.workload_key]
+            real_values_after = labels_after[np.argsort(-preds_after)]
+            real_latency_after = min_latency_after / np.maximum(real_values_after, 1e-5)
+            for i, top_k in enumerate(top_ks):
+                latencies_after[i] += np.min(real_latency_after[:top_k]) * weight
+            best_latency_after += min_latency_after * weight
+        try:
+            top_1_total.append(best_latency/latencies[0])
+            top_1_total_drift.append(best_latency_drift / latencies_drift[0])
+            top_1_total_after.append(best_latency_after / latencies_after[0])
+            # print(f"top 1 score: {best_latency / latencies[0]}")
+        except:
+            top_1_total.append(0)
+            top_1_total_drift.append(0)
+            top_1_total_after.append(0)
+        try:
+            top_5_total.append(best_latency / latencies[1])
+            top_5_total_drift.append(best_latency_drift / latencies_drift[1])
+            top_5_total_after.append(best_latency_after / latencies_after[1])
+            # print(f"top 5 score: {best_latency / latencies[1]}")
+        except:
+            top_5_total.append(0)
+            top_5_total_drift.append(0)
+            top_5_total_after.append(0)
 
+        best_latency_total += best_latency
+        top1_total += latencies[0]
 
+        top5_total += latencies[1]
+        #
+        best_latency_total_drift += best_latency_drift
+        top1_total_drift += latencies_drift[0]
+        top5_total_drift += latencies_drift[1]
+        #
+        best_latency_total_after += best_latency_after
+        top1_total_after += latencies_after[0]
+        top5_total_after += latencies_after[1]
+
+    # data=top_1_total
+    if top1_total == 0:
+        print(f"average top 1 score is {0}")
+        top_1_total.append(0)
+    else:
+        print(f"average top 1 score is {best_latency_total / top1_total}")
+        top_1_total.append(best_latency_total / top1_total)
+
+    if top5_total == 0:
+        print(f"average top 5 score is {0}")
+        top_5_total.append(0)
+    else:
+        print(f"average top 5 score is {best_latency_total / top5_total}")
+        top_5_total.append(best_latency_total / top5_total)
+
+    if top1_total_drift == 0:
+        print(f"find drift average top 1 score is {0}")
+        top_1_total_drift.append(0)
+    else:
+        print(f"find drift average top 1 score is {best_latency_total_drift / top1_total_drift}")
+        top_1_total_drift.append(best_latency_total_drift / top1_total_drift)
+
+    if top5_total_drift == 0:
+        print(f"find drift average top 5 score is {0}")
+        top_5_total_drift.append(0)
+    else:
+        print(f"find drift average top 5 score is {best_latency_total_drift / top5_total_drift}")
+        top_5_total_drift.append(best_latency_total_drift / top5_total_drift)
+    ###############
+    if top1_total_after == 0:
+        print(f"after average top 1 score is {0}")
+        top_1_total_after.append(0)
+    else:
+        print(f"after average top 1 score is {best_latency_total_after / top1_total_after}")
+        top_1_total_after.append(best_latency_total_after / top1_total_after)
+
+    if top5_total_after == 0:
+        print(f"after average top 5 score is {0}")
+        top_5_total_after.append(0)
+    else:
+        print(f"after average top 5 score is {best_latency_total_after / top5_total_after}")
+        top_5_total_after.append(best_latency_total_after / top5_total_after)
+        # except:
+        #     print("skip this")
+        #     continue
     """finish"""
     # for i in TF:
     #     TF=i
@@ -1263,7 +1280,7 @@ def cp(train_loader, val_dataloader, test_datasets, underlying_path,file_pattern
 
 def init_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--save_folder", type=str, default='/models/tlp_i7_base')
+    parser.add_argument("--save_folder", type=str, default='tlp_i7_base')
     parser.add_argument("--under_train_dataset", type=str,
                         default='/home/huanting/PROM/examples/case_study/tlp/scripts/data_model/bert_base_train_and_val.pkl')
     parser.add_argument("--under_test_dataset", type=str,
@@ -1322,43 +1339,40 @@ def deploy_model(args):
 
     """cp"""
     print("Conformal prediction...")
-    indices_detec= cp(*train_data, test_datasets=test_data,
+    cp(*train_data, test_datasets=test_data,
        underlying_path=underlying_model_name, file_pattern="((bert_large*.task.pkl")
-
-    """incremental learning"""
-    print("Incremental learning...")
-
-    il_model=il(test_data, device="cpu", pre_trained_model=underlying_model_name,
-                          aug_data=indices_detec, args=args)
-    print("Evaluate the data on new benchmark...")
-    eval_model(model_file=il_model, test_datasets=test_data)
-
-def Incre(args):
-    # init args
-    tlp_prom = Tlp_prom()
-    # split data to train and test
-    print("Load data and split data to train and test...")
-    # ori_train_data, ori_test_data = tlp_prom.data_partitioning \
-    #     (train_dataset=args.under_train_dataset, test_dataset=args.under_test_dataset, args=args)
-    train_data, test_data = tlp_prom.data_partitioning \
-        (train_dataset=args.under_train_dataset, test_dataset=args.test_dataset, args=args)
-
-    underlying_model_name = args.under_model
-    # print("Evaluate the data on origin benchmark...")
-    # eval_model(model_file=underlying_model_name, test_datasets=ori_test_data)
-    # print("Evaluate the data on new benchmark...")
-    # eval_model(model_file=underlying_model_name, test_datasets=test_data)
-
-    indices_detec=[1,2,3]
-    under_model_name = il(test_data, device="cpu", pre_trained_model=underlying_model_name,
-                          aug_data=indices_detec, args=args)
-    eval_model(model_file=underlying_model_name, test_datasets=test_data)
 
 if __name__ == "__main__":
     print("initial parameters...")
     args = init_args()
     # train_model(args)
     deploy_model(args)
-    # Incre(args)
 
+def a():
+    # init args
+    print("initial parameters...")
+    args = init_args()
+    tlp_prom = Tlp_prom()
+    # split data to train and test
+    print("Load data and split data to train and test...")
+    underlying_model = r'/home/huanting/PROM/examples/case_study/tlp/scripts/tlp_i7/resnet50.pkl'
+    test_data=r'/home/huanting/PROM/examples/case_study/tlp/scripts/data_model/bert_tiny_test.pkl'
+    train_data,test_data=tlp_prom.data_partitioning\
+        (dataset=args.dataset,test_dataset=test_data,args=args)
 
+    origin_testdata=r'/home/huanting/PROM/examples/case_study/tlp/scripts/data_model/resnet50_test.pkl'
+    with open(origin_testdata, 'rb') as f:
+        origin_testdata = pickle.load(f)
+    origin_testdata = origin_testdata[:1]
+    print("Load data and evaluate the data...")
+    eval_model(model_file=underlying_model,test_datasets=origin_testdata)
+    print("Load data and evaluate the data on new benchmark...")
+    eval_model(model_file=underlying_model, test_datasets=test_data)
+
+    # train the undelying model
+    model_save_file_name=train(*train_data, device="cpu")
+
+    """cp"""
+    print("Conformal prediction...")
+    cp(*train_data, test_datasets=test_data,
+       underlying_path=underlying_model,file_pattern = "((bert_tiny*.task.pkl")

@@ -12,10 +12,10 @@ from sklearn.pipeline import Pipeline
 from sklearn.utils import check_random_state
 from sklearn.utils.validation import _check_y, check_is_fitted, indexable
 from scipy.stats import gmean, mode,percentileofscore
-from prom._typing import ArrayLike, NDArray
-from prom.conformity_scores import ConformityScore, ResidualNormalisedScore
-from prom.estimator.estimator import EnsembleRegressor
-from prom.utils import (check_alpha, check_alpha_and_n_samples,
+from src.prom._typing import ArrayLike, NDArray
+from src.prom.conformity_scores import ConformityScore, ResidualNormalisedScore
+from src.prom.estimator.estimator import EnsembleRegressor
+from src.prom.utils import (check_alpha, check_alpha_and_n_samples,
                          check_conformity_score, check_cv,
                          check_estimator_fit_predict, check_n_features_in,
                          check_n_jobs, check_null_weight, check_verbose)

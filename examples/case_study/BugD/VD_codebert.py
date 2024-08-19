@@ -701,7 +701,7 @@ def deploy(args, train_dataset, model, tokenizer):
                             # logger.info("Saving model checkpoint to %s", output_dir)
                             # print("Saving model checkpoint to {}".format(output_dir))
 
-                        if results['eval_acc'] >= 0.2 and results['eval_acc'] <= 0.9:
+                        if results['eval_acc'] >= 0.1 and results['eval_acc'] <= 0.9:
                             print(
                                 f"The current accuracy is: {round(best_f1, 4)}")
                             results_uq, incre_index = conformal_prediction(args, model, tokenizer)

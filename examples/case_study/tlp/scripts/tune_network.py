@@ -8,10 +8,10 @@ import time
 import numpy as np
 import nni
 from nni.utils import merge_parameter
-import tvm
-from tvm import relay, auto_scheduler
-import tvm.contrib.graph_runtime as runtime
-from tvm.auto_scheduler.utils import to_str_round
+# import tvm
+# from tvm import relay, auto_scheduler
+# import tvm.contrib.graph_runtime as runtime
+# from tvm.auto_scheduler.utils import to_str_round
 
 from dump_network_info import get_network_with_key
 from common import str2bool, log_line, BenchmarkRecord

@@ -63,7 +63,7 @@ class Prom_utils:
             self.cfs = list(range(35))
         if self.task== "bug":
             self.cfs = list(range(8))
-        if self.task== "bug":
+        if self.task== "dev":
             self.cfs = list(range(2))
 
     def find_alpha_range(self,n):
@@ -284,7 +284,7 @@ class Prom_utils:
         """
 
         # origin_accuracy = accuracy_score(y_test, y_preds[name])
-        np.random.seed(seed_value)
+        random.seed(seed_value)
 
         # Select a portion of the test data for retraining
         selected_count = max(int(len(self.y_test) * 0.05), 1)

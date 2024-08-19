@@ -9,10 +9,10 @@ from sklearn.model_selection import BaseCrossValidator
 from sklearn.utils import _safe_indexing
 from sklearn.utils.validation import _num_samples, check_is_fitted
 
-from prom._typing import ArrayLike, NDArray
-from prom.aggregation_functions import aggregate_all, phi2D
-from prom.estimator.interface import EnsembleEstimator
-from prom.utils import (check_nan_in_aposteriori_prediction, check_no_agg_cv,
+from src.prom._typing import ArrayLike, NDArray
+from src.prom.aggregation_functions import aggregate_all, phi2D
+from src.prom.estimator.interface import EnsembleEstimator
+from src.prom.utils import (check_nan_in_aposteriori_prediction, check_no_agg_cv,
                          fit_estimator)
 
 

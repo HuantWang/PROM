@@ -3,9 +3,9 @@ from typing import Tuple
 
 import numpy as np
 
-from prom._compatibility import np_nanquantile
-from prom._typing import ArrayLike, NDArray
-from prom.estimator.interface import EnsembleEstimator
+from src.prom._compatibility import np_nanquantile
+from src.prom._typing import ArrayLike, NDArray
+from src.prom.estimator.interface import EnsembleEstimator
 
 
 class ConformityScore(metaclass=ABCMeta):
