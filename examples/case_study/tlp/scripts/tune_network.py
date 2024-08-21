@@ -17,7 +17,7 @@ from dump_network_info import get_network_with_key
 from common import str2bool, log_line, BenchmarkRecord
 
 from search import random_search, local_search, default_search
-from tlp_train import *
+from train_tlp import *
 from mtl_tlp_train import MTLTLPAttentionModule
 
 

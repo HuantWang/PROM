@@ -319,7 +319,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--save_folder", type=str, default='.')
     parser.add_argument("--cuda", type=str, default='cuda:0')
-    parser.add_argument("--dataset", type=str, default='tlp_dataset_platinum_8272_100_train_and_val.pkl')
+    parser.add_argument("--dataset", type=str, default='/home/huanting/PROM/examples/case_study/tlp/scripts/data_model/bert_base_train_and_val.pkl')
     parser.add_argument("--lr", type=float, default=7e-4)
     parser.add_argument("--weight_decay", type=float, default=1e-6)
     parser.add_argument("--rank_mse", type=str, default='rank')

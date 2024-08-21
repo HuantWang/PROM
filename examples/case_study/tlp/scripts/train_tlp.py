@@ -9,7 +9,7 @@ from torch import nn
 from torch import optim
 import argparse
 import sys
-
+import nni
 # sys.path.append('/home/huanting/PROM/src')
 
 
@@ -151,6 +151,7 @@ def eval_model(model_file='',test_datasets=''):
         print(f"average top 20 score is {best_latency_total / top20_total}")
         top_20_total.append(best_latency_total / top20_total)
 
+    return best_latency_total / top1_total
 
 def get_cosine_schedule_with_warmup(
 	optimizer: optim.Optimizer,
@@ -220,9 +221,9 @@ class Tlp_prom(util.ModelDefinition):
             test_datasets = pickle.load(f)
 
         random.shuffle(test_datasets)
-        length = len(test_datasets) // 10
-        print("length", length)
-        test_dataset = test_datasets[:1]
+        length = len(test_datasets)
+        # print("length", length)
+        test_dataset = test_datasets[:length]
 
         return train_data,test_dataset
 
@@ -747,18 +748,16 @@ def load_datas(datasets_global):
 
     datasets = np.array(datasets_global, dtype=object)
     if args.data_cnt > 0:
-        train_len = int(args.data_cnt * 100 * 0.9)
-
+        train_len = int(args.data_cnt * 1000 * 0.9)
         perm = np.random.permutation(len(datasets))
-        train_indices, val_indices = perm[:train_len], perm[train_len:args.data_cnt * 100]
+        train_indices, val_indices = perm[:train_len], perm[train_len:args.data_cnt * 1000]
         # train_indices, val_indices = perm[:1], perm[train_len:args.data_cnt * 1000]
     else:
-        # train_len = int(len(datasets) * 0.9)
-        train_len = int(500 * 0.8)
+        train_len = int(len(datasets) * 0.9)
+        # train_len = int(500 * 0.8)
         # print("valid length",len(datasets))
-
         perm = np.random.permutation(len(datasets))
-        train_indices, val_indices = perm[:train_len], perm[train_len:(500)]
+        train_indices, val_indices = perm[:train_len], perm[train_len:]
         # train_indices, val_indices = perm, perm
     train_datas, val_datas = datasets[train_indices], datasets[val_indices]
 
@@ -792,8 +791,9 @@ def validate(model, valid_loader, loss_func, device):
     return np.sum(valid_losses)
 
 
-def train(train_loader, val_dataloader, device):
-    # n_epoch = 50
+def train(train_loader, val_dataloader, device, test_tlp):
+    performance=0
+    best_performance = 0
     if args.attention_class == 'default':
         args.hidden_dim = [64, 128, 256, 256]
         args.out_dim = [256, 128, 64, 1]
@@ -876,7 +876,8 @@ def train(train_loader, val_dataloader, device):
 
     train_loss = None
     print('start train...')
-    print(len(train_loader), len(val_dataloader))
+    # print(len(train_loader), len(val_dataloader))
+    best_valid_loss=1e6
     for epoch in range(n_epoch):
         tic = time.time()
 
@@ -896,7 +897,7 @@ def train(train_loader, val_dataloader, device):
 
         train_time = time.time() - tic
 
-        if epoch % 5 == 0 or epoch == n_epoch - 1:
+        if epoch % 10 == 0 or epoch == n_epoch - 1:
 
             valid_loss = validate(net, val_dataloader,
                                   loss_func, device=device)
@@ -904,14 +905,25 @@ def train(train_loader, val_dataloader, device):
                 train_loss, valid_loss)
             print("Epoch: %d\tBatch: %d\t%s\tTrain Speed: %.0f" % (
                 epoch, batch, loss_msg, len(train_loader) / train_time,))
+            model_save_file_name = '%s/tlp_model_%d.pkl' % (args.save_folder, args.seed)
 
+        if best_valid_loss>valid_loss:
+            print("save the current model...")
+            best_valid_loss=valid_loss
+            with open(model_save_file_name, 'wb') as f:
+                pickle.dump(net.cpu(), f)
+            print("evaluating...")
+            performance = eval_model(model_file=model_save_file_name, test_datasets=test_tlp)
 
-        model_save_file_name = '%s/tlp_model_%d.pkl' % (args.save_folder, valid_loss)
+            if best_performance< performance:
+                best_performance = performance
+                print("The best top-1 performance is", best_performance)
+                model_save_file_name = '%s/tlp_model_%d_best.pkl' % (args.save_folder, args.seed)
+                with open(model_save_file_name, 'wb') as f:
+                    pickle.dump(net.cpu(), f)
 
-    with open(model_save_file_name, 'wb') as f:
-        pickle.dump(net.cpu(), f)
     net = net.to(device)
-    return model_save_file_name
+    return model_save_file_name, performance
 
 
 def il(test_loader, device, pre_trained_model,aug_data, args):
@@ -968,7 +980,7 @@ def il(test_loader, device, pre_trained_model,aug_data, args):
             print(f"Epoch: {epoch} Train Loss: {train_loss:.4f} Valid Loss: {valid_loss:.4f}")
 
         # 保存模型
-    model_save_file_name = f'{args.save_folder}/tlp_model_{valid_loss}.pkl'
+    model_save_file_name = f'{args.save_folder}/tlp_model_{args.seed}.pkl'
     with open(model_save_file_name, 'wb') as f:
         pickle.dump(net.cpu(), f)
     net.to(device)
@@ -1262,17 +1274,24 @@ def cp(train_loader, val_dataloader, test_datasets, underlying_path,file_pattern
     # print(coverage)
 
 def init_args():
+    params = nni.get_next_parameter()
+    if params == {}:
+        params = {
+            "seed": 1730,
+        }
+
     parser = argparse.ArgumentParser()
-    parser.add_argument("--save_folder", type=str, default='models/tlp_i7_base')
+    parser.add_argument("--save_folder", type=str, default='models/il/tlp_i7_base')
     parser.add_argument('--mode', choices=['train', 'deploy'], help="Mode to run: train or deploy")
     parser.add_argument("--under_train_dataset", type=str,
-                        default='/home/huanting/PROM/examples/case_study/tlp/scripts/data_model/bert_base_train_and_val.pkl')
+                        default='./data_model/bert_base_train_and_val.pkl')
     parser.add_argument("--under_test_dataset", type=str,
-                        default='/home/huanting/PROM/examples/case_study/tlp/scripts/data_model/bert_base_test.pkl')
+                        default='./data_model/bert_base_test.pkl')
     parser.add_argument("--under_model", type=str,
-                        default='/home/huanting/PROM/examples/case_study/tlp/scripts/tlp_i7_base/tlp_model_49.pkl')
+                        default='./models/tlp_i7_base/tlp_model_2705.pkl')
     parser.add_argument("--test_dataset", type=str,
-                        default='/home/huanting/PROM/examples/case_study/tlp/scripts/data_model/bert_large_test.pkl')
+                        default='./data_model/bert_large_test.pkl')
+    parser.add_argument("--path", type=str, default="((bert_large*.task.pkl")
     parser.add_argument("--cuda", type=str, default='cpu')
     parser.add_argument("--lr", type=float, default=7e-4)
     parser.add_argument("--weight_decay", type=float, default=1e-6)
@@ -1280,16 +1299,18 @@ def init_args():
     parser.add_argument("--optimizer", type=str, default='default')
     parser.add_argument("--attention_head", type=int, default=8)
     parser.add_argument("--attention_class", type=str, default='default')
-    parser.add_argument("--step_size", type=int, default=25)
+    parser.add_argument("--step_size", type=int, default=64)
     parser.add_argument("--fea_size", type=int, default=22)
     parser.add_argument("--res_block_cnt", type=int, default=2)
     parser.add_argument("--self_sup_model", type=str, default='')
-    parser.add_argument("--data_cnt", type=int, default=-1)  # data_cnt * 1000
-    parser.add_argument("--seed", type=int, default=0)
-    parser.add_argument("--train_size_per_gpu", type=int, default=16)
-    parser.add_argument("--val_size_per_gpu", type=int, default=16)
-    parser.add_argument("--n_epoch", type=int, default=10)
+    parser.add_argument("--data_cnt", type=int, default=50)  # data_cnt * 1000
+    parser.add_argument("--seed", type=int, default=params["seed"])
+    parser.add_argument("--train_size_per_gpu", type=int, default=1024)
+    parser.add_argument("--val_size_per_gpu", type=int, default=1024)
+    parser.add_argument("--n_epoch", type=int, default=200)
     args = parser.parse_args()
+    args.seed = int(args.seed)
+    print("seed: ", args.seed)
     set_seed(args.seed)
     return args
 
@@ -1300,31 +1321,28 @@ def train_model(args):
     print("Load data and split data to train and test...")
     train_data, test_data = tlp_prom.data_partitioning \
         (train_dataset=args.under_train_dataset, test_dataset=args.under_test_dataset, args=args)
-    under_model_name=train(*train_data, device="cpu")
+    under_model_name,performance=train(*train_data, device="cpu",test_tlp=test_data)
     # origin_testdata = test_data
+    # under_model_name='/home/huanting/PROM/examples/case_study/tlp/scripts/models/train/tlp_i7_base/tlp_model_1730.pkl'
     print("Load data and evaluate the data on new benchmark...")
-    eval_model(model_file=under_model_name, test_datasets=test_data)
+    nni.report_final_result(performance)
 
 def deploy_model(args):
     # init args
     tlp_prom = Tlp_prom()
     # split data to train and test
     print("Load data and split data to train and test...")
-    # ori_train_data, ori_test_data = tlp_prom.data_partitioning \
-    #     (train_dataset=args.under_train_dataset, test_dataset=args.under_test_dataset, args=args)
     train_data, test_data = tlp_prom.data_partitioning \
         (train_dataset=args.under_train_dataset, test_dataset=args.test_dataset, args=args)
 
     underlying_model_name=args.under_model
-    # print("Evaluate the data on origin benchmark...")
-    # eval_model(model_file=underlying_model_name, test_datasets=ori_test_data)
     print("Evaluate the data on new benchmark...")
-    eval_model(model_file=underlying_model_name, test_datasets=test_data)
+    deploy_perm=eval_model(model_file=underlying_model_name, test_datasets=test_data)
 
     """cp"""
     print("Conformal prediction...")
     indices_detec= cp(*train_data, test_datasets=test_data,
-       underlying_path=underlying_model_name, file_pattern="((bert_large*.task.pkl")
+       underlying_path=underlying_model_name, file_pattern=args.path)
 
     """incremental learning"""
     print("Incremental learning...")
@@ -1332,36 +1350,20 @@ def deploy_model(args):
     il_model=il(test_data, device="cpu", pre_trained_model=underlying_model_name,
                           aug_data=indices_detec, args=args)
     print("Evaluate the data on new benchmark...")
-    eval_model(model_file=il_model, test_datasets=test_data)
+    il_perm=eval_model(model_file=il_model, test_datasets=test_data)
+    improve_perm= il_perm-deploy_perm
+    print("improve_perm: ", improve_perm)
+    nni.report_final_result(improve_perm)
 
-# def Incre(args):
-#     # init args
-#     tlp_prom = Tlp_prom()
-#     # split data to train and test
-#     print("Load data and split data to train and test...")
-#     # ori_train_data, ori_test_data = tlp_prom.data_partitioning \
-#     #     (train_dataset=args.under_train_dataset, test_dataset=args.under_test_dataset, args=args)
-#     train_data, test_data = tlp_prom.data_partitioning \
-#         (train_dataset=args.under_train_dataset, test_dataset=args.test_dataset, args=args)
-#
-#     underlying_model_name = args.under_model
-#     # print("Evaluate the data on origin benchmark...")
-#     # eval_model(model_file=underlying_model_name, test_datasets=ori_test_data)
-#     # print("Evaluate the data on new benchmark...")
-#     # eval_model(model_file=underlying_model_name, test_datasets=test_data)
-#
-#     indices_detec=[1,2,3]
-#     under_model_name = il(test_data, device="cpu", pre_trained_model=underlying_model_name,
-#                           aug_data=indices_detec, args=args)
-#     eval_model(model_file=underlying_model_name, test_datasets=test_data)
 
 if __name__ == "__main__":
     print("initial parameters...")
     args = init_args()
-    # if args.mode=="train":
-    #     train_model(args)
-    # elif args.mode=="deploy":
-    #     deploy_model(args)
-    train_model(args)
-
+    if args.mode=="train":
+        train_model(args)
+    elif args.mode=="deploy":
+        deploy_model(args)
+    # deploy_model(args)
+    # train_model(args)
+    # nnictl create --config /home/huanting/PROM/examples/case_study/tlp/scripts/config.yaml --port 8088
 

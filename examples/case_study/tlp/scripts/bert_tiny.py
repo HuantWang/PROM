@@ -9,6 +9,7 @@ from torch import nn
 from torch import optim
 import argparse
 import sys
+import nni
 
 # sys.path.append('/home/huanting/PROM/src')
 
@@ -23,8 +24,8 @@ from sklearn.neural_network import MLPRegressor
 from prom.regression import MapieQuantileRegressor, MapieRegressor
 from prom.metrics import regression_coverage_score
 
-def pred_a_dataset(datas, task_pred_dict, model):
 
+def pred_a_dataset(datas, task_pred_dict, model):
     datas_new = []
     for data_idx, data in enumerate([datas]):
         file, file_idx, workloadkey_idx, workloadkey, workload_args, flop_ct, line_vecs = data
@@ -55,7 +56,7 @@ def pred_a_dataset(datas, task_pred_dict, model):
     ), test_loader.min_latency.min().numpy(), labels_all.numpy())
 
 
-def eval_model(model_file='',test_datasets=''):
+def eval_model(model_file='', test_datasets=''):
     top_ks = [1, 5, 10, 20]
     with open(model_file, 'rb') as f:
         model = pickle.load(f)
@@ -99,10 +100,10 @@ def eval_model(model_file='',test_datasets=''):
             real_latency = min_latency / np.maximum(real_values, 1e-5)
 
             for i, top_k in enumerate(top_ks):
-                latencies[i] += np.min(real_latency[:top_k]) * weight #预测
+                latencies[i] += np.min(real_latency[:top_k]) * weight  # 预测
             best_latency += min_latency * weight
         try:
-            top_1_total.append(best_latency/latencies[0])
+            top_1_total.append(best_latency / latencies[0])
             # print(f"top 1 score: {best_latency / latencies[0]}")
         except:
             top_1_total.append(0)
@@ -114,7 +115,6 @@ def eval_model(model_file='',test_datasets=''):
         except:
             top_5_total.append(0)
             # print(f"top 5 score: {0}")
-
 
         best_latency_total_list.append(best_latency)
         best_latency_total += best_latency
@@ -151,61 +151,64 @@ def eval_model(model_file='',test_datasets=''):
         print(f"average top 20 score is {best_latency_total / top20_total}")
         top_20_total.append(best_latency_total / top20_total)
 
+    return best_latency_total / top1_total
+
 
 def get_cosine_schedule_with_warmup(
-	optimizer: optim.Optimizer,
-	num_warmup_steps: int,
-	num_training_steps: int,
-	num_cycles: float = 0.5,
-	last_epoch: int = -1,
+        optimizer: optim.Optimizer,
+        num_warmup_steps: int,
+        num_training_steps: int,
+        num_cycles: float = 0.5,
+        last_epoch: int = -1,
 ):
-	"""
-	Create a schedule with a learning rate that decreases following the values of the cosine function between the
-	initial lr set in the optimizer to 0, after a warmup period during which it increases linearly between 0 and the
-	initial lr set in the optimizer.
+    """
+    Create a schedule with a learning rate that decreases following the values of the cosine function between the
+    initial lr set in the optimizer to 0, after a warmup period during which it increases linearly between 0 and the
+    initial lr set in the optimizer.
 
-	Args:
-		optimizer (:class:`~torch.optim.Optimizer`):
-		The optimizer for which to schedule the learning rate.
-		num_warmup_steps (:obj:`int`):
-		The number of steps for the warmup phase.
-		num_training_steps (:obj:`int`):
-		The total number of training steps.
-		num_cycles (:obj:`float`, `optional`, defaults to 0.5):
-		The number of waves in the cosine schedule (the defaults is to just decrease from the max value to 0
-		following a half-cosine).
-		last_epoch (:obj:`int`, `optional`, defaults to -1):
-		The index of the last epoch when resuming training.
+    Args:
+        optimizer (:class:`~torch.optim.Optimizer`):
+        The optimizer for which to schedule the learning rate.
+        num_warmup_steps (:obj:`int`):
+        The number of steps for the warmup phase.
+        num_training_steps (:obj:`int`):
+        The total number of training steps.
+        num_cycles (:obj:`float`, `optional`, defaults to 0.5):
+        The number of waves in the cosine schedule (the defaults is to just decrease from the max value to 0
+        following a half-cosine).
+        last_epoch (:obj:`int`, `optional`, defaults to -1):
+        The index of the last epoch when resuming training.
 
-	Return:
-		:obj:`torch.optim.lr_scheduler.LambdaLR` with the appropriate schedule.
-	"""
-	def lr_lambda(current_step):
-		# Warmup
-		if current_step < num_warmup_steps:
-			return float(current_step) / float(max(1, num_warmup_steps))
-		# decadence
-		progress = float(current_step - num_warmup_steps) / float(
-			max(1, num_training_steps - num_warmup_steps)
-		)
-		return max(
-			0.0, 0.5 * (1.0 + math.cos(math.pi * float(num_cycles) * 2.0 * progress))
-		)
+    Return:
+        :obj:`torch.optim.lr_scheduler.LambdaLR` with the appropriate schedule.
+    """
 
-	return optim.lr_scheduler.LambdaLR(optimizer, lr_lambda, last_epoch)
+    def lr_lambda(current_step):
+        # Warmup
+        if current_step < num_warmup_steps:
+            return float(current_step) / float(max(1, num_warmup_steps))
+        # decadence
+        progress = float(current_step - num_warmup_steps) / float(
+            max(1, num_training_steps - num_warmup_steps)
+        )
+        return max(
+            0.0, 0.5 * (1.0 + math.cos(math.pi * float(num_cycles) * 2.0 * progress))
+        )
+
+    return optim.lr_scheduler.LambdaLR(optimizer, lr_lambda, last_epoch)
+
 
 class Tlp_prom(util.ModelDefinition):
-    def __init__(self,model=None,dataset=None,calibration_data=None,args=None):
+    def __init__(self, model=None, dataset=None, calibration_data=None, args=None):
         # self.model =
         self.calibration_data = None
         self.dataset = None
 
-    def data_partitioning(self, train_dataset, test_dataset, calibration_ratio=0.2,args=None):
+    def data_partitioning(self, train_dataset, test_dataset, calibration_ratio=0.2, args=None):
         # prepare dataset
         if os.path.exists(args.save_folder) is False:
             print('create folder', args.save_folder)
             os.makedirs(args.save_folder, exist_ok=True)
-
 
         with open(train_dataset, 'rb') as f:
             datasets_global = pickle.load(f)
@@ -216,29 +219,29 @@ class Tlp_prom(util.ModelDefinition):
 
         # random.seed(args.seed)
         with open(test_dataset, 'rb') as f:
-        # with open(r'/home/huanting/PROM/examples/case_study/tlp/scripts/data_model/bert_tiny_test.pkl', 'rb') as f:
+            # with open(r'/home/huanting/PROM/examples/case_study/tlp/scripts/data_model/bert_tiny_test.pkl', 'rb') as f:
             test_datasets = pickle.load(f)
 
         random.shuffle(test_datasets)
-        length = len(test_datasets) // 10
-        print("length", length)
+        length = len(test_datasets)
+        # print("length", length)
         test_dataset = test_datasets[:1]
 
-        return train_data,test_dataset
-
+        return train_data, test_dataset
 
     def predict(self, X, significant_level=0.1):
         if self.model is None:
             raise ValueError("Model is not initialized.")
 
-        pred=self.model.predict(self, sequences='')
-        probability=self.model.predict_proba(self, sequences='')
+        pred = self.model.predict(self, sequences='')
+        probability = self.model.predict_proba(self, sequences='')
         return pred, probability
 
     def feature_extraction(self, srcs):
         pass
 
-class AttentionModule(nn.Module):  
+
+class AttentionModule(nn.Module):
     def __init__(self):
         super().__init__()
         self.fea_size = args.fea_size
@@ -270,7 +273,7 @@ class AttentionModule(nn.Module):
         self.l_list = []
         for i in range(self.res_block_cnt):
             self.l_list.append(nn.Sequential(
-                nn.Linear(hidden_dim_1, hidden_dim_1), 
+                nn.Linear(hidden_dim_1, hidden_dim_1),
                 nn.ReLU()
             ))
         self.l_list = nn.Sequential(*self.l_list)
@@ -284,7 +287,6 @@ class AttentionModule(nn.Module):
             nn.ReLU(),
             nn.Linear(out_dim[2], out_dim[3]),
         )
-        
 
     def forward(self, batch_datas_steps):
 
@@ -316,6 +318,7 @@ class AttentionModule(nn.Module):
 
         output = self.decoder(output).sum(0)
         return output.squeeze()
+
 
 class TransformerEncoderLayerModule(nn.Module):
     def __init__(self):
@@ -364,7 +367,7 @@ class TransformerEncoderLayerModule(nn.Module):
 
     def forward(self, batch_datas_steps):
         batch_datas_steps = batch_datas_steps[:,
-                                              :self.step_size, :self.fea_size]
+                            :self.step_size, :self.fea_size]
         encoder_output = self.encoder(batch_datas_steps)
         encoder_output = encoder_output.transpose(0, 1)
         output = self.transformer_encoder_layer(encoder_output)
@@ -372,6 +375,7 @@ class TransformerEncoderLayerModule(nn.Module):
         output = self.l1(output) + output
         output = self.decoder(output).sum(0)
         return output.squeeze()
+
 
 class TransformerModule(nn.Module):
     def __init__(self):
@@ -412,7 +416,6 @@ class TransformerModule(nn.Module):
         )
 
     def forward(self, batch_datas_steps):
-
         batch_datas_steps = batch_datas_steps[:, :self.step_size, :self.fea_size]
         encoder_output = self.encoder(batch_datas_steps)
 
@@ -422,6 +425,7 @@ class TransformerModule(nn.Module):
         output = self.decoder(output).sum(0)
 
         return output.squeeze()
+
 
 class LSTMModule(nn.Module):
     def __init__(self):
@@ -447,7 +451,6 @@ class LSTMModule(nn.Module):
         self.lstm = nn.LSTM(
             lstm_linar_hidden_dim[-1], lstm_linar_hidden_dim[-1])
 
-
         self.l0 = nn.Sequential(
             nn.Linear(hidden_dim, hidden_dim),
             nn.ReLU(),
@@ -467,7 +470,6 @@ class LSTMModule(nn.Module):
         )
 
     def forward(self, batch_datas_steps):
-
         batch_datas_steps = batch_datas_steps[:, :self.step_size, :self.fea_size]
 
         batch_datas_steps = batch_datas_steps.transpose(0, 1)
@@ -483,6 +485,7 @@ class LSTMModule(nn.Module):
         output = self.decoder(output)
 
         return output.squeeze()
+
 
 class GPTModule(nn.Module):
     def __init__(self):
@@ -500,10 +503,10 @@ class GPTModule(nn.Module):
         )
 
     def forward(self, batch_datas_steps):
-
         output = self.gpt(batch_datas_steps)[0].mean(1)
         output = self.decoder(output)
         return output.squeeze()
+
 
 class BertModule(nn.Module):
     def __init__(self):
@@ -520,10 +523,10 @@ class BertModule(nn.Module):
         )
 
     def forward(self, batch_datas_steps):
-
         output = self.bert(batch_datas_steps).logits[:, 0, :]
         output = self.decode(output)
         return output.squeeze()
+
 
 class LambdaRankLoss(nn.Module):
     def __init__(self, device):
@@ -546,7 +549,7 @@ class LambdaRankLoss(nn.Module):
 
         true_sorted_by_preds = torch.gather(y_true, dim=1, index=indices_pred)
         true_diffs = true_sorted_by_preds[:, :,
-                                          None] - true_sorted_by_preds[:, None, :]
+                     None] - true_sorted_by_preds[:, None, :]
         padded_pairs_mask = torch.isfinite(true_diffs)
 
         padded_pairs_mask = padded_pairs_mask & (true_diffs > 0)
@@ -566,7 +569,7 @@ class LambdaRankLoss(nn.Module):
         weights = self.lamdbaRank_scheme(G, D, mu, true_sorted_by_preds)
 
         scores_diffs = (
-            y_pred_sorted[:, :, None] - y_pred_sorted[:, None, :]).clamp(min=-1e8, max=1e8)
+                y_pred_sorted[:, :, None] - y_pred_sorted[:, None, :]).clamp(min=-1e8, max=1e8)
         scores_diffs[torch.isnan(scores_diffs)] = 0.
         weighted_probas = (torch.sigmoid(
             sigma * scores_diffs).clamp(min=eps) ** weights).clamp(min=eps)
@@ -574,6 +577,7 @@ class LambdaRankLoss(nn.Module):
         masked_losses = losses[padded_pairs_mask & ndcg_at_k_mask]
         loss = -torch.sum(masked_losses)
         return loss
+
 
 class SegmentDataLoader:
     def __init__(
@@ -630,6 +634,7 @@ class SegmentDataLoader:
 
     def __len__(self):
         return self.number
+
 
 class GPTSegmentDataLoader:
     def __init__(
@@ -690,6 +695,7 @@ class GPTSegmentDataLoader:
     def __len__(self):
         return self.number
 
+
 class BertSegmentDataLoader:
     def __init__(
             self,
@@ -705,7 +711,6 @@ class BertSegmentDataLoader:
         labels = []
         min_latency = []
         for data_idx, data in enumerate(dataset):
-
             datas_step, label, min_lat = data
             datas_steps.append(datas_step)
             labels.append(label)
@@ -743,8 +748,8 @@ class BertSegmentDataLoader:
     def __len__(self):
         return self.number
 
-def load_datas(datasets_global):
 
+def load_datas(datasets_global):
     datasets = np.array(datasets_global, dtype=object)
     if args.data_cnt > 0:
         train_len = int(args.data_cnt * 100 * 0.9)
@@ -764,16 +769,16 @@ def load_datas(datasets_global):
 
     n_gpu = int(8)
     if args.attention_class == 'gpt':
-        train_dataloader = GPTSegmentDataLoader(train_datas, args.train_size_per_gpu*n_gpu, True)
-        val_dataloader = GPTSegmentDataLoader(val_datas, args.train_size_per_gpu*n_gpu, False)
+        train_dataloader = GPTSegmentDataLoader(train_datas, args.train_size_per_gpu * n_gpu, True)
+        val_dataloader = GPTSegmentDataLoader(val_datas, args.train_size_per_gpu * n_gpu, False)
     elif args.attention_class == 'bert':
-        train_dataloader = BertSegmentDataLoader(train_datas, args.train_size_per_gpu*n_gpu, True)
-        val_dataloader = BertSegmentDataLoader(val_datas, args.train_size_per_gpu*n_gpu, False)
+        train_dataloader = BertSegmentDataLoader(train_datas, args.train_size_per_gpu * n_gpu, True)
+        val_dataloader = BertSegmentDataLoader(val_datas, args.train_size_per_gpu * n_gpu, False)
     else:
         train_dataloader = SegmentDataLoader(
-            train_datas, args.train_size_per_gpu*n_gpu, True)
+            train_datas, args.train_size_per_gpu * n_gpu, True)
         val_dataloader = SegmentDataLoader(
-            val_datas, args.val_size_per_gpu*n_gpu, False)
+            val_datas, args.val_size_per_gpu * n_gpu, False)
 
     return train_dataloader, val_dataloader
 
@@ -896,15 +901,13 @@ def train(train_loader, val_dataloader, device):
 
         train_time = time.time() - tic
 
-        if epoch % 5 == 0 or epoch == n_epoch - 1 or True:
-
+        if epoch % 5 == 0 or epoch == n_epoch - 1:
             valid_loss = validate(net, val_dataloader,
                                   loss_func, device=device)
             loss_msg = "Train Loss: %.4f\tValid Loss: %.4f" % (
                 train_loss, valid_loss)
             print("Epoch: %d\tBatch: %d\t%s\tTrain Speed: %.0f" % (
                 epoch, batch, loss_msg, len(train_loader) / train_time,))
-
 
         model_save_file_name = '%s/tlp_model_%d.pkl' % (args.save_folder, valid_loss)
 
@@ -914,7 +917,7 @@ def train(train_loader, val_dataloader, device):
     return model_save_file_name
 
 
-def il(test_loader, device, pre_trained_model,aug_data, args):
+def il(test_loader, device, pre_trained_model, aug_data, args):
     # 加载预训练模型
     if pre_trained_model:
         with open(pre_trained_model, 'rb') as f:
@@ -986,8 +989,8 @@ def set_seed(seed):
     torch.backends.cudnn.benchmark = False
     torch.backends.cudnn.deterministic = True
 
-def conformal_prediction(datas, task_pred_dict, model,mapie,task_drift_dict,task_after_dict):
 
+def conformal_prediction(datas, task_pred_dict, model, mapie, task_drift_dict, task_after_dict):
     datas_new = []
     for data_idx, data in enumerate([datas]):
         file, file_idx, workloadkey_idx, workloadkey, workload_args, flop_ct, line_vecs = data
@@ -1003,8 +1006,7 @@ def conformal_prediction(datas, task_pred_dict, model,mapie,task_drift_dict,task
 
     preds_all = []
     labels_all = []
-    data_test= []
-
+    data_test = []
 
     for batch_datas_steps, batch_labels in test_loader:
         batch_datas_steps = batch_datas_steps.to('cpu')
@@ -1023,7 +1025,7 @@ def conformal_prediction(datas, task_pred_dict, model,mapie,task_drift_dict,task
     percentage_difference = np.abs((test_loader.min_latency.min() - labels_all) / labels_all) * 100
     # 找到差异大于 20% 的索引
     indices_real = np.where(percentage_difference > 5)[0]
-    print("The size of indices is :",indices_real.size)
+    print("The size of indices is :", indices_real.size)
     """cp"""
     data_test = torch.cat(data_test, dim=0)
     y_test = labels_all
@@ -1041,9 +1043,9 @@ def conformal_prediction(datas, task_pred_dict, model,mapie,task_drift_dict,task
     # 创建一个字典来存储每个 alpha 的结果
     indices_detec_dict = {}
     indices_not_detec_dict = {}
-    best_f1=0
-    best_indices_detec=[]
-    for index,pvalue in enumerate(alphas):
+    best_f1 = 0
+    best_indices_detec = []
+    for index, pvalue in enumerate(alphas):
         # if index==num_set:
         #     if all(pvalue) or not any(pvalue):
         #         print("all ture/false, break")
@@ -1052,7 +1054,7 @@ def conformal_prediction(datas, task_pred_dict, model,mapie,task_drift_dict,task
         indices_cre = np.where(credibility_result[:, index] == True)[0]
         indices_con = np.where(confidence_result[:, index] == True)[0]
 
-        indices_detec = np.union1d(indices_cre, indices_con) # np.intersect1d 交
+        indices_detec = np.union1d(indices_cre, indices_con)  # np.intersect1d 交
         indices_detec_dict[pvalue] = indices_detec
         # 获取所有索引中不在 indices_detec 中的索引
         indices_not_detec = np.setdiff1d(all_indices, indices_detec)
@@ -1079,14 +1081,13 @@ def conformal_prediction(datas, task_pred_dict, model,mapie,task_drift_dict,task
 
         # 计算 F1 分数
         f1_score = 2 * (precision * recall) / (precision + recall)
-        if best_f1<f1_score:
+        if best_f1 < f1_score:
             best_f1 = f1_score
-            best_indices_detec=indices_detec
-        print("The alpha is:",pvalue)
+            best_indices_detec = indices_detec
+        print("The alpha is:", pvalue)
         print(f"Detection f1_score is: {f1_score:.2%}, "
               f"accuracy is: {accuracy:.2%}, "
               f"precision is: {precision:.2%}, recall is: {recall:.2%}")
-
 
     task_after_dict[workloadkey] = (preds_all[indices_detec].detach().cpu().numpy(),
                                     test_loader.min_latency[indices_detec].min().numpy(),
@@ -1101,13 +1102,13 @@ def conformal_prediction(datas, task_pred_dict, model,mapie,task_drift_dict,task
     return best_indices_detec
 
 
-def cp(train_loader, val_dataloader, test_datasets, underlying_path,file_pattern):
+def cp(train_loader, val_dataloader, test_datasets, underlying_path, file_pattern):
     model_save_file_name = underlying_path
     with open(model_save_file_name, 'rb') as f:
         net = pickle.load(f)
     """calibration data"""
-    data_valid=[]
-    y_valid=[]
+    data_valid = []
+    y_valid = []
     for batch_datas_steps, batch_labels in val_dataloader:
         # a=batch_datas_steps.shape
         # b=batch_labels.shape
@@ -1177,11 +1178,11 @@ def cp(train_loader, val_dataloader, test_datasets, underlying_path,file_pattern
             if task.workload_key not in pred_a_dataset_dict:
                 # print('error task.workload_key not in pred_a_dataset_dict')
                 continue
-            indices_detec=conformal_prediction(
+            indices_detec = conformal_prediction(
                 pred_a_dataset_dict[task.workload_key], task_pred_dict,
-                net,mapie,task_drift_dict,task_after_dict)
+                net, mapie, task_drift_dict, task_after_dict)
     return indices_detec
-            # p-value
+    # p-value
     #         preds, min_latency, labels = task_pred_dict[task.workload_key]
     #         real_values = labels[np.argsort(-preds)]
     #         real_latency = min_latency / np.maximum(real_values, 1e-5)
@@ -1206,7 +1207,6 @@ def cp(train_loader, val_dataloader, test_datasets, underlying_path,file_pattern
     # else:
     #     print(f"average top 5 score is {best_latency_total / top5_total}")
     #     top_5_total.append(best_latency_total / top5_total)
-
 
     """finish"""
     # for i in TF:
@@ -1258,16 +1258,23 @@ def cp(train_loader, val_dataloader, test_datasets, underlying_path,file_pattern
 
     # preds, min_latency, labels = (preds_all.detach().cpu().numpy(), test_loader.min_latency.min().numpy(), labels_all.numpy())
 
-
     # print(coverage)
 
+
 def init_args():
+    params = nni.get_next_parameter()
+    if params == {}:
+        params = {
+            "seed": 123,
+        }
+    print("seed: ", params["seed"])
     parser = argparse.ArgumentParser()
-    parser.add_argument("--save_folder", type=str, default='/models/tlp_i7_base')
+    parser.add_argument("--save_folder", type=str, default='models/tlp_i7_tiny')
+    parser.add_argument('--mode', choices=['train', 'deploy'], help="Mode to run: train or deploy")
     parser.add_argument("--under_train_dataset", type=str,
-                        default='/home/huanting/PROM/examples/case_study/tlp/scripts/data_model/bert_base_train_and_val.pkl')
+                        default='/home/huanting/PROM/examples/case_study/tlp/scripts/data_model/bert_tiny_train_and_val.pkl')
     parser.add_argument("--under_test_dataset", type=str,
-                        default='/home/huanting/PROM/examples/case_study/tlp/scripts/data_model/bert_base_test.pkl')
+                        default='/home/huanting/PROM/examples/case_study/tlp/scripts/data_model/bert_tiny_test.pkl')
     parser.add_argument("--under_model", type=str,
                         default='/home/huanting/PROM/examples/case_study/tlp/scripts/tlp_i7_base/tlp_model_49.pkl')
     parser.add_argument("--test_dataset", type=str,
@@ -1284,13 +1291,16 @@ def init_args():
     parser.add_argument("--res_block_cnt", type=int, default=2)
     parser.add_argument("--self_sup_model", type=str, default='')
     parser.add_argument("--data_cnt", type=int, default=-1)  # data_cnt * 1000
-    parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--seed", type=int, default=params["seed"])
     parser.add_argument("--train_size_per_gpu", type=int, default=16)
     parser.add_argument("--val_size_per_gpu", type=int, default=16)
     parser.add_argument("--n_epoch", type=int, default=10)
     args = parser.parse_args()
+    args.seed = int(args.seed)
+    print("seed: ", params["seed"])
     set_seed(args.seed)
     return args
+
 
 def train_model(args):
     # init args
@@ -1299,41 +1309,15 @@ def train_model(args):
     print("Load data and split data to train and test...")
     train_data, test_data = tlp_prom.data_partitioning \
         (train_dataset=args.under_train_dataset, test_dataset=args.under_test_dataset, args=args)
-    under_model_name=train(*train_data, device="cpu")
+    under_model_name = train(*train_data, device="cpu")
     # origin_testdata = test_data
     print("Load data and evaluate the data on new benchmark...")
-    eval_model(model_file=under_model_name, test_datasets=test_data)
+    top_1_total = eval_model(model_file=under_model_name, test_datasets=test_data)
+
+    nni.report_final_result(top_1_total)
+
 
 def deploy_model(args):
-    # init args
-    tlp_prom = Tlp_prom()
-    # split data to train and test
-    print("Load data and split data to train and test...")
-    # ori_train_data, ori_test_data = tlp_prom.data_partitioning \
-    #     (train_dataset=args.under_train_dataset, test_dataset=args.under_test_dataset, args=args)
-    train_data, test_data = tlp_prom.data_partitioning \
-        (train_dataset=args.under_train_dataset, test_dataset=args.test_dataset, args=args)
-
-    underlying_model_name=args.under_model
-    # print("Evaluate the data on origin benchmark...")
-    # eval_model(model_file=underlying_model_name, test_datasets=ori_test_data)
-    print("Evaluate the data on new benchmark...")
-    eval_model(model_file=underlying_model_name, test_datasets=test_data)
-
-    """cp"""
-    print("Conformal prediction...")
-    indices_detec= cp(*train_data, test_datasets=test_data,
-       underlying_path=underlying_model_name, file_pattern="((bert_large*.task.pkl")
-
-    """incremental learning"""
-    print("Incremental learning...")
-
-    il_model=il(test_data, device="cpu", pre_trained_model=underlying_model_name,
-                          aug_data=indices_detec, args=args)
-    print("Evaluate the data on new benchmark...")
-    eval_model(model_file=il_model, test_datasets=test_data)
-
-def Incre(args):
     # init args
     tlp_prom = Tlp_prom()
     # split data to train and test
@@ -1346,19 +1330,51 @@ def Incre(args):
     underlying_model_name = args.under_model
     # print("Evaluate the data on origin benchmark...")
     # eval_model(model_file=underlying_model_name, test_datasets=ori_test_data)
-    # print("Evaluate the data on new benchmark...")
-    # eval_model(model_file=underlying_model_name, test_datasets=test_data)
-
-    indices_detec=[1,2,3]
-    under_model_name = il(test_data, device="cpu", pre_trained_model=underlying_model_name,
-                          aug_data=indices_detec, args=args)
+    print("Evaluate the data on new benchmark...")
     eval_model(model_file=underlying_model_name, test_datasets=test_data)
+
+    """cp"""
+    print("Conformal prediction...")
+    indices_detec = cp(*train_data, test_datasets=test_data,
+                       underlying_path=underlying_model_name, file_pattern="((bert_large*.task.pkl")
+
+    """incremental learning"""
+    print("Incremental learning...")
+
+    il_model = il(test_data, device="cpu", pre_trained_model=underlying_model_name,
+                  aug_data=indices_detec, args=args)
+    print("Evaluate the data on new benchmark...")
+    eval_model(model_file=il_model, test_datasets=test_data)
+
+
+# def Incre(args):
+#     # init args
+#     tlp_prom = Tlp_prom()
+#     # split data to train and test
+#     print("Load data and split data to train and test...")
+#     # ori_train_data, ori_test_data = tlp_prom.data_partitioning \
+#     #     (train_dataset=args.under_train_dataset, test_dataset=args.under_test_dataset, args=args)
+#     train_data, test_data = tlp_prom.data_partitioning \
+#         (train_dataset=args.under_train_dataset, test_dataset=args.test_dataset, args=args)
+#
+#     underlying_model_name = args.under_model
+#     # print("Evaluate the data on origin benchmark...")
+#     # eval_model(model_file=underlying_model_name, test_datasets=ori_test_data)
+#     # print("Evaluate the data on new benchmark...")
+#     # eval_model(model_file=underlying_model_name, test_datasets=test_data)
+#
+#     indices_detec=[1,2,3]
+#     under_model_name = il(test_data, device="cpu", pre_trained_model=underlying_model_name,
+#                           aug_data=indices_detec, args=args)
+#     eval_model(model_file=underlying_model_name, test_datasets=test_data)
 
 if __name__ == "__main__":
     print("initial parameters...")
     args = init_args()
-    # train_model(args)
-    deploy_model(args)
-    # Incre(args)
+    # if args.mode=="train":
+    #     train_model(args)
+    # elif args.mode=="deploy":
+    #     deploy_model(args)
+    train_model(args)
 
 
