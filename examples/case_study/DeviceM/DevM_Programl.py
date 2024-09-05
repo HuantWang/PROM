@@ -149,9 +149,8 @@ def load_args():
     params = nni.get_next_parameter()
     if params == {}:
         params = {
-            "seed": 123,
+            "seed": 838,
             "method": "Deeptune",
-            "mode": "train"
         }
 
     parser = argparse.ArgumentParser()
@@ -159,7 +158,7 @@ def load_args():
                         help="random seed for initialization")
     parser.add_argument('--method', choices=['Deeptune', 'Programl','Inst2vec'],default='Programl',
                         help="The baseline method to run")
-    parser.add_argument('--mode', choices=['train', 'deploy'], default='deploy', help="Mode to run: train or deploy")
+    parser.add_argument('--mode', choices=['train', 'deploy'], help="Mode to run: train or deploy")
     args = parser.parse_args()
     torch.manual_seed(args.seed)
     dataset = D.OpenCLDevmapDataset()
@@ -415,6 +414,6 @@ if __name__ == '__main__':
         train_phase(args, dataset_ori)
     elif args.mode == 'deploy':
         deploy(args, dataset_ori)
-
+    deploy(args, dataset_ori)
     # train_phase(args, dataset_ori)
     # deploy(args, dataset_ori)

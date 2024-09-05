@@ -82,8 +82,8 @@ class Prom_utils:
         alpha_max = min(1 - 1 / n, 1) + 0.1
 
         # Round alpha_min and alpha_max up to the nearest tenth and ensure they do not exceed 1
-        alpha_min = min(math.ceil(alpha_min * 10) / 10.0, 1/n + 0.1)
-        alpha_max = min(math.ceil(alpha_max * 10) / 10.0, 1-1/n - 0.1)
+        alpha_min = min(math.ceil(alpha_min * 10) / 10.0, 1/n + 0.02)
+        alpha_max = min(math.ceil(alpha_max * 10) / 10.0, 1-1/n - 0.02)
 
         return alpha_min, alpha_max
 
@@ -106,7 +106,7 @@ class Prom_utils:
             if alpha_max==alpha_min:
                 self.alphas = [alpha_min]
             else:
-                self.alphas = np.arange(alpha_min, alpha_max, 0.1)
+                self.alphas = np.arange(alpha_min, alpha_max, 0.02)
         else :
             self.alphas = [significance_level]
         try:
@@ -334,114 +334,106 @@ class Prom_utils:
             confidence_sizes[name] = [y_pss[name][:, :, i].sum(axis=1).mean() for i, _ in enumerate(self.alphas)]
             credibility_sizes[name] = [credibility_score[name][i, :].sum().mean() for i, _ in enumerate(self.alphas)]
 
+        if significance_level is "auto":
+            # Extract the y_ps at the closest index
+            for alpha_num in range(len(self.alphas)):
+                # print("The current alpha is: ", self.alphas[alpha_num])
+                confidence_result_ps = {method: y_pss[method][:, :, alpha_num] for method in y_pss}
+                credibility_result_ps = {method: credibility_score[method][:, alpha_num] for method in
+                                         credibility_score}
+                # Determine indices for each method
+                index_all_tem, index_all_right_tem = {}, {}
 
-        # Find the index of confidence score near 1
-        confidence_result = {key: min(range(len(lst)), key=lambda i: abs(lst[i] - 1)) for key, lst in confidence_sizes.items()}
-        credibility_result = {key: min(range(len(lst)), key=lambda i: abs(lst[i] - 1)) for key, lst in
-                             credibility_sizes.items()}
+                for (method, y_ps1), (_, y_ps2) in zip(credibility_result_ps.items(), confidence_result_ps.items()):
+                    for index, confidence_single in enumerate(y_ps2):
+                        confidence_true = sum(confidence_single)
+                        credibility_true = y_ps1[index]
+                        if method not in index_all_tem:
+                            index_all_tem[method] = []
+                            index_all_right_tem[method] = []
+                        if confidence_true == 1 and credibility_true == 1:
+                            # elif confidence_true == 1:
+                            index_all_right_tem[method].append(index)
+                        else:
+                            index_all_tem[method].append(index)
 
-        # Extract the y_ps at the closest index
-        confidence_result_ps = {method: y_pss[method][:, :, confidence_result[method]] for method in y_pss}
-        credibility_result_ps = {method: credibility_score[method][:,  credibility_result[method]] for method in credibility_score}
-        # Determine indices for each method
-        index_all_tem, index_all_right_tem = {}, {}
+                index_all = list(set([idx for indices in index_all_tem.values() for idx in indices]))
+                index_list = list(index_all_tem.values())
+                index_list.append(index_all)
 
-        for (method, y_ps1), (_, y_ps2) in zip(credibility_result_ps.items(), confidence_result_ps.items()):
-            for index, confidence_single in enumerate(y_ps2):
-                confidence_true = sum(confidence_single)
-                credibility_true = y_ps1[index]
-                if method not in index_all_tem:
-                    index_all_tem[method] = []
-                    index_all_right_tem[method] = []
-                if confidence_true == 1 and credibility_true == 1:
-                # elif confidence_true == 1:
-                    index_all_right_tem[method].append(index)
-                else:
-                    index_all_tem[method].append(index)
-        # for method, y_ps in confidence_result_ps.items():
-        #     for index, i in enumerate(y_ps):
-        #         num_true = sum(i)
-        #         if method not in index_all_tem:
-        #             index_all_tem[method] = []
-        #             index_all_right_tem[method] = []
-        #         if num_true != 1:
-        #             index_all_tem[method].append(index)
-        #         elif num_true == 1:
-        #             index_all_right_tem[method].append(index)
+                index_all_right = list(set(range(len(self.y_test))) - set(index_all))
+                index_list_right = list(index_all_right_tem.values())
+                index_list_right.append(index_all_right)
 
-        index_all = list(set([idx for indices in index_all_tem.values() for idx in indices]))
-        index_list = list(index_all_tem.values())
-        index_list.append(index_all)
+                """ compute metircs"""
+                # o = y[test_index]
+                # correct = p == o
+                # 所有错误的
+                different_indices = np.where(all_pre != y)[0]
+                different_indices_right = np.where(all_pre == y)[0]
+                # 找到的错误的： index_list
+                # 找的真的错的：num_common_elements
+                acc_best = 0
+                F1_best = 0
+                pre_best = 0
+                rec_best = 0
+                method_name_best = "NONE"
+                self.method_params["mixture"] = ("mixture", False)
+                # print("_____________The detection performance can be seen below_____________")
+                for index, (single_list, single_list_right) in enumerate(zip(index_list, index_list_right)):
+                    self.common_elements = np.intersect1d(single_list, different_indices)
+                    num_common_elements = len(self.common_elements)
+                    self.common_elements_right = np.intersect1d(single_list_right, different_indices_right)
+                    num_common_elements_right = len(self.common_elements_right)
+                    try:
+                        accuracy = (num_common_elements + num_common_elements_right) / len(all_pre)
+                    except:
+                        accuracy = 0
+                    try:
+                        precision = num_common_elements / len(single_list)
+                    except:
+                        precision = 0
+                    try:
+                        recall = num_common_elements / len(different_indices)
+                    except:
+                        recall = 0
+                    try:
+                        F1 = 2 * precision * recall / (precision + recall)
+                    except:
+                        F1 = 0
 
-        index_all_right = list(set(range(len(self.y_test))) - set(index_all))
-        index_list_right = list(index_all_right_tem.values())
-        index_list_right.append(index_all_right)
+                    # print(
+                    #     f"The accuracy for detection on {list(self.method_params.keys())[index]} is: {accuracy * 100:.2f}%, "
+                    #     f"precision is: {precision * 100:.2f}%, "
+                    #     f"recall is: {recall * 100:.2f}%, "
+                    #     f"F1 is: {F1 * 100:.2f}%"
+                    # )
 
-        """ compute metircs"""
-        # o = y[test_index]
-        # correct = p == o
-        # 所有错误的
-        different_indices = np.where(all_pre != y)[0]
-        different_indices_right = np.where(all_pre == y)[0]
-        # 找到的错误的： index_list
-        # 找的真的错的：num_common_elements
-        acc_best = 0
-        F1_best = 0
-        pre_best = 0
-        rec_best = 0
-        method_name_best = "NONE"
-        self.method_params["mixture"] = ("mixture", False)
-        print("_____________The detection performance can be seen below_____________")
-        for index, (single_list, single_list_right) in enumerate(zip(index_list, index_list_right)):
-            self.common_elements = np.intersect1d(single_list, different_indices)
-            num_common_elements = len(self.common_elements)
-            self.common_elements_right = np.intersect1d(single_list_right, different_indices_right)
-            num_common_elements_right = len(self.common_elements_right)
-            try:
-                accuracy = (num_common_elements + num_common_elements_right) / len(all_pre)
-            except:
-                accuracy = 0
-            try:
-                precision = num_common_elements / len(single_list)
-            except:
-                precision = 0
-            try:
-                recall = num_common_elements / len(different_indices)
-            except:
-                recall = 0
-            try:
-                F1 = 2 * precision * recall / (precision + recall)
-            except:
-                F1 = 0
+                    if F1 > F1_best:
+                        method_name_best = list(self.method_params.keys())[index]
+                        acc_best = accuracy
+                        F1_best = F1
+                        pre_best = precision
+                        rec_best = recall
+                # print(
+                #     f"{method_name_best} is the best approach，"
+                #     f"the accuracy is: {accuracy * 100:.2f}%, "
+                #     f"the precision is: {pre_best * 100:.2f}%, "
+                #     f"the recall is: {rec_best * 100:.2f}%, "
+                #     f"the F1 is: {F1_best * 100:.2f}%"
+                # )
+                # print("______________________________________")
+                Acc_all.append(acc_best)
+                F1_all.append(F1_best)
+                Pre_all.append(pre_best)
+                Rec_all.append(rec_best)
+                # print("The P value is", self.alphas)
+                # print("The precision is ", Pre_all)
+                # print("The recall is ", Rec_all)
+                # print("The F1 is ", F1_all)
+                # print("The accuracy is ", Acc_all)
 
-            print(
-                f"The accuracy for detection on {list(self.method_params.keys())[index]} is: {accuracy * 100:.2f}%, "
-                f"precision is: {precision * 100:.2f}%, "
-                f"recall is: {recall * 100:.2f}%, "
-                f"F1 is: {F1 * 100:.2f}%"
-            )
-
-
-            if F1 > F1_best:
-                method_name_best = list(self.method_params.keys())[index]
-                acc_best = accuracy
-                F1_best = F1
-                pre_best = precision
-                rec_best = recall
-        print(
-            f"{method_name_best} is the best approach，"
-            f"the accuracy is: {accuracy * 100:.2f}%, "
-            f"the precision is: {pre_best * 100:.2f}%, "
-            f"the recall is: {rec_best * 100:.2f}%, "
-            f"the F1 is: {F1_best * 100:.2f}%"
-        )
-        print("______________________________________")
-        Acc_all.append(acc_best)
-        F1_all.append(F1_best)
-        Pre_all.append(pre_best)
-        Rec_all.append(rec_best)
-
-        return index_all_right, index_list_right,Acc_all,F1_all,Pre_all,Rec_all,index_list,self.common_elements
+        return index_all_right, index_list_right,Acc_all,F1_all,Pre_all,Rec_all,index_list,self.common_elements,self.alphas
 
     def evaluate_mapie(self, y_preds, y_pss,p_value,all_pre,y, significance_level=0.05):
         nulls, coverages, accuracies, confidence_sizes, credibility_sizes = {}, {}, {}, {}, {}

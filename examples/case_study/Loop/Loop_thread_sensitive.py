@@ -1,7 +1,7 @@
 import sys
 import os
 import warnings
-
+import pickle
 # from sklearn.metrics import accuracy_score
 
 warnings.filterwarnings("ignore")
@@ -18,7 +18,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.svm import SVC
 
-from src.prom.prom_util import Prom_utils
+from prom_util_sensitive import Prom_utils
 
 
 def load_deeptune_args():
@@ -41,9 +41,7 @@ def load_deeptune_args():
     parser.add_argument('--mode', choices=['train', 'deploy'], help="Mode to run: train or deploy")
     args = parser.parse_args()
 
-    args.seed=int(args.seed)
-    args.epoch=int(args.epoch)
-    args.batch_size=int(args.batch_size)
+    args.seed=int(random.randint(0, 10000))
     print("seeds is", args.seed)
     # train the underlying model
     # deeptune_model = DeepTune()
@@ -74,7 +72,7 @@ def loop_deploy_de(args):
     # valid_index = valid_index[:100]
     # test_index = test_index[:100]
     #  init the model
-    print(f"Loading underlying model...")
+    # print(f"Loading underlying model...")
     prom_loop.model.init(args)
     seed_value = int(args.seed)
     prom_loop.model.train(
@@ -94,28 +92,8 @@ def loop_deploy_de(args):
     origin_speedup, all_pre, data_distri = deeptune_make_prediction \
         (model=deeptune_model, X_seq=X_seq, y_1hot=y_1hot,
          time=time, test_index=test_index)
-    print(f"Loading successful, the speedup is {origin_speedup}")
-    # origin = sum(speed_up_all) / len(speed_up_all)
-    # print("final percent:", origin)
+    # print(f"Loading successful, the speedup is {origin_speedup}")
     # nni.report_final_result(origin)
-    ######
-    import matplotlib.pyplot as plt
-    import seaborn as sns
-    import pandas as pd
-    plt.boxplot(data_distri)
-    data_df = pd.DataFrame({'Data': data_distri})
-    sns.violinplot(data=data_df, y='Data')
-    seed_save = str(int(seed_value))
-    plt.title('Box Plot Example ' + seed_save)
-    plt.ylabel('Values')
-
-    plt.savefig(plot_figure_path + str(origin_speedup) + '_' + str(
-        seed_save) + '.png')
-    data_df.to_pickle(
-        plot_figuredata_path + str(origin_speedup) + '_' + str(
-            seed_save) + '_data.pkl')
-    # plt.show()
-    print("training finished")
 
     # Conformal Prediction
     # the underlying model
@@ -144,40 +122,19 @@ def loop_deploy_de(args):
 
     # evaluate conformal prediction
     # MAPIE
-    Prom_thread.evaluate_mapie \
-        (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y,
-         significance_level=0.05)
+    # Prom_thread.evaluate_mapie \
+    #     (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y,
+    #      significance_level=0.05)
 
-    Prom_thread.evaluate_rise \
-        (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y,
-         significance_level=0.05)
+    # Prom_thread.evaluate_rise \
+    #     (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y,
+    #      significance_level=0.05)
 
-    index_all_right, index_list_right, Acc_all, F1_all, Pre_all, Rec_all, _, _ \
+    index_all_right, index_list_right, Acc_all, F1_all, Pre_all, Rec_all, _, _,alpha \
         = Prom_thread.evaluate_conformal_prediction \
         (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y,significance_level='auto')
 
-    # Increment learning
-    print("Finding the most valuable instances for incremental learning...")
-    train_index, test_index = Prom_thread.incremental_learning \
-        (args.seed, test_index, train_index)
-    # retrain the model
-    print("Retraining the model...")
-
-    prom_loop.model.train(
-        sequences=X_seq[train_index], verbose=0, y_1hot=y_1hot[train_index]
-    )
-    # test the pretrained model
-    retrained_speedup, inproved_speedup = deeptune_make_prediction_il \
-        (model_il=deeptune_model, X_seq=X_seq, y_1hot=y_1hot, time=time,
-         test_index=test_index, origin_speedup=origin_speedup)
-
-    print(
-        f"origin speed up: {origin_speedup}, "
-        f"Imroved speed up: {retrained_speedup}, "
-        f"Imroved mean speed up: {inproved_speedup}, "
-    )
-
-    nni.report_final_result(inproved_speedup)
+    return Acc_all, F1_all, Pre_all, Rec_all, alpha,seed_value
 
 
 def loop_train_de(args):
@@ -246,14 +203,76 @@ def loop_train_de(args):
     print("training finished")
     nni.report_final_result(origin_speedup)
 
+def sensitive():
+    from tqdm import tqdm
+    Acc_all = []
+    F1_all = []
+    Pre_all = []
+    Rec_all = []
+    alpha_all = []
+    seed_all = []
+
+    for i in tqdm(range(100)):
+        args = load_deeptune_args()
+        Acc, F1, Pre, Rec, alpha,seed = loop_deploy_de(args)
+        # print(f"Acc: {Acc}, F1: {F1}, Pre: {Pre}, Rec: {Rec}, alpha: {alpha}")
+        Acc_all.append(Acc)
+        F1_all.append(F1)
+        Pre_all.append(Pre)
+        Rec_all.append(Rec)
+        seed_all.append(seed)
+
+    # 将这些列表保存到一个pkl文件中
+    with open('results.pkl', 'wb') as f:
+        pickle.dump(
+            {'Acc_all': Acc_all, 'F1_all': F1_all, 'Pre_all': Pre_all, 'Rec_all': Rec_all, 'alpha_all': alpha_all, 'seed_all':seed_all}, f)
+
+def load_pkc():
+    import matplotlib.pyplot as plt
+    from scipy.stats import gmean
+    with open('results.pkl', 'rb') as f:
+        data = pickle.load(f)
+
+    # 提取各个列表
+    Acc_all = data['Acc_all']
+    F1_all = data['F1_all']
+    Pre_all = data['Pre_all']
+    Rec_all = data['Rec_all']
+    alpha_all = data['alpha_all']
+    # seed_all = data['seed_all']
+    Acc_all=np.array(Acc_all)
+    F1_all=np.array(F1_all)
+    Pre_all=np.array(Pre_all)
+    Rec_all=np.array(Rec_all)
+    Acc_mean = gmean(Acc_all, axis=1)
+    F1_mean = gmean(F1_all, axis=1)
+    Pre_mean = gmean(Pre_all, axis=1)
+    Rec_mean = gmean(Rec_all, axis=1)
+
+    Pre_mean_sort = sorted(Pre_mean, reverse=False)
+    Rec_mean_sort = sorted(Rec_mean, reverse=True)
+    F1_scores = [2 * (pre * rec) / (pre + rec) for pre, rec in zip(Pre_mean_sort, Rec_mean_sort)]
+
+    # 绘制排序后的图表
+    plt.plot(Pre_mean_sort, label="Precision", )
+    plt.plot(Rec_mean_sort, label="recall",)
+    plt.plot(F1_scores, label="F1", )
+    plt.xlabel('Alpha')
+    plt.ylabel('Precision')
+    plt.legend()
+    plt.title("Precision vs Alpha (Sorted by Precision)")
+    plt.show()
+    print("over")
+
 
 if __name__ == '__main__':
-    args = load_deeptune_args()
-    if args.mode == 'train':
-        loop_train_de(args=args)
-    elif args.mode == 'deploy':
-        loop_deploy_de(args=args)
-    # loop_train_de(args)
-    loop_deploy_de(args)
+
+    # sensitive()
+    load_pkc()
+
+
+
+
+
     # nnictl create --config /home/huanting/PROM/examples/case_study/Loop/config.yaml --port 8088
 

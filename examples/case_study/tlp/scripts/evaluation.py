@@ -25,13 +25,13 @@ yaml_file = "/home/huanting/PROM/examples/case_study/tlp/scripts/config.yaml"
 
 # 要运行的命令列表和对应的端口
 experiments = [
-{"command": "python train_tlp.py --mode train --save_folder='models/train/tlp_i7_base' --under_train_dataset='./data_model/bert_base_train_and_val.pkl' --under_test_dataset='./data_model/bert_base_test.pkl' ", "port": 8088},
-{"command": "python train_tlp.py --mode train --save_folder='models/train/tlp_i7_large' --under_train_dataset='./data_model/bert_large_train_and_val.pkl' --under_test_dataset='./data_model/bert_large_test.pkl' ", "port": 8089},
-{"command": "python train_tlp.py --mode train --save_folder='models/train/tlp_i7_tiny' --under_train_dataset='./data_model/bert_tiny_train_and_val.pkl' --under_test_dataset='./data_model/bert_tiny_test.pkl' ", "port": 8090},
-{"command": "python train_tlp.py --mode train --save_folder='models/train/tlp_i7_med' --under_train_dataset='./data_model/bert_medium_train_and_val.pkl' --under_test_dataset='./data_model/bert_medium_test.pkl' ", "port": 8091},
-# {"command": "python train_tlp.py --mode deploy --save_folder='models/il/tlp_i7_tiny' --under_model='./models/tlp_i7_base/tlp_model_2705.pkl' --test_data='./data_model/bert_tiny_test.pkl' --path='((bert_tiny*.task.pkl'", "port": 8092},
-# {"command": "python train_tlp.py --mode deploy --save_folder='models/il/tlp_i7_med' --under_model='./models/tlp_i7_base/tlp_model_2705.pkl' --test_data='./data_model/bert_medium_test.pkl' --path='((bert_medium*.task.pkl'", "port": 8093},
-# {"command": "python train_tlp.py --mode deploy --save_folder='models/il/tlp_i7_large' --under_model='./models/tlp_i7_base/tlp_model_2705.pkl' --test_data='./data_model/bert_large_test.pkl' --path='((bert_large*.task.pkl'", "port": 8094},
+# {"command": "python train_tlp.py --mode train --save_folder='models/train/tlp_i7_base' --under_train_dataset='./data_model/bert_base_train_and_val.pkl' --under_test_dataset='./data_model/bert_base_test.pkl' ", "port": 8088},
+# {"command": "python train_tlp.py --mode train --save_folder='models/train/tlp_i7_large' --under_train_dataset='./data_model/bert_large_train_and_val.pkl' --under_test_dataset='./data_model/bert_large_test.pkl' ", "port": 8089},
+# {"command": "python train_tlp.py --mode train --save_folder='models/train/tlp_i7_tiny' --under_train_dataset='./data_model/bert_tiny_train_and_val.pkl' --under_test_dataset='./data_model/bert_tiny_test.pkl' ", "port": 8090},
+# {"command": "python train_tlp.py --mode train --save_folder='models/train/tlp_i7_med' --under_train_dataset='./data_model/bert_medium_train_and_val.pkl' --under_test_dataset='./data_model/bert_medium_test.pkl' ", "port": 8091},
+# {"command": "python train_tlp.py --mode deploy --save_folder='models/il/tlp_i7_tiny' --under_model='./models/train/tlp_i7_base/tlp_model_533_best.pkl' --test_data='./data_model/bert_tiny_test.pkl' --path='((bert_tiny*.task.pkl'", "port": 8092},
+{"command": "python train_tlp.py --mode deploy --save_folder='models/il/tlp_i7_med' --under_model='./models/train/tlp_i7_base/tlp_model_533_best.pkl' --test_data='./data_model/bert_medium_test.pkl' --path='((bert_medium*.task.pkl'", "port": 8093},
+{"command": "python train_tlp.py --mode deploy --save_folder='models/il/tlp_i7_large' --under_model='./models/train/tlp_i7_base/tlp_model_533_best.pkl' --test_data='./data_model/bert_large_test.pkl' --path='((bert_large*.task.pkl'", "port": 8094},
 
 ]
 
@@ -56,6 +56,6 @@ for exp in experiments:
 
 
     print(f"Waiting for experiment to complete...")
-    time.sleep(5*60*60)
+    time.sleep(8*60*60)
 
 # subprocess.run(["nnictl", "stop", "-a"], capture_output=True, text=True)

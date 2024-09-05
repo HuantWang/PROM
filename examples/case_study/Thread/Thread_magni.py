@@ -19,7 +19,9 @@ def load_magni_args():
     params = nni.get_next_parameter()
     if params == {}:
         params = {
-            "seed": 123,
+            "seed": 2494,
+            "epoch": 10,
+            "batch_size": 32,
         }
 
     parser = argparse.ArgumentParser()
@@ -174,9 +176,6 @@ def Thread_deploy_magni(args):
         seed_save = str(int(seed_value))
         plt.title('Box Plot Example ' + seed_save)
         plt.ylabel('Values')
-
-
-
         plt.savefig(plot_figure_path+str(origin)+'_' + str(seed_save) + '.png')
         data_df.to_pickle(plot_figuredata_path +str(origin)+'_' + str(seed_save) + '_data.pkl')
         # plt.show()
@@ -237,10 +236,19 @@ def Thread_deploy_magni(args):
                 cascading_features=X_seq[train_index],
                 cascading_y=y_1hot[train_index],verbose=True)
         # test the finetuned model
-        retrained_speedup,inproved_speedup=make_prediction_ilMa\
+        retrained_speedup,inproved_speedup,data_distri=make_prediction_ilMa\
             (speed_up_all=speed_up_all, platform=platform,model=prom_thread.model,
              test_x=X_seq[test_index],test_index=test_index, X_cc=X_cc,
              origin_speedup=origin_speedup,improved_spp_all=improved_spp_all)
+
+        plt.boxplot(data_distri)
+        data_df = pd.DataFrame({'Data': data_distri})
+        sns.violinplot(data=data_df, y='Data')
+        seed_save = str(int(seed_value))
+        plt.title('Box Plot Example ' + seed_save)
+        plt.ylabel('Values')
+        plt.savefig(plot_figure_path + str(origin) + '_' + str(seed_save) + '_il.png')
+        data_df.to_pickle(plot_figuredata_path + str(origin) + '_' + str(seed_save) + '_il_data.pkl')
 
         origin_speedup_all.append(origin_speedup)
         speed_up_all.append(retrained_speedup)
@@ -274,5 +282,5 @@ if __name__=='__main__':
         Thread_deploy_magni( args=args)
     # Thread_deploy_magni( args=args)
     # Thread_train_magni(args)
-    # Thread_deploy_magni(args)
+    Thread_deploy_magni(args)
     # nnictl create --config /home/huanting/PROM/examples/case_study/Thread/config.yaml --port 8088

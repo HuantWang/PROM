@@ -1416,7 +1416,6 @@ def model_initial():
             "train_batch_size": 64,
             "eval_batch_size": 64,
             "seed": 7959,
-            "method": 'top_k'
         }
 
     parser = argparse.ArgumentParser()

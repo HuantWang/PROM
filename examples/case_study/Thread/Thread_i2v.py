@@ -624,7 +624,7 @@ def load_args():
     params = nni.get_next_parameter()
     if params == {}:
         params = {
-            "seed": 11,
+            "seed": 1994,
         }
 
     parser = argparse.ArgumentParser()
@@ -649,7 +649,7 @@ if __name__ == '__main__':
     elif args.mode == 'deploy':
         deploy(max_depth=1, learning_rate=0.05, n_estimators=140, args=args)
     # train(max_depth=1, learning_rate=0.05, n_estimators=140, args=args)
-    # deploy(max_depth=1, learning_rate=0.05, n_estimators=140, args=args)
+    deploy(max_depth=1, learning_rate=0.05, n_estimators=140, args=args)
     #
     # nnictl create --config /home/huanting/PROM/examples/case_study/Thread/config.yaml --port 8088
 

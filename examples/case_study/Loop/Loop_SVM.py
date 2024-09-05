@@ -26,7 +26,9 @@ def load_deeptune_args():
     params = nni.get_next_parameter()
     if params == {}:
         params = {
-            "seed": 123,
+            "epoch": 5,  # 5,10,15,20
+            "batch_size": 64,  # 32,64,128
+            "seed": 5220,
         }
 
     parser = argparse.ArgumentParser()
@@ -315,5 +317,5 @@ if __name__=='__main__':
     elif args.mode == 'deploy':
         loop_deploy_svm(args=args)
     # loop_train_svm(args)
-    # loop_deploy_svm(args)
+    loop_deploy_svm(args)
     # nnictl create --config /home/huanting/PROM/examples/case_study/Loop/config.yaml --port 8088

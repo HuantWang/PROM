@@ -10,7 +10,7 @@ logging.set_verbosity_error()
 import pandas as pd
 from transformers import AutoTokenizer
 from keras_preprocessing.sequence import pad_sequences
-from progressbar import ProgressBar
+# from progressbar import ProgressBar
 
 import nni
 import os.path as fs
@@ -201,7 +201,7 @@ def make_prediction_ilDe(speed_up_all=[],platform='',
                     model=None,test_x=None,test_index=None,X_cc=None,origin_speedup=None
                        ,improved_spp_all=[]):
 
-    retrained_speedup, all_pre,_ = make_predictionDe(speed_up_all=speed_up_all,
+    retrained_speedup, all_pre,data_dist = make_predictionDe(speed_up_all=speed_up_all,
                                                  platform=platform, model=model,
          test_x=test_x, test_index=test_index, X_cc=X_cc)
 
@@ -210,7 +210,7 @@ def make_prediction_ilDe(speed_up_all=[],platform='',
     #       "improved speed up is ", inproved_speedup)
     print("The retrained speed up is ", retrained_speedup,
           "the improved speed up is ", inproved_speedup)
-    return retrained_speedup,inproved_speedup
+    return retrained_speedup,inproved_speedup,data_dist
 
 
 def make_predictionDe(speed_up_all=[],platform='',

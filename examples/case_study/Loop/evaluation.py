@@ -25,15 +25,15 @@ yaml_file = "/home/huanting/PROM/examples/case_study/Loop/config.yaml"
 
 # 要运行的命令列表和对应的端口
 experiments = [
-    {"command": "python Loop_de.py --mode train", "port": 8088},
-    {"command": "python Loop_de.py --mode deploy", "port": 8089},
-    {"command": "python Loop_ma.py --mode train", "port": 8090},
-    {"command": "python Loop_ma.py --mode deploy", "port": 8091},
-    {"command": "python Loop_SVM.py --mode train", "port": 8092},
-    {"command": "python Loop_SVM.py --mode deploy", "port": 8093},
+    {"command": "python Loop_de.py --mode train", "port": 8094},
+    {"command": "python Loop_de.py --mode deploy", "port": 8095},
+    {"command": "python Loop_ma.py --mode train", "port": 8096},
+    {"command": "python Loop_ma.py --mode deploy", "port": 8097},
+    {"command": "python Loop_SVM.py --mode train", "port": 8098},
+    {"command": "python Loop_SVM.py --mode deploy", "port": 8099},
 ]
-subprocess.run(["nnictl", "stop", "-a"], capture_output=True, text=True)
-time.sleep(30)
+# subprocess.run(["nnictl", "stop", "-a"], capture_output=True, text=True)
+# time.sleep(30)
 
 for exp in experiments:
     # 加载现有的 YAML 文件

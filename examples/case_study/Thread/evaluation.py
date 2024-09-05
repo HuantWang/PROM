@@ -25,7 +25,7 @@ yaml_file = "/home/huanting/PROM/examples/case_study/Thread/config.yaml"
 
 # 要运行的命令列表和对应的端口
 experiments = [
-    {"command": "python Thread_i2v.py --mode train", "port": 8088},
+    # {"command": "python Thread_i2v.py --mode train", "port": 8088},
     {"command": "python Thread_i2v.py --mode deploy", "port": 8089},
     {"command": "python Thread_Deep.py --mode train", "port": 8090},
     {"command": "python Thread_Deep.py --mode deploy", "port": 8091},
@@ -52,6 +52,6 @@ for exp in experiments:
 
 
     print(f"Waiting for experiment to complete...")
-    time.sleep(300*60)
+    time.sleep(1*60*60)
 
 # subprocess.run(["nnictl", "stop", "-a"], capture_output=True, text=True)

@@ -19,9 +19,9 @@ def load_deeptune_args():
     params = nni.get_next_parameter()
     if params == {}:
         params = {
-            "epoch": 3,
-            "batch_size": 8,
-            "seed": 123,
+            "epoch": 10,
+            "batch_size": 16,
+            "seed": 5072,
         }
 
     parser = argparse.ArgumentParser()
@@ -104,11 +104,11 @@ def Thread_DeepTune_train(args):
         plt.ylabel('Values')
 
         plt.savefig(plot_figure_path + str(origin) + '_' + str(
-            seed_save) + '.png')
+            seed_save) + '_test.png')
         data_df.to_pickle(
             plot_figuredata_path + str(origin) + '_' + str(
-                seed_save) + '_data.pkl')
-        # plt.show()
+                seed_save) + '_data_test.pkl')
+        plt.show()
         print("training finished")
     print("final percent:", origin)
     nni.report_final_result(origin)
@@ -237,7 +237,7 @@ def Thread_DeepTune_deploy(args):
                 verbose=True,
                 y_1hot=y_1hot[train_index])
         # test the pretrained model
-        retrained_speedup,inproved_speedup=make_prediction_ilDe\
+        retrained_speedup,inproved_speedup,data_distri=make_prediction_ilDe\
             (speed_up_all=speed_up_all, platform=platform,model=prom_thread.model,
              test_x=X_seq[test_index],test_index=test_index, X_cc=X_cc,
              origin_speedup=origin_speedup,improved_spp_all=improved_spp_all)
@@ -245,6 +245,19 @@ def Thread_DeepTune_deploy(args):
         origin_speedup_all.append(origin_speedup)
         speed_up_all.append(retrained_speedup)
         improved_spp_all.append(inproved_speedup)
+
+        plt.boxplot(data_distri)
+        data_df = pd.DataFrame({'Data': data_distri})
+        sns.violinplot(data=data_df, y='Data')
+        seed_save = str(int(seed_value))
+        plt.title('Box Plot Example ' + seed_save)
+        plt.ylabel('Values')
+
+        plt.savefig(plot_figure_path + str(origin) + '_' + str(
+            seed_save) + '_il.png')
+        data_df.to_pickle(
+            plot_figuredata_path + str(origin) + '_' + str(
+                seed_save) + '_data_il.pkl')
         # print("____________________________________")
     mean_acc = sum(Acc_all) / len(Acc_all)
     mean_f1 = sum(F1_all) / len(F1_all)
@@ -272,6 +285,6 @@ if __name__=='__main__':
         Thread_DeepTune_train(args=args)
     elif args.mode == 'deploy':
         Thread_DeepTune_deploy(args=args)
-    # Thread_DeepTune_train(args)
+    Thread_DeepTune_train(args)
     # Thread_DeepTune_deploy(args)
     # nnictl create --config /home/huanting/PROM/examples/case_study/Thread/config.yaml --port 8088

@@ -14,6 +14,9 @@ import sys, re
 from sklearn.model_selection import KFold
 import os
 from scipy.stats.mstats import gmean
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 sys.path.append('/home/huanting/PROM')
 sys.path.append('./case_study/DeviceM')
 sys.path.append('/home/huanting/PROM/src')
@@ -175,7 +178,24 @@ def train(max_depth=4, learning_rate=0.1, n_estimators=200, args=None):
 
     print("\nSpeedup Matrix: IR2Vec Vs. others\n")
     ir2vec_sp_vals = ir2vec.groupby(["Platform"])["Speedup"].apply(lambda x: gmean(x)).values
+    o_percent_all=ir2vec.groupby(["Platform"])["Speedup"].apply(lambda x: x).values
+
+
     ir2vec_sp_mean = ir2vec_sp_vals.mean()
+
+    ###
+    plt.boxplot(o_percent_all)
+    data_df = pd.DataFrame({'Data': o_percent_all})
+    sns.violinplot(data=data_df, y='Data')
+    seed_save = str(int(args.seed))
+    plt.title('Box Plot Example ' + seed_save)
+    plt.ylabel('Values')
+    plt.savefig('/home/huanting/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_train' +
+                str(ir2vec_sp_mean) + '_' + str(seed_save) + '.png')
+    data_df.to_pickle('/home/huanting/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_train' +
+                      str(ir2vec_sp_mean) + '_' + str(seed_save) + '_data.pkl')
+    plt.show()
+
     sp_df = pd.DataFrame(
         {
             "IR2Vec": list(ir2vec_sp_vals) + [ir2vec_sp_mean],
@@ -348,6 +368,20 @@ def deploy(max_depth=4, learning_rate=0.1, n_estimators=200, args=None):
     original_performance = ir2vec_sp_mean
     print("Original perf. is", ir2vec_sp_mean)
 
+    o_percent_all = ir2vec.groupby(["Platform"])["Speedup"].apply(lambda x: x).values
+    ###
+    plt.boxplot(o_percent_all)
+    data_df = pd.DataFrame({'Data': o_percent_all})
+    sns.violinplot(data=data_df, y='Data')
+    seed_save = str(int(args.seed))
+    plt.title('Box Plot Example ' + seed_save)
+    plt.ylabel('Values')
+    plt.savefig('/home/huanting/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_deploy' +
+                str(ir2vec_sp_mean) + '_' + str(seed_save) + '.png')
+    data_df.to_pickle('/home/huanting/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_deploy' +
+                      str(ir2vec_sp_mean) + '_' + str(seed_save) + '_data.pkl')
+    plt.show()
+
     """conformal prediction"""
     # Conformal Prediction
     # the underlying model
@@ -467,6 +501,20 @@ def deploy(max_depth=4, learning_rate=0.1, n_estimators=200, args=None):
     improved_performance = current_performance - original_performance
     print("Improved perf. is", improved_performance)
 
+    o_percent_all = ir2vec.groupby(["Platform"])["Speedup"].apply(lambda x: x).values
+    ###
+    plt.boxplot(o_percent_all)
+    data_df = pd.DataFrame({'Data': o_percent_all})
+    sns.violinplot(data=data_df, y='Data')
+    seed_save = str(int(args.seed))
+    plt.title('Box Plot Example ' + seed_save)
+    plt.ylabel('Values')
+    plt.savefig('/home/huanting/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_IL' +
+                str(ir2vec_sp_mean) + '_' + str(seed_save) + '.png')
+    data_df.to_pickle('/home/huanting/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_IL' +
+                      str(ir2vec_sp_mean) + '_' + str(seed_save) + '_data.pkl')
+    plt.show()
+
     nni.report_final_result(improved_performance)
 
 
@@ -477,7 +525,7 @@ def load_args():
     params = nni.get_next_parameter()
     if params == {}:
         params = {
-            "seed": 11,
+            "seed": 8882,
         }
 
     parser = argparse.ArgumentParser()

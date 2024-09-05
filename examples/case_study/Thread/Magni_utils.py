@@ -315,7 +315,7 @@ def make_prediction_ilMa(speed_up_all=[],platform='',
                     model=None,test_x=None,test_index=None,X_cc=None,origin_speedup=None
                        ,improved_spp_all=[]):
 
-    retrained_speedup, all_pre,_ = make_predictionMa(speed_up_all=speed_up_all,
+    retrained_speedup, all_pre,data_distr = make_predictionMa(speed_up_all=speed_up_all,
                                                  platform=platform, model=model,
          test_x=test_x, test_index=test_index, X_cc=X_cc)
 
@@ -324,7 +324,7 @@ def make_prediction_ilMa(speed_up_all=[],platform='',
     #       "improved speed up is ", inproved_speedup)
     print("The retrained speed up is ", retrained_speedup,
           "the improved speed up is ", inproved_speedup)
-    return retrained_speedup,inproved_speedup
+    return retrained_speedup,inproved_speedup,data_distr
 
 
 def make_predictionMa(speed_up_all=[],platform='',

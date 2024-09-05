@@ -36,7 +36,7 @@ def load_args():
 
     if params == {}:
         params = {
-            "seed": 123,
+            "seed": 8264,
         }
 
     parser = argparse.ArgumentParser()
@@ -44,7 +44,7 @@ def load_args():
                         help="random seed for initialization")
     parser.add_argument('--method', choices=['Deeptune', 'Programl','Inst2vec'],default='Deeptune',
                         help="The baseline method to run")
-    parser.add_argument('--mode', choices=['train', 'deploy'], default='train', help="Mode to run: train or deploy")
+    parser.add_argument('--mode', choices=['train', 'deploy'],  help="Mode to run: train or deploy")
     args = parser.parse_args()
     print("seed: ", args.seed)
     torch.manual_seed(args.seed)
@@ -407,6 +407,8 @@ if __name__ == '__main__':
         train_phase(args, dataset_ori)
     elif args.mode == 'deploy':
         deploy(args, dataset_ori)
+    train_phase(args, dataset_ori)
+    # deploy(args, dataset_ori)
     # nnictl create --config /home/huanting/PROM/examples/case_study/DeviceM/config.yml --port 8088
     # train_phase(args, dataset_ori)
     # deploy(args, dataset_ori)

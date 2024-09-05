@@ -1,6 +1,9 @@
 import pprint
 import time
 import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 class Model(object):
     def __init__(self, config):
@@ -99,21 +102,19 @@ class Model(object):
                   " test_accuracy ", test_accuracy, "percent_mean",percent_mean)
 
         # #####
-        # import pandas as pd
-        # import matplotlib.pyplot as plt
-        # import seaborn as sns
-        # plt.boxplot(o_percent_all)
-        # data_df = pd.DataFrame({'Data': o_percent_all})
-        # sns.violinplot(data=data_df, y='Data')
-        # seed_save = str(int(random_seed))
-        # plt.title('Box Plot Example ' + seed_save)
-        # plt.ylabel('Values')
-        # plt.savefig('/home/huanting/model/compy-learn-master/figures/' + 'box_plot_' +
-        #             str(percent_mean) + '_' + str(seed_save) + '.png')
-        # data_df.to_pickle('/home/huanting/model/compy-learn-master/figures/data/' +
-        #                   str(percent_mean) + '_' + str(seed_save) + '_data.pkl')
-        # plt.show()
-        # print("a")
+
+        plt.boxplot(o_percent_all)
+        data_df = pd.DataFrame({'Data': o_percent_all})
+        sns.violinplot(data=data_df, y='Data')
+        seed_save = str(int(args.seed))
+        plt.title('Box Plot Example ' + seed_save)
+        plt.ylabel('Values')
+        plt.savefig('/home/huanting/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_deploy' +
+                    str(percent_mean) + '_' + str(seed_save) + '.png')
+        data_df.to_pickle('/home/huanting/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_deploy' +
+                          str(percent_mean) + '_' + str(seed_save) + '_data.pkl')
+        plt.show()
+
         # # UQ
         # cp_valid_batches = data_valid
         # cp_test_batches = data_test
@@ -326,6 +327,19 @@ class Model(object):
                 il_speed_up = np.exp(np.mean(np.log(pre_speedup_total)))
             test_accuracy = test_count / len(data_test)
             il_percent_mean = sum(o_percent_all) / len(o_percent_all)
+
+        plt.boxplot(o_percent_all)
+        data_df = pd.DataFrame({'Data': o_percent_all})
+        sns.violinplot(data=data_df, y='Data')
+        seed_save = str(int(random_seed))
+        plt.title('Box Plot Example ' + seed_save)
+        plt.ylabel('Values')
+        plt.savefig('/home/huanting/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_IL' +
+                    str(il_percent_mean) + '_' + str(seed_save) + '.png')
+        data_df.to_pickle('/home/huanting/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_IL' +
+                          str(il_percent_mean) + '_' + str(seed_save) + '_data.pkl')
+        plt.show()
+
         improved_sp = il_percent_mean - test_percent_mean
         print("The performance to the oracle is {:.2f}%, "
               "The improved speedup is {:.2f}%".format(il_percent_mean * 100, improved_sp* 100))
