@@ -1,5 +1,4 @@
-# Enhancing Deployment-time Predictive Model Robustness for
-Code Analysis and Optimization: Artifacts Evaluation Instructions
+# Enhancing Deployment-time Predictive Model Robustness for Code Analysis and Optimization: Artifacts Evaluation Instructions
 
 ## Preliminaries
 
