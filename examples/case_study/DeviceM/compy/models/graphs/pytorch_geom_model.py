@@ -485,21 +485,21 @@ class GnnPytorchGeomModel(Model):
             cal_x=X_cal, cal_y=y_cal, test_x=X_test, test_y=y_test, significance_level="auto")
         #################
         # MAPIE
-        Prom_thread.evaluate_mapie \
-            (y_preds=y_preds,
-             y_pss=y_pss,
-             p_value=p_value,
-             all_pre=all_pre,
-             y=y_test,
-             significance_level=0.05)
-
-        Prom_thread.evaluate_rise \
-            (y_preds=y_preds,
-             y_pss=y_pss,
-             p_value=p_value,
-             all_pre=all_pre,
-             y=y_test,
-             significance_level=0.05)
+        # Prom_thread.evaluate_mapie \
+        #     (y_preds=y_preds,
+        #      y_pss=y_pss,
+        #      p_value=p_value,
+        #      all_pre=all_pre,
+        #      y=y_test,
+        #      significance_level=0.05)
+        #
+        # Prom_thread.evaluate_rise \
+        #     (y_preds=y_preds,
+        #      y_pss=y_pss,
+        #      p_value=p_value,
+        #      all_pre=all_pre,
+        #      y=y_test,
+        #      significance_level=0.05)
 
         index_all_right, index_list_right, Acc_all, F1_all, Pre_all, Rec_all, _, _ \
             = Prom_thread.evaluate_conformal_prediction \
@@ -508,7 +508,7 @@ class GnnPytorchGeomModel(Model):
              p_value=p_value,
              all_pre=all_pre,
              y=y_test,
-             significance_level=0.05)
+             significance_level='auto')
         ##############
         # nulls, coverages, accuracies, confidence_sizes,credibility_sizes = {}, {}, {}, {},{}
         # credibility_score={}

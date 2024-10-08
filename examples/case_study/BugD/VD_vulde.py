@@ -1001,17 +1001,17 @@ def conformal_prediction(args, model, tokenizer):
 
     # Evaluate conformal prediction
     print("Detect the drifting samples...")
-    Prom_thread.evaluate_mapie \
-        (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y_test,
-         significance_level=0.05)
-
-    Prom_thread.evaluate_rise \
-        (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y_test,
-         significance_level=0.05)
+    # Prom_thread.evaluate_mapie \
+    #     (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y_test,
+    #      significance_level=0.05)
+    #
+    # Prom_thread.evaluate_rise \
+    #     (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y_test,
+    #      significance_level=0.05)
 
     index_all_right, index_list_right, Acc_all, F1_all, Pre_all, Rec_all,index_list,common_elements \
         = Prom_thread.evaluate_conformal_prediction \
-        (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y_test)
+        (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y_test,significance_level='auto')
 
     # Increment learning
     # print("Finding the most valuable instances for incremental learning...")
@@ -1414,7 +1414,7 @@ def model_initial():
             "epoch": 3,
             "train_batch_size": 64,
             "eval_batch_size": 64,
-            "seed": 4137,
+            "seed": 4046,
             "method": 'top_k'
         }
 
@@ -1648,7 +1648,7 @@ if __name__ == "__main__":
     elif args.mode == 'deploy':
         codebert_deploy(model_pre, config, tokenizer, args)
     # codebert_train(model_pre, config, tokenizer, args)
-    # codebert_deploy(model_pre, config, tokenizer, args)
+    codebert_deploy(model_pre, config, tokenizer, args)
     """
     --output_dir=./saved_models     --model_type=roberta     --tokenizer_name=microsoft/codebert-base     --model_name_or_path=microsoft/codebert-base   --do_train  --do_eval     --do_test     --train_data_file=../../../benchmark/Bug/train.jsonl     --eval_data_file=../../../benchmark/Bug/valid.jsonl     --test_data_file=../../../benchmark/Bug/test.jsonl --evaluate_during_training
     """

@@ -758,10 +758,10 @@ def load_datas(datasets_global):
         # train_indices, val_indices = perm[:1], perm[train_len:args.data_cnt * 1000]
     else:
         train_len = int(len(datasets) * 0.9)
-        # train_len = int(500 * 0.8)
+        train_len = int(500 * 0.8)
         # print("valid length",len(datasets))
         perm = np.random.permutation(len(datasets))
-        train_indices, val_indices = perm[:train_len], perm[train_len:]
+        train_indices, val_indices = perm[:train_len], perm[train_len:500]
         # train_indices, val_indices = perm, perm
     train_datas, val_datas = datasets[train_indices], datasets[val_indices]
 
@@ -1004,7 +1004,7 @@ def set_seed(seed):
     torch.backends.cudnn.deterministic = True
 
 
-def conformal_prediction(datas, task_pred_dict, model, mapie, task_drift_dict, task_after_dict):
+def conformal_prediction(datas, task_pred_dict, model, mapie, task_drift_dict, task_after_dict,cluster_num):
     datas_new = []
     for data_idx, data in enumerate([datas]):
         file, file_idx, workloadkey_idx, workloadkey, workload_args, flop_ct, line_vecs = data
@@ -1059,6 +1059,9 @@ def conformal_prediction(datas, task_pred_dict, model, mapie, task_drift_dict, t
     indices_not_detec_dict = {}
     best_f1 = 0
     best_indices_detec = []
+    f1_score_all=[]
+    precision_all=[]
+    recall_all=[]
     for index, pvalue in enumerate(alphas):
         # if index==num_set:
         #     if all(pvalue) or not any(pvalue):
@@ -1099,9 +1102,12 @@ def conformal_prediction(datas, task_pred_dict, model, mapie, task_drift_dict, t
             best_f1 = f1_score
             best_indices_detec = indices_detec
         print("The alpha is:", pvalue)
-        print(f"Detection f1_score is: {f1_score:.2%}, "
-              f"accuracy is: {accuracy:.2%}, "
-              f"precision is: {precision:.2%}, recall is: {recall:.2%}")
+        # print(f"Detection f1_score is: {f1_score:.2%}, "
+        #       f"accuracy is: {accuracy:.2%}, "
+        #       f"precision is: {precision:.2%}, recall is: {recall:.2%}")
+        f1_score_all.append(f1_score)
+        precision_all.append(precision)
+        recall_all.append(recall)
 
     task_after_dict[workloadkey] = (preds_all[indices_detec].detach().cpu().numpy(),
                                     test_loader.min_latency[indices_detec].min().numpy(),
@@ -1118,10 +1124,10 @@ def conformal_prediction(datas, task_pred_dict, model, mapie, task_drift_dict, t
                                         labels_all[indices_not_detec].numpy()
                                         )
 
-    return best_indices_detec
+    return best_indices_detec, f1_score_all, precision_all, recall_all
 
 
-def cp(train_loader, val_dataloader, test_datasets, underlying_path, file_pattern):
+def cp(train_loader, val_dataloader, test_datasets, underlying_path, file_pattern,cluster_num=2):
     model_save_file_name = underlying_path
     with open(model_save_file_name, 'rb') as f:
         net = pickle.load(f)
@@ -1137,12 +1143,13 @@ def cp(train_loader, val_dataloader, test_datasets, underlying_path, file_patter
     y_valid = torch.cat(y_valid, dim=0)
     """CP"""
     import numpy as np
+
     print("Train the anamoly detection model...")
     # alphas = np.arange(0.1, 1, 0.1)
     # for batch_datas_steps, batch_labels in val_dataloader:
     est_mlp = net
     mapie = MapieRegressor(est_mlp, cv="prefit")
-    mapie.fit(data_valid, y_valid)
+    mapie.fit(data_valid, y_valid,cluster_num=cluster_num)
 
     # Evaluate prediction and coverage level on testing set
     """test data"""
@@ -1152,18 +1159,7 @@ def cp(train_loader, val_dataloader, test_datasets, underlying_path, file_patter
     for data_idx, data in enumerate(test_datasets):
         file, file_idx, workloadkey_idx, workloadkey, workload_args, flop_ct, line_vecs = data
         pred_a_dataset_dict[workloadkey] = data
-    # datas_new = []
-    # data_test = []
-    # y_test = []
-    # for data_idx, data in enumerate(test_datasets):
-    #     file, file_idx, workloadkey_idx, workloadkey, workload_args, flop_ct, line_vecs = data
-    #     datas_new.extend(line_vecs)
-    #     test_loader = SegmentDataLoader(datas_new, 4000, False)
-    #     for batch_datas_steps, batch_labels in test_loader:
-    #         data_test.append(batch_datas_steps)
-    #         y_test.append(batch_labels)
-    # data_test = torch.cat(data_test, dim=0)
-    # y_test = torch.cat(y_test, dim=0)
+
 
     folder_path = '/home/huanting/PROM/benchmark/TensorT/network_info'  #
 
@@ -1198,11 +1194,15 @@ def cp(train_loader, val_dataloader, test_datasets, underlying_path, file_patter
             if task.workload_key not in pred_a_dataset_dict:
                 # print('error task.workload_key not in pred_a_dataset_dict')
                 continue
-            indices_detec = conformal_prediction(
+            indices_detec,f1,precision,recall = conformal_prediction(
                 pred_a_dataset_dict[task.workload_key], task_pred_dict,
-                net, mapie, task_drift_dict, task_after_dict)
+                net, mapie, task_drift_dict, task_after_dict,cluster_num)
+            # f1_maxindex = f1.index(max(f1))
+            # f1_max= f1[f1_maxindex]
+            # pre_max = precision[f1_maxindex]
+            # rec_max = recall[f1_maxindex]
             # indices_detec.append(indices_detec)
-    return indices_detec
+    return indices_detec,f1,precision,recall
     # p-value
     #         preds, min_latency, labels = task_pred_dict[task.workload_key]
     #         real_values = labels[np.argsort(-preds)]
@@ -1229,57 +1229,7 @@ def cp(train_loader, val_dataloader, test_datasets, underlying_path, file_patter
     #     print(f"average top 5 score is {best_latency_total / top5_total}")
     #     top_5_total.append(best_latency_total / top5_total)
 
-    """finish"""
-    # for i in TF:
-    #     TF=i
-    #     """not drift data"""
-    #     keep_data = data_test[TF].numpy()
-    #     keep_label = y_test[TF].numpy()
-    #     keep_pred = y_pred[TF].detach().numpy()
-    #
-    #     prediction=keep_pred
-    #     target=keep_label
-    #     rmse_keep = np.sqrt(np.mean((prediction - target) ** 2))
-    #     print()
-    #     from sklearn.metrics import r2_score
-    #
-    #     r2_keep = r2_score(target, prediction)
-    #
-    #
-    #     """drift data"""
-    #     filtered_indices = ~TF
-    #
-    #     # 使用筛选后的索引从 data_test、y_test 和 y_pred 中获取对应数据
-    #     drift_data = data_test[filtered_indices].numpy()
-    #     drift_label = y_test[filtered_indices].numpy()
-    #     drift_pred = y_pred[filtered_indices].detach().numpy()
-    #
-    #
-    #     prediction = drift_pred
-    #     target = drift_label
-    #     rmse = np.sqrt(np.mean((prediction - target) ** 2))
-    #     from sklearn.metrics import r2_score
-    #     r2 = r2_score(target, prediction)
-    #     print("keep_RMSE:", rmse_keep,"keep_R-squared:", r2_keep, "keep_length", len(keep_label))
-    #     print("drift_RMSE:", rmse, "drift_R-squared:", r2,"drift_length", len(drift_label))
-    # print("a")
 
-    # drift_data=torch.tensor(drift_data)
-    # drift_label=torch.tensor(drift_label)
-    """What about these data?"""
-    # preds_all=[]
-    # labels_all=[]
-    # preds = net(drift_data)
-    # if isinstance(preds, list) and len(preds) > 1:
-    #     preds = preds[0]
-    # preds_all.append(preds.detach().cpu())
-    # labels_all.append(drift_label.detach().cpu())
-    # preds_all = torch.cat(preds_all, dim=0)
-    # labels_all = torch.cat(labels_all, dim=0)
-
-    # preds, min_latency, labels = (preds_all.detach().cpu().numpy(), test_loader.min_latency.min().numpy(), labels_all.numpy())
-
-    # print(coverage)
 
 
 def init_args():
@@ -1290,7 +1240,7 @@ def init_args():
         }
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("--save_folder", type=str, default='models/il/tlp_i7_base')
+    parser.add_argument("--save_folder", type=str, default='models/il/tlp_i7_tiny')
     parser.add_argument('--mode', choices=['train', 'deploy'], help="Mode to run: train or deploy")
     parser.add_argument("--under_train_dataset", type=str,
                         default='./data_model/bert_base_train_and_val.pkl')
@@ -1312,7 +1262,7 @@ def init_args():
     parser.add_argument("--fea_size", type=int, default=22)
     parser.add_argument("--res_block_cnt", type=int, default=2)
     parser.add_argument("--self_sup_model", type=str, default='')
-    parser.add_argument("--data_cnt", type=int, default=1)  # data_cnt * 1000
+    parser.add_argument("--data_cnt", type=int, default=-1)  # data_cnt * 1000
     parser.add_argument("--seed", type=int, default=params["seed"])
     parser.add_argument("--train_size_per_gpu", type=int, default=64)
     parser.add_argument("--val_size_per_gpu", type=int, default=64)
@@ -1349,35 +1299,59 @@ def deploy_model(args):
         (train_dataset=args.under_train_dataset, test_dataset=args.test_dataset, args=args)
 
     underlying_model_name = args.under_model
-    print("Evaluate the data on new benchmark...")
-    deploy_perm = eval_model(model_file=underlying_model_name, test_datasets=test_data)
+    # print("Evaluate the data on new benchmark...")
+    # deploy_perm = eval_model(model_file=underlying_model_name, test_datasets=test_data)
 
     """cp"""
     print("Conformal prediction...")
-    indices_detec = cp(*train_data, test_datasets=test_data,
-                       underlying_path=underlying_model_name, file_pattern=args.path)
-
+    cluster_f1 = []
+    cluster_pre = []
+    cluster_rec = []
+    cluster_all = []
+    for cluster_num in tqdm(range(2,70), desc="Inner loop", leave=False):
+        indices_detec,f1,pre,rec = cp(*train_data, test_datasets=test_data,
+                           underlying_path=underlying_model_name, file_pattern=args.path,cluster_num=cluster_num)
+        cluster_f1.append(f1)
+        cluster_pre.append(pre)
+        cluster_rec.append(rec)
+        cluster_all.append(cluster_num)
+    return cluster_f1,cluster_pre,cluster_rec,cluster_all
     """incremental learning"""
-    print("Incremental learning...")
-
-    il_model = il(test_data, device="cpu", pre_trained_model=underlying_model_name,
-                  aug_data=indices_detec, args=args)
-    print("Evaluate the data on new benchmark...")
-    il_perm = eval_model(model_file=il_model, test_datasets=test_data)
-    improve_perm = il_perm - deploy_perm
-    print("improve_perm: ", improve_perm)
-    nni.report_final_result(improve_perm)
+    # print("Incremental learning...")
+    #
+    # il_model = il(test_data, device="cpu", pre_trained_model=underlying_model_name,
+    #               aug_data=indices_detec, args=args)
+    # print("Evaluate the data on new benchmark...")
+    # il_perm = eval_model(model_file=il_model, test_datasets=test_data)
+    # improve_perm = il_perm - deploy_perm
+    # print("improve_perm: ", improve_perm)
+    # nni.report_final_result(improve_perm)
 
 
 if __name__ == "__main__":
     print("initial parameters...")
+    from tqdm import tqdm
     args = init_args()
-    if args.mode == "train":
-        train_model(args)
-    elif args.mode == "deploy":
-        deploy_model(args)
-    deploy_model(args)
+
+    for i in tqdm(range(1), desc="Outer loop"):
+        cluster_f1,cluster_pre,cluster_rec,cluster_all=deploy_model(args)
+
+    data = {
+        'cluster_f1': cluster_f1,
+        'cluster_pre': cluster_pre,
+        'cluster_rec': cluster_rec,
+        'cluster_all': cluster_all
+    }
+
+    # 将数据保存为 pkl 文件
+    with open('cluster_data.pkl', 'wb') as f:
+        pickle.dump(data, f)
+
+    print("数据已保存到 'cluster_data.pkl'")
 
     # train_model(args)
     # nnictl create --config /home/huanting/PROM/examples/case_study/tlp/scripts/config.yaml --port 8088
 
+    """
+    --mode deploy --save_folder models/il/tlp_i7_tiny --under_model ./models/train/tlp_i7_base/tlp_model_533_best.pkl --test_data ./data_model/bert_tiny_test.pkl --path ((bert_tiny*.task.pkl
+    """

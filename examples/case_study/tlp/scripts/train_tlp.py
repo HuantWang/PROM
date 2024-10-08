@@ -1043,7 +1043,8 @@ def conformal_prediction(datas, task_pred_dict, model,mapie,task_drift_dict,task
     data_test = torch.cat(data_test, dim=0)
     y_test = labels_all
     alphas = np.arange(0.1, 1, 0.1)
-    credibility_result, confidence_result = mapie.predict(data_test, alpha=alphas)
+    y_pis = {}
+    credibility_result, confidence_result,y_pis = mapie.predict(data_test, alpha=alphas)
     # results = [regression_coverage_score(y_test, y_pis[:, 0, i], y_pis[:, 1, i]) for i, _ in enumerate(alphas)]
     # coverage = [result[0] for result in results]
     # TF = [result[1] for result in results]
@@ -1287,7 +1288,7 @@ def init_args():
     params = nni.get_next_parameter()
     if params == {}:
         params = {
-            "seed": 1730,
+            "seed": 3542,
         }
 
     parser = argparse.ArgumentParser()
@@ -1379,4 +1380,6 @@ if __name__ == "__main__":
 
     # train_model(args)
     # nnictl create --config /home/huanting/PROM/examples/case_study/tlp/scripts/config.yaml --port 8088
-
+    # --mode deploy --save_folder=models/il/tlp_i7_large --under_model=./models/train/tlp_i7_base/tlp_model_533_best.pkl --test_data=./data_model/bert_large_test.pkl --path=((bert_large*.task.pkl
+    # --mode deploy --save_folder models/il/tlp_i7_tiny --under_model ./models/train/tlp_i7_base/tlp_model_533_best.pkl --test_data ./data_model/bert_tiny_test.pkl --path ((bert_tiny*.task.pkl
+    # --mode deploy --save_folder=models/il/tlp_i7_med --under_model=./models/train/tlp_i7_base/tlp_model_533_best.pkl --test_data=./data_model/bert_medium_test.pkl' --path='((bert_medium*.task.pkl

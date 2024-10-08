@@ -20,8 +20,8 @@ def load_deeptune_args():
     if params == {}:
         params = {
             "epoch": 10,
-            "batch_size": 16,
-            "seed": 5072,
+            "batch_size": 8,
+            "seed": 8105,
         }
 
     parser = argparse.ArgumentParser()
@@ -285,6 +285,6 @@ if __name__=='__main__':
         Thread_DeepTune_train(args=args)
     elif args.mode == 'deploy':
         Thread_DeepTune_deploy(args=args)
-    Thread_DeepTune_train(args)
-    # Thread_DeepTune_deploy(args)
+    # Thread_DeepTune_train(args)
+    Thread_DeepTune_deploy(args)
     # nnictl create --config /home/huanting/PROM/examples/case_study/Thread/config.yaml --port 8088

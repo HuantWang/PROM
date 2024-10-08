@@ -194,7 +194,7 @@ def train(max_depth=4, learning_rate=0.1, n_estimators=200, args=None):
                 str(ir2vec_sp_mean) + '_' + str(seed_save) + '.png')
     data_df.to_pickle('/home/huanting/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_train' +
                       str(ir2vec_sp_mean) + '_' + str(seed_save) + '_data.pkl')
-    plt.show()
+    # plt.show()
 
     sp_df = pd.DataFrame(
         {
@@ -380,7 +380,7 @@ def deploy(max_depth=4, learning_rate=0.1, n_estimators=200, args=None):
                 str(ir2vec_sp_mean) + '_' + str(seed_save) + '.png')
     data_df.to_pickle('/home/huanting/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_deploy' +
                       str(ir2vec_sp_mean) + '_' + str(seed_save) + '_data.pkl')
-    plt.show()
+    # plt.show()
 
     """conformal prediction"""
     # Conformal Prediction
@@ -407,21 +407,21 @@ def deploy(max_depth=4, learning_rate=0.1, n_estimators=200, args=None):
         cal_x=calibration_data, cal_y=cal_y, test_x=test_x, test_y=test_y, significance_level="auto")
 
     # evaluate conformal prediction
-    Prom_thread.evaluate_mapie \
-        (y_preds=y_preds,
-         y_pss=y_pss,
-         p_value=p_value,
-         all_pre=all_pre,
-         y=test_y,
-         significance_level=0.05)
-
-    Prom_thread.evaluate_rise \
-        (y_preds=y_preds,
-         y_pss=y_pss,
-         p_value=p_value,
-         all_pre=all_pre,
-         y=test_y,
-         significance_level=0.05)
+    # Prom_thread.evaluate_mapie \
+    #     (y_preds=y_preds,
+    #      y_pss=y_pss,
+    #      p_value=p_value,
+    #      all_pre=all_pre,
+    #      y=test_y,
+    #      significance_level=0.05)
+    #
+    # Prom_thread.evaluate_rise \
+    #     (y_preds=y_preds,
+    #      y_pss=y_pss,
+    #      p_value=p_value,
+    #      all_pre=all_pre,
+    #      y=test_y,
+    #      significance_level=0.05)
 
     # evaluate conformal prediction
     index_all_right, index_list_right, Acc_all, F1_all, Pre_all, Rec_all, _, _ \
@@ -431,7 +431,7 @@ def deploy(max_depth=4, learning_rate=0.1, n_estimators=200, args=None):
          p_value=p_value,
          all_pre=all_pre,
          y=test_y,
-         significance_level=0.05)
+         significance_level='auto')
 
     # Increment learning
     print("Finding the most valuable instances for incremental learning...")
@@ -513,7 +513,7 @@ def deploy(max_depth=4, learning_rate=0.1, n_estimators=200, args=None):
                 str(ir2vec_sp_mean) + '_' + str(seed_save) + '.png')
     data_df.to_pickle('/home/huanting/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_IL' +
                       str(ir2vec_sp_mean) + '_' + str(seed_save) + '_data.pkl')
-    plt.show()
+    # plt.show()
 
     nni.report_final_result(improved_performance)
 

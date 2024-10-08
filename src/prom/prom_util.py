@@ -78,12 +78,12 @@ class Prom_utils:
         """
         # Calculate initial alpha_min and alpha_max values with added 0.1
 
-        alpha_min=math.floor((max(1 / n, 0) + 0.1) * 10) / 10
-        alpha_max = min(1 - 1 / n, 1) + 0.1
+        # alpha_min=math.floor((max(1 / n, 0) + 0.1) * 10) / 10
+        # alpha_max = min(1 - 1 / n, 1) + 0.1
 
         # Round alpha_min and alpha_max up to the nearest tenth and ensure they do not exceed 1
-        alpha_min = min(math.ceil(alpha_min * 10) / 10.0, 1/n + 0.1)
-        alpha_max = min(math.ceil(alpha_max * 10) / 10.0, 1-1/n - 0.1)
+        alpha_min = math.ceil((max(1 / n, 0) ) * 10) / 10
+        alpha_max = min(math.ceil((min(1 - 1 / n, 1) ) * 10) / 10, 1)
 
         return alpha_min, alpha_max
 
@@ -138,127 +138,6 @@ class Prom_utils:
             if true in pred_set:
                 correct_predictions += 1
         return correct_predictions / len(y_true)
-
-    # def evaluate_conformal_prediction(self, y_preds, y_pss,p_value,all_pre,y):
-    #     """
-    #     Evaluate conformal prediction using various methods.
-    #
-    #     Parameters:
-    #     method_params (dict): Dictionary of method parameters.
-    #     y_preds (dict): Dictionary of predicted labels for each method.
-    #     y_pss (dict): Dictionary of predicted sets for each method.
-    #     y_test (list): List of true labels.
-    #     alphas (list): List of alpha values.
-    #     cfs (list): List of class factors.
-    #     test_index (list): List of test indices.
-    #
-    #     Returns:
-    #     tuple: A tuple containing index_all_right and index_list_right.
-    #     """
-    #     nulls, coverages, accuracies, sizes = {}, {}, {}, {}
-    #     Acc_all = []
-    #     F1_all = []
-    #     Pre_all = []
-    #     Rec_all = []
-    #
-    #     # value_to_index = {value: index for index, value in enumerate(self.cfs)}
-    #     # y_test_mapped = [value_to_index.get(value, -1) for value in self.y_test]
-    #
-    #     for name, (method, include_last_label) in self.method_params.items():
-    #         accuracies[name] = accuracy_score(self.y_test, y_preds[name])
-    #         nulls[name] = [self.count_null_set(y_pss[name][:, :, i]) for i, _ in enumerate(self.alphas)]
-    #         coverages[name] = [classification_coverage_score(self.y_test, y_pss[name][:, :, i]) for i, _ in
-    #                            enumerate(self.alphas)]
-    #         sizes[name] = [y_pss[name][:, :, i].sum(axis=1).mean() for i, _ in enumerate(self.alphas)]
-    #
-    #     # Find the index in sizes that is closest to 1
-    #     result = {key: min(range(len(lst)), key=lambda i: abs(lst[i] - 1)) for key, lst in sizes.items()}
-    #
-    #     # Extract the y_ps at the closest index
-    #     result_ps = {method: y_pss[method][:, :, result[method]] for method in y_pss}
-    #
-    #     # Determine indices for each method
-    #     index_all_tem, index_all_right_tem = {}, {}
-    #     for method, y_ps in result_ps.items():
-    #         for index, i in enumerate(y_ps):
-    #             num_true = sum(i)
-    #             if method not in index_all_tem:
-    #                 index_all_tem[method] = []
-    #                 index_all_right_tem[method] = []
-    #             if num_true != 1:
-    #                 index_all_tem[method].append(index)
-    #             elif num_true == 1:
-    #                 index_all_right_tem[method].append(index)
-    #
-    #     index_all = list(set([idx for indices in index_all_tem.values() for idx in indices]))
-    #     index_list = list(index_all_tem.values())
-    #     index_list.append(index_all)
-    #
-    #     index_all_right = list(set(range(len(self.y_test))) - set(index_all))
-    #     index_list_right = list(index_all_right_tem.values())
-    #     index_list_right.append(index_all_right)
-    #
-    #     """ compute metircs"""
-    #     # o = y[test_index]
-    #     # correct = p == o
-    #     # 所有错误的
-    #     different_indices = np.where(all_pre != y)[0]
-    #     different_indices_right = np.where(all_pre == y)[0]
-    #     # 找到的错误的： index_list
-    #     # 找的真的错的：num_common_elements
-    #     acc_best = 0
-    #     F1_best = 0
-    #     pre_best = 0
-    #     rec_best = 0
-    #     method_name_best = "NONE"
-    #     self.method_params["mixture"] = ("mixture", False)
-    #     for index, (single_list, single_list_right) in enumerate(zip(index_list, index_list_right)):
-    #         self.common_elements = np.intersect1d(single_list, different_indices)
-    #         num_common_elements = len(self.common_elements)
-    #         self.common_elements_right = np.intersect1d(single_list_right, different_indices_right)
-    #         num_common_elements_right = len(self.common_elements_right)
-    #         try:
-    #             accuracy = (num_common_elements + num_common_elements_right) / len(all_pre)
-    #         except:
-    #             accuracy = 0
-    #         try:
-    #             precision = num_common_elements / len(single_list)
-    #         except:
-    #             precision = 0
-    #         try:
-    #             recall = num_common_elements / len(different_indices)
-    #         except:
-    #             recall = 0
-    #         try:
-    #             F1 = 2 * precision * recall / (precision + recall)
-    #         except:
-    #             F1 = 0
-    #         print(
-    #             f"{list(self.method_params.keys())[index]} find accuracy: {accuracy * 100:.2f}%, "
-    #             f"precision: {precision * 100:.2f}%, "
-    #             f"recall: {recall * 100:.2f}%, "
-    #             f"F1: {F1 * 100:.2f}%"
-    #         )
-    #
-    #         if F1 > F1_best:
-    #             method_name_best = list(self.method_params.keys())[index]
-    #             acc_best = accuracy
-    #             F1_best = F1
-    #             pre_best = precision
-    #             rec_best = recall
-    #     print(
-    #         f"{method_name_best} is the best approach"
-    #         f"best accuracy: {accuracy * 100:.2f}%, "
-    #         f"best precision: {pre_best * 100:.2f}%, "
-    #         f"best recall: {rec_best * 100:.2f}%, "
-    #         f"best F1: {F1_best * 100:.2f}%"
-    #     )
-    #     Acc_all.append(acc_best)
-    #     F1_all.append(F1_best)
-    #     Pre_all.append(pre_best)
-    #     Rec_all.append(rec_best)
-    #
-    #     return index_all_right, index_list_right,Acc_all,F1_all,Pre_all,Rec_all
 
     def incremental_learning(self,seed_value, test_index, train_index,
                              ):

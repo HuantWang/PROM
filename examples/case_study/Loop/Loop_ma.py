@@ -321,7 +321,7 @@ def loop_deploy_magni(args):
 
     index_all_right, index_list_right, Acc_all, F1_all, Pre_all, Rec_all,_,_ \
         = Prom_thread.evaluate_conformal_prediction \
-        (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y)
+        (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y,significance_level='auto')
 
     # Increment learning
     print("Finding the most valuable instances for incremental learning...")

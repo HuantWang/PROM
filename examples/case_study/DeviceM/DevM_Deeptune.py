@@ -407,8 +407,8 @@ if __name__ == '__main__':
         train_phase(args, dataset_ori)
     elif args.mode == 'deploy':
         deploy(args, dataset_ori)
-    train_phase(args, dataset_ori)
-    # deploy(args, dataset_ori)
+    # train_phase(args, dataset_ori)
+    deploy(args, dataset_ori)
     # nnictl create --config /home/huanting/PROM/examples/case_study/DeviceM/config.yml --port 8088
     # train_phase(args, dataset_ori)
     # deploy(args, dataset_ori)

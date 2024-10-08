@@ -472,6 +472,7 @@ class MapieRegressor(BaseEstimator, RegressorMixin):
         y: ArrayLike,
         sample_weight: Optional[ArrayLike] = None,
         groups: Optional[ArrayLike] = None,
+        cluster_num=2,
         **fit_params,
     ) -> MapieRegressor:
         """
@@ -548,10 +549,10 @@ class MapieRegressor(BaseEstimator, RegressorMixin):
                 X, y, y_pred
             )
         # give the classes for each calibration sample
-        self.cal_clusters, self.optimal_k, self.gap_df = self.cluster_cal_data()
+        self.cal_clusters, self.optimal_k = self.cluster_cal_data(cluster_num)
         return self
 
-    def compute_gap_statistic(self, X, n_refs=10, max_clusters=10):
+    def compute_gap_statistic(self, X, n_refs=5, max_clusters=10):
 
         gaps = np.zeros(max_clusters - 1)
         results_list = []
@@ -583,7 +584,7 @@ class MapieRegressor(BaseEstimator, RegressorMixin):
         results_df = pd.DataFrame(results_list)
         return gaps.argmax() + 1, results_df
 
-    def cluster_cal_data(self):
+    def cluster_cal_data(self,cluster_num):
         # Reshape cal to 2D array [n_samples, n_features]
         n_samples = self.cal.size(0)
         feature_dim1 = self.cal.size(1)
@@ -591,8 +592,8 @@ class MapieRegressor(BaseEstimator, RegressorMixin):
         cal_reshaped = self.cal.view(n_samples, feature_dim1 * feature_dim2).numpy()
 
         # Determine the optimal number of clusters
-        optimal_k, gap_df = self.compute_gap_statistic(cal_reshaped)
-
+        # optimal_k, gap_df = self.compute_gap_statistic(cal_reshaped)
+        optimal_k = cluster_num
         # Fit KMeans with the optimal number of clusters
         kmeans = KMeans(n_clusters=optimal_k)
         kmeans.fit(cal_reshaped)
@@ -600,7 +601,7 @@ class MapieRegressor(BaseEstimator, RegressorMixin):
         # Assign each sample in cal to a cluster
         cal_clusters = kmeans.labels_
 
-        return cal_clusters, optimal_k, gap_df
+        return cal_clusters, optimal_k
 
     def classify_test_samples(self, X, cal_clusters, k=10):
         n_cal_samples = self.cal.size(0)
@@ -800,7 +801,7 @@ class MapieRegressor(BaseEstimator, RegressorMixin):
 
             # 对比两个数组，生成布尔标志
             credibility_result = credibility_scores_np < alpha_np
-            return credibility_result, confidence_result
+            return credibility_result, confidence_result, np.stack([y_pred_low, y_pred_up], axis=1)
             # print("a")
             # select around samples and compute Kmeans as true prediction
             # n_cal_samples = self.cal.size(0)
