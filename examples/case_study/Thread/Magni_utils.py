@@ -224,10 +224,14 @@ class ThreadCoarseningMa(util.ModelDefinition):
         self.calibration_data = None
         self.dataset = None
 
-    def data_partitioning(self, dataset,platform='', mode='train',  calibration_ratio=0.2,args=None):
+    def data_partitioning(self, dataset,platform='', mode='test',  calibration_ratio=0.2,args=None):
         pd.set_option('display.max_rows', 5)
-        df = pd.read_csv("../../../benchmark/Thread/pact-2014-runtimes.csv")
-        oracles = pd.read_csv("../../../benchmark/Thread/pact-2014-oracles.csv")
+        try:
+            df = pd.read_csv(dataset+"/pact-2014-runtimes.csv")
+            oracles = pd.read_csv(dataset+"/pact-2014-oracles.csv")
+        except:
+            df = pd.read_csv("../../../benchmark/Thread/pact-2014-runtimes.csv")
+            oracles = pd.read_csv("../../../benchmark/Thread/pact-2014-oracles.csv")
         data = []
         platform_name = platform2str(platform)
         # load data
@@ -329,8 +333,12 @@ def make_prediction_ilMa(speed_up_all=[],platform='',
 
 def make_predictionMa(speed_up_all=[],platform='',
                     model=None,test_x=None,test_index=None,X_cc=None):
-    df = pd.read_csv("../../../benchmark/Thread/pact-2014-runtimes.csv")
-    oracles = pd.read_csv("../../../benchmark/Thread/pact-2014-oracles.csv")
+    try:
+        df = pd.read_csv("../../../benchmark/Thread/pact-2014-runtimes.csv")
+        oracles = pd.read_csv("../../../benchmark/Thread/pact-2014-oracles.csv")
+    except:
+        df = pd.read_csv("../../benchmark/Thread/pact-2014-runtimes.csv")
+        oracles = pd.read_csv("../../benchmark/Thread/pact-2014-oracles.csv")
     oracle_runtimes = np.array([float(x) for x in oracles["runtime_" + platform]])
     y = np.array([int(x) for x in oracles["cf_" + platform]], dtype=np.int32)
     all_pre = []

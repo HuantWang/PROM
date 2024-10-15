@@ -19,7 +19,7 @@ def load_magni_args():
     params = nni.get_next_parameter()
     if params == {}:
         params = {
-            "seed": 2494,
+            "seed": 6349,
             "epoch": 10,
             "batch_size": 32,
         }
@@ -28,12 +28,19 @@ def load_magni_args():
     parser.add_argument('--seed', type=int, default=params['seed'],
                         help="random seed for initialization")
     parser.add_argument('--mode', choices=['train', 'deploy'], help="Mode to run: train or deploy")
-    args = parser.parse_args()
+    args, unknown = parser.parse_known_args()
     # train the underlying model
     # deeptune_model = DeepTune()
     # deeptune_model.init(args)
     return args
 
+def load_magni_args_notebook():
+    args = {
+        "seed": 2494,
+        "epoch": 10,
+        "batch_size": 32,
+    }
+    return args
 
 
 def Thread_train_magni(args):
@@ -274,6 +281,7 @@ def Thread_deploy_magni(args):
     nni.report_final_result(meanimproved_speed_up)
 
 
+
 if __name__=='__main__':
     args = load_magni_args()
     if args.mode == 'train':
@@ -282,5 +290,5 @@ if __name__=='__main__':
         Thread_deploy_magni( args=args)
     # Thread_deploy_magni( args=args)
     # Thread_train_magni(args)
-    Thread_deploy_magni(args)
+    # Thread_deploy_magni(args)
     # nnictl create --config /home/huanting/PROM/examples/case_study/Thread/config.yaml --port 8088
