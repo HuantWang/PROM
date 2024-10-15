@@ -112,8 +112,12 @@ class ThreadCoarseningDe(util.ModelDefinition):
 
     def data_partitioning(self, dataset, platform='', mode='train', calibration_ratio=0.2, args=None):
         pd.set_option('display.max_rows', 5)
-        df = pd.read_csv("../../../benchmark/Thread/pact-2014-runtimes.csv")
-        oracles = pd.read_csv("../../../benchmark/Thread/pact-2014-oracles.csv")
+        try:
+            df = pd.read_csv("../../../benchmark/Thread/pact-2014-runtimes.csv")
+            oracles = pd.read_csv("../../../benchmark/Thread/pact-2014-oracles.csv")
+        except:
+            df = pd.read_csv("../../benchmark/Thread/pact-2014-runtimes.csv")
+            oracles = pd.read_csv("../../benchmark/Thread/pact-2014-oracles.csv")
         data = []
         platform_name = platform2str(platform)
         # load data
@@ -215,8 +219,12 @@ def make_prediction_ilDe(speed_up_all=[],platform='',
 
 def make_predictionDe(speed_up_all=[],platform='',
                     model=None,test_x=None,test_index=None,X_cc=None):
-    df = pd.read_csv("../../../benchmark/Thread/pact-2014-runtimes.csv")
-    oracles = pd.read_csv("../../../benchmark/Thread/pact-2014-oracles.csv")
+    try:
+        df = pd.read_csv("../../../benchmark/Thread/pact-2014-runtimes.csv")
+        oracles = pd.read_csv("../../../benchmark/Thread/pact-2014-oracles.csv")
+    except:
+        df = pd.read_csv("../../benchmark/Thread/pact-2014-runtimes.csv")
+        oracles = pd.read_csv("../../benchmark/Thread/pact-2014-oracles.csv")
     oracle_runtimes = np.array([float(x) for x in oracles["runtime_" + platform]])
     y = np.array([int(x) for x in oracles["cf_" + platform]], dtype=np.int32)
     all_pre = []
@@ -326,8 +334,12 @@ def platform2str(platform):
 
 def evaluate(model,args):
     pd.set_option('display.max_rows', 5)
-    df = pd.read_csv("/benchmark/Thread/pact-2014-runtimes.csv")
-    oracles = pd.read_csv("/benchmark/Thread/pact-2014-oracles.csv")
+    try:
+        df = pd.read_csv("../../../benchmark/Thread/pact-2014-runtimes.csv")
+        oracles = pd.read_csv("../../../benchmark/Thread/pact-2014-oracles.csv")
+    except:
+        df = pd.read_csv("../../benchmark/Thread/pact-2014-runtimes.csv")
+        oracles = pd.read_csv("../../benchmark/Thread/pact-2014-oracles.csv")
       # thread coarsening factors
     # report progress:
     from progressbar import ProgressBar
@@ -623,8 +635,12 @@ def get_onehot(df, platform):
 
 def load_predict(model,args,model_pretrained=''):
     pd.set_option('display.max_rows', 5)
-    df = pd.read_csv("/benchmark/Thread/pact-2014-runtimes.csv")
-    oracles = pd.read_csv("/benchmark/Thread/pact-2014-oracles.csv")
+    try:
+        df = pd.read_csv("../../../benchmark/Thread/pact-2014-runtimes.csv")
+        oracles = pd.read_csv("../../../benchmark/Thread/pact-2014-oracles.csv")
+    except:
+        df = pd.read_csv("../../benchmark/Thread/pact-2014-runtimes.csv")
+        oracles = pd.read_csv("../../benchmark/Thread/pact-2014-oracles.csv")
     # report progress:
     from progressbar import ProgressBar
     progressbar = [0, ProgressBar(max_value=4)]
@@ -883,8 +899,12 @@ def load_predict(model,args,model_pretrained=''):
 
 def train_underlying(model,args):
     pd.set_option('display.max_rows', 5)
-    df = pd.read_csv("/benchmark/Thread/pact-2014-runtimes.csv")
-    oracles = pd.read_csv("/benchmark/Thread/pact-2014-oracles.csv")
+    try:
+        df = pd.read_csv("../../../benchmark/Thread/pact-2014-runtimes.csv")
+        oracles = pd.read_csv("../../../benchmark/Thread/pact-2014-oracles.csv")
+    except:
+        df = pd.read_csv("../../benchmark/Thread/pact-2014-runtimes.csv")
+        oracles = pd.read_csv("../../benchmark/Thread/pact-2014-oracles.csv")
 
     X_seq = None  # defer sequence encoding (it's expensive)
 
@@ -1002,8 +1022,12 @@ def train_underlying(model,args):
 
 def restore_model(model,args,model_pretrained=''):
     pd.set_option('display.max_rows', 5)
-    df = pd.read_csv("../../../benchmark/Thread/pact-2014-runtimes.csv")
-    oracles = pd.read_csv("../../../benchmark/Thread/pact-2014-oracles.csv")
+    try:
+        df = pd.read_csv("../../../benchmark/Thread/pact-2014-runtimes.csv")
+        oracles = pd.read_csv("../../../benchmark/Thread/pact-2014-oracles.csv")
+    except:
+        df = pd.read_csv("../../benchmark/Thread/pact-2014-runtimes.csv")
+        oracles = pd.read_csv("../../benchmark/Thread/pact-2014-oracles.csv")
     # report progress:
     from progressbar import ProgressBar
     progressbar = [0, ProgressBar(max_value=4)]
