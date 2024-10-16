@@ -23,10 +23,6 @@ def set_box_colors(bp, colors, edge_colors):
             # flier.set_markerfacecolor(edge_c)
             flier.set_markeredgecolor(edge_c)
 
-# def set_line_colors(bp, color):
-#     for patch, color in zip(bp['boxes'], color):
-
-
 def set_violin_colors(vp, colors, edge_color, linewidth=0.7):
     for i, (pc, color, edge_c) in enumerate(zip(vp['bodies'], colors, edge_color)):
         pc.set_facecolor(color)
@@ -315,33 +311,33 @@ def violin_3(method='thread'):
 
     plt.show()
 
-def drifting_thread(path, name):
+def drifting_loop(path, name):
     df = pd.read_excel(path)
     x = df['value'].values
     # 平均值
-    y1 = df['Magni'].values
-    y2 = df['Deeptune'].values
-    y3 = df['IR2Vec'].values
+    y1 = df['K'].values
+    y2 = df['Magni'].values
+    y3 = df['Deeptune'].values
 
     fig = plt.figure(figsize=(6, 3), dpi=80)
-    ax = fig.add_axes([0.17, 0.15, 0.8, 0.6], zorder=11)
+    ax = fig.add_axes([0.15, 0.15, 0.8, 0.6], zorder=11)
 
     ax.set_xticks(np.arange(0, 4, 1)+0.3)
     ax.set_xticklabels(x, fontdict={'horizontalalignment': 'center', 'size': 20,'family': 'Arial'})
-    ax.set_yticks(np.arange(0.8, 1.01, 0.05))
-    ax.set_yticklabels([0.8,0.85, 0.9,0.95, 1],
+    ax.set_yticks(np.arange(0.7, 1.01, 0.1))
+    ax.set_yticklabels([0.7,0.8,0.9, 1],
                        fontdict={'horizontalalignment': 'right', 'size': 20,'family': 'Arial'})
-    ax.set_ylim((0.8, 1.01))
+    ax.set_ylim((0.7, 1.01))
     ax.set_ylabel('Metric value', fontsize=20)
     bar_width = 0.2
 
-    ax.bar(x=np.arange(len(x)), height=y1, label='Magni', width=bar_width,
+    ax.bar(x=np.arange(len(x)), height=y1, label='K.Stock et al.', width=bar_width,
            edgecolor='#b08cee', linewidth=1, color='#cfb8f5', zorder=10,
            alpha=0.9, align="center")
-    ax.bar(x=np.arange(len(x)) + bar_width + 0.06, height=y2, label='DeepTune', width=bar_width,
+    ax.bar(x=np.arange(len(x)) + bar_width + 0.06, height=y2, label='Magni', width=bar_width,
            edgecolor='#925fe8',
-           linewidth=1, color='#b08cee', zorder=10, alpha=0.9, hatch='////')
-    ax.bar(x=np.arange(len(x)) + 2 * bar_width + 0.12, height=y3, label='IR2Vec', width=bar_width,
+           linewidth=1, color='#b08cee', zorder=10, alpha=0.9, hatch='////' )
+    ax.bar(x=np.arange(len(x)) + 2 * bar_width + 0.12, height=y3, label='DeepTune', width=bar_width,
            edgecolor='#7e41e4',
            linewidth=1, color='#9c6eea', zorder=10, alpha=0.9, hatch='|||')
 
@@ -353,7 +349,7 @@ def drifting_thread(path, name):
     box = ax.get_position()
     # columnspacing=2
     ax.set_position([box.x0, box.y0, box.width, box.height * 0.8])
-    ax.legend(loc='center left', bbox_to_anchor=(0, 1.2), ncol=6, prop=font, columnspacing=0.5, handletextpad=0.1,
+    ax.legend(loc='center left', bbox_to_anchor=(-0.13, 1.2), ncol=6, prop=font, columnspacing=0.5, handletextpad=0.1,
               handlelength=1.15)
     plt.grid(axis="y", alpha=0.8, linestyle=':')
 
@@ -456,16 +452,18 @@ def Individual(path, name):
     plt.savefig(str(name) + '.pdf')
     plt.show()
 
-def ae_thread_plot_script(case=''):
-    violin_3(method='thread')
-    print("Figure 7(a) C1: thread coarsening. The resulting performance when using an ML model for decision making.")
-    drifting_thread(r'./figures_plot/data/drifting_thread.xlsx',
-                    r'./figures_plot/figure/detectdrifting_thread')
-    print("Figure 8(a) C1: thread coarsening. Prom’s performance for detecting drifting samples across case studies and underlying models.")
+def ae_loop_plot_script():
+    violin_3(method='loop')
+    print("Figure 7(b) C2: loop vectorization. The resulting performance when using an ML model for decision making.")
+    drifting_loop(r'./figures_plot/data/drifting_loop.xlsx',
+                  r'./figures_plot/figure/detectdrifting_loop')
+
+    print("Figure 8(b) C2: loop vectorization. Prom’s performance for detecting drifting samples across case studies and underlying models.")
     violin_3(method='thread_il')
-    print("Figure 9(a) C1: thread coarsening. Prom enhances performance through incremental learning in different underlying models.")
+
+    print("Figure 9(b) C2: loop vectorization. Prom enhances performance through incremental learning in different underlying models.")
     Individual(r'./figures_plot/data/indiv_thread.xlsx',
                r'./figures_plot/figure/individual_thread')
-    print("Figure 11(a) C1: Performance of individual nonconformity functions.")
+    print("Figure 11(b) C2: loop vectorization. Performance of individual nonconformity functions.")
 
 # violin_3(method='thread')
