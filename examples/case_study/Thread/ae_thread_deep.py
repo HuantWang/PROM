@@ -292,13 +292,13 @@ def ae_thread_deep_script():
     args = load_deeptune_args("deploy")
     Thread_DeepTune_deploy(args)
 
-if __name__=='__main__':
-    args = load_deeptune_args("train")
+# if __name__=='__main__':
+#     args = load_deeptune_args("train")
     # if args.mode == 'train':
     #     Thread_DeepTune_train(args=args)
     # elif args.mode == 'deploy':
     #     Thread_DeepTune_deploy(args=args)
     # Thread_DeepTune_train(args)
-    args = load_deeptune_args("deploy")
-    Thread_DeepTune_deploy(args)
+    # args = load_deeptune_args("deploy")
+    # Thread_DeepTune_deploy(args)
     # nnictl create --config /home/huanting/PROM/examples/case_study/Thread/config.yaml --port 8088

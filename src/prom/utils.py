@@ -757,26 +757,48 @@ def compute_quantiles(vector: NDArray, alpha: NDArray) -> NDArray:
         Quantiles of the vector.
     """
     n = len(vector)
-    if len(vector.shape) <= 2:
-        quantiles_ = np.stack(
-            [
-                np_quantile(
-                    vector,
-                    ((n + 1) * (1 - _alpha)) / n,
-                    method="higher",
-                )
-                for _alpha in alpha
-            ]
-        )
+    try:
+        if len(vector.shape) <= 2:
+            quantiles_ = np.stack(
+                [
+                    np_quantile(
+                        vector,
+                        ((n + 1) * (1 - _alpha)) / n,
+                        method="higher",
+                    )
+                    for _alpha in alpha
+                ]
+            )
+        else:
+            check_alpha_and_last_axis(vector, alpha)
+            quantiles_ = np.stack(
+                [
+                    compute_quantiles(vector[:, :, i], np.array([alpha_]))
+                    for i, alpha_ in enumerate(alpha)
+                ]
+            )[:, 0]
+    except:
+        if len(vector.shape) <= 2:
+            quantiles_ = np.stack(
+                [
+                    np_quantile(
+                        vector,
+                        ((n) * (1 - _alpha)) / n,
+                        method="higher",
+                    )
+                    for _alpha in alpha
+                ]
+            )
+        else:
+            check_alpha_and_last_axis(vector, alpha)
+            quantiles_ = np.stack(
+                [
+                    compute_quantiles(vector[:, :, i], np.array([alpha_]))
+                    for i, alpha_ in enumerate(alpha)
+                ]
+            )[:, 0]
 
-    else:
-        check_alpha_and_last_axis(vector, alpha)
-        quantiles_ = np.stack(
-            [
-                compute_quantiles(vector[:, :, i], np.array([alpha_]))
-                for i, alpha_ in enumerate(alpha)
-            ]
-        )[:, 0]
+
     return quantiles_
 
 

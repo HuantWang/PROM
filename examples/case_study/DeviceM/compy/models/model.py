@@ -113,7 +113,7 @@ class Model(object):
                     str(percent_mean) + '_' + str(seed_save) + '.png')
         data_df.to_pickle('/home/huanting/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_deploy' +
                           str(percent_mean) + '_' + str(seed_save) + '_data.pkl')
-        plt.show()
+        # plt.show()
 
         # # UQ
         # cp_valid_batches = data_valid
@@ -338,7 +338,7 @@ class Model(object):
                     str(il_percent_mean) + '_' + str(seed_save) + '.png')
         data_df.to_pickle('/home/huanting/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_IL' +
                           str(il_percent_mean) + '_' + str(seed_save) + '_data.pkl')
-        plt.show()
+        # plt.show()
 
         improved_sp = il_percent_mean - test_percent_mean
         print("The performance to the oracle is {:.2f}%, "

@@ -987,7 +987,7 @@ def conformal_prediction(args, model, tokenizer):
         "lac": ("score", True),
         "top_k": ("top_k", True),
         "aps": ("cumulated_score", True),
-        "raps": ("raps", True)
+        # "raps": ("raps", True)
     }
     Prom_thread = Prom_utils(clf, method_params, task="bug")
 
@@ -1412,8 +1412,6 @@ def model_initial():
             "learning_rate": 0.002,
             "alpha": 0.1,
             "epoch": 3,
-            "train_batch_size": 64,
-            "eval_batch_size": 64,
             "seed": 4046,
             "method": 'top_k'
         }
@@ -1457,9 +1455,9 @@ def model_initial():
                         help="Run evaluation during training at each logging step.")
     parser.add_argument("--do_lower_case", action='store_true',
                         help="Set this flag if you are using an uncased model.")
-    parser.add_argument("--train_batch_size", default=params['train_batch_size'], type=int,
+    parser.add_argument("--train_batch_size", default=64, type=int,
                         help="Batch size per GPU/CPU for training.")
-    parser.add_argument("--eval_batch_size", default=params['eval_batch_size'], type=int,
+    parser.add_argument("--eval_batch_size", default=64, type=int,
                         help="Batch size per GPU/CPU for evaluation.")
     parser.add_argument('--gradient_accumulation_steps', type=int, default=1,
                         help="Number of updates steps to accumulate before performing a backward/update pass.")

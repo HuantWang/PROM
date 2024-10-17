@@ -145,7 +145,6 @@ def drifting_vul(path, name):
 
     plt.show()
 
-
 def drifting_dev(path, name):
 
     df = pd.read_excel(path)

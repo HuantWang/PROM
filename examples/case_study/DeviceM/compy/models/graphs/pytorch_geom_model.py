@@ -25,7 +25,8 @@ from src.prom.prom_util import Prom_utils
 from prom.prom_classification import MapieClassifier
 from prom.metrics import (classification_coverage_score,
                            classification_mean_width_score)
-
+import warnings
+warnings.filterwarnings("ignore")
 import random
 class Dev_gnn(prom_utils.ModelDefinition):
     def __init__(self,model=None,dataset=None,calibration_data=None,args=None):
