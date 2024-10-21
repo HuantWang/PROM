@@ -30,13 +30,13 @@ experiments = [
 # {"command": "python train_tlp.py --mode train --save_folder='models/train/tlp_i7_tiny' --under_train_dataset='./data_model/bert_tiny_train_and_val.pkl' --under_test_dataset='./data_model/bert_tiny_test.pkl' ", "port": 8090},
 # {"command": "python train_tlp.py --mode train --save_folder='models/train/tlp_i7_med' --under_train_dataset='./data_model/bert_medium_train_and_val.pkl' --under_test_dataset='./data_model/bert_medium_test.pkl' ", "port": 8091},
 # {"command": "python train_tlp.py --mode deploy --save_folder='models/il/tlp_i7_tiny' --under_model='./models/train/tlp_i7_base/tlp_model_533_best.pkl' --test_data='./data_model/bert_tiny_test.pkl' --path='((bert_tiny*.task.pkl'", "port": 8092},
-{"command": "python train_tlp.py --mode deploy --save_folder='models/il/tlp_i7_med' --under_model='./models/train/tlp_i7_base/tlp_model_533_best.pkl' --test_data='./data_model/bert_medium_test.pkl' --path='((bert_medium*.task.pkl'", "port": 8093},
-{"command": "python train_tlp.py --mode deploy --save_folder='models/il/tlp_i7_large' --under_model='./models/train/tlp_i7_base/tlp_model_533_best.pkl' --test_data='./data_model/bert_large_test.pkl' --path='((bert_large*.task.pkl'", "port": 8094},
+{"command": "python train_tlp.py --mode deploy --save_folder='models/il/tlp_i7_med' --under_model='./models/tlp_model_base_best.pkl' --test_data='./data_model/bert_medium_test.pkl' --path='((bert_medium*.task.pkl'", "port": 8093},
+{"command": "python train_tlp.py --mode deploy --save_folder='models/il/tlp_i7_large' --under_model='./models/tlp_model_base_best.pkl' --test_data='./data_model/bert_large_test.pkl' --path='((bert_large*.task.pkl'", "port": 8094},
 
 ]
 
 subprocess.run(["nnictl", "stop", "-a"], capture_output=True, text=True)
-time.sleep(30)
+time.sleep(10)
 
 for exp in experiments:
     # 加载现有的 YAML 文件
@@ -56,6 +56,6 @@ for exp in experiments:
 
 
     print(f"Waiting for experiment to complete...")
-    time.sleep(8*60*60)
+    time.sleep(60*60)
 
 # subprocess.run(["nnictl", "stop", "-a"], capture_output=True, text=True)

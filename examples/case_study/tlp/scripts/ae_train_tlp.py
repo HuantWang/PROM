@@ -211,7 +211,7 @@ class Tlp_prom(util.ModelDefinition):
         with open(train_dataset, 'rb') as f:
             datasets_global = pickle.load(f)
 
-        train_data = load_datas(datasets_global)
+        train_data = load_datas(datasets_global,args)
         # print('create dataloader done.')
         del datasets_global
 
@@ -223,7 +223,7 @@ class Tlp_prom(util.ModelDefinition):
         random.shuffle(test_datasets)
         length = len(test_datasets)
         # print("length", length)
-        test_dataset = test_datasets[:1]
+        test_dataset = test_datasets[:length]
 
         return train_data,test_dataset
 
@@ -239,7 +239,7 @@ class Tlp_prom(util.ModelDefinition):
     def feature_extraction(self, srcs):
         pass
 
-class AttentionModule(nn.Module):  
+class AttentionModule(nn.Module):
     def __init__(self):
         super().__init__()
         self.fea_size = args.fea_size
@@ -271,7 +271,7 @@ class AttentionModule(nn.Module):
         self.l_list = []
         for i in range(self.res_block_cnt):
             self.l_list.append(nn.Sequential(
-                nn.Linear(hidden_dim_1, hidden_dim_1), 
+                nn.Linear(hidden_dim_1, hidden_dim_1),
                 nn.ReLU()
             ))
         self.l_list = nn.Sequential(*self.l_list)
@@ -285,7 +285,7 @@ class AttentionModule(nn.Module):
             nn.ReLU(),
             nn.Linear(out_dim[2], out_dim[3]),
         )
-        
+
 
     def forward(self, batch_datas_steps):
 
@@ -744,7 +744,7 @@ class BertSegmentDataLoader:
     def __len__(self):
         return self.number
 
-def load_datas(datasets_global):
+def load_datas(datasets_global,args):
 
     datasets = np.array(datasets_global, dtype=object)
     if args.data_cnt > 0:
@@ -1284,24 +1284,43 @@ def cp(train_loader, val_dataloader, test_datasets, underlying_path,file_pattern
 
     # print(coverage)
 
-def init_args():
+def init_args(model_name):
     params = nni.get_next_parameter()
-    if params == {}:
+    if params == {} and model_name == 'base':
         params = {
             "seed": 533,
+            "under_train_dataset": '../case_study/tlp/scripts/data_model/bert_base_train_and_val.pkl',
+            "under_test_dataset": '../case_study/tlp/scripts/data_model/bert_base_test.pkl'
         }
-
+    elif params == {} and model_name == 'tiny':
+        params = {
+            "seed": 2628,
+            "under_train_dataset": '../case_study/tlp/scripts/data_model/bert_tiny_train_and_val.pkl',
+            "under_test_dataset": '../case_study/tlp/scripts/data_model/bert_tiny_test.pkl'
+        }
+    elif params == {} and model_name == 'mid':
+        params = {
+            "seed": 7194,
+            "under_train_dataset": '../case_study/tlp/scripts/data_model/bert_medium_train_and_val.pkl',
+            "under_test_dataset": '../case_study/tlp/scripts/data_model/bert_medium_test.pkl'
+        }
+    elif params == {} and model_name == 'large':
+        params = {
+            "seed": 1538,
+            "under_train_dataset": '../case_study/tlp/scripts/data_model/bert_large_train_and_val.pkl',
+            "under_test_dataset": '../case_study/tlp/scripts/data_model/bert_large_test.pkl'
+        }
     parser = argparse.ArgumentParser()
     parser.add_argument("--save_folder", type=str, default='models/train/tlp_i7_base')
     parser.add_argument('--mode', choices=['train', 'deploy'], help="Mode to run: train or deploy")
     parser.add_argument("--under_train_dataset", type=str,
-                        default='./data_model/bert_base_train_and_val.pkl')
+                        default='../case_study/tlp/scripts/data_model/bert_base_train_and_val.pkl')
     parser.add_argument("--under_test_dataset", type=str,
-                        default='./data_model/bert_base_test.pkl')
+                        default='../case_study/tlp/scripts/data_model/bert_base_test.pkl')
     parser.add_argument("--under_model", type=str,
                         default='./models/tlp_i7_base/tlp_model_2705.pkl')
     parser.add_argument("--test_dataset", type=str,
-                        default='./data_model/bert_large_test.pkl')
+                        default='../case_study/tlp/scripts/data_model/bert_large_test.pkl')
     parser.add_argument("--path", type=str, default="((bert_large*.task.pkl")
     parser.add_argument("--cuda", type=str, default='cpu')
     parser.add_argument("--lr", type=float, default=7e-4)
@@ -1314,7 +1333,7 @@ def init_args():
     parser.add_argument("--fea_size", type=int, default=22)
     parser.add_argument("--res_block_cnt", type=int, default=2)
     parser.add_argument("--self_sup_model", type=str, default='')
-    parser.add_argument("--data_cnt", type=int, default=1)  # data_cnt * 1000
+    parser.add_argument("--data_cnt", type=int, default=50)  # data_cnt * 1000
     parser.add_argument("--seed", type=int, default=params["seed"])
     parser.add_argument("--train_size_per_gpu", type=int, default=64)
     parser.add_argument("--val_size_per_gpu", type=int, default=64)
@@ -1325,7 +1344,7 @@ def init_args():
     set_seed(args.seed)
     return args
 
-def train_model(args):
+def train_model(args,under_model_name):
     # init args
     tlp_prom = Tlp_prom()
     # split data to train and test
@@ -1333,13 +1352,12 @@ def train_model(args):
     # set test length
     train_data, test_data = tlp_prom.data_partitioning \
         (train_dataset=args.under_train_dataset, test_dataset=args.under_test_dataset, args=args)
-    under_model_name,performance=train(*train_data, device="cpu",test_tlp=test_data)
+    # under_model_name,performance=train(*train_data, device="cpu",test_tlp=test_data)
     # origin_testdata = test_data
-    # under_model_name=\
-    #     '/home/huanting/PROM/examples/case_study/tlp/scripts/models/train/tlp_i7_base/tlp_model_7785_best.pkl'
-    # performance = eval_model(model_file=under_model_name, test_datasets=test_data)
+
+    performance = eval_model(model_file=under_model_name, test_datasets=test_data)
     print("Load data and evaluate the data on new benchmark...")
-    # nni.report_final_result(performance)
+    nni.report_final_result(performance)
 
 def deploy_model(args):
     # init args
@@ -1369,26 +1387,46 @@ def deploy_model(args):
     print("improve_perm: ", improve_perm)
     nni.report_final_result(improve_perm)
 
+def ae_eval_model(model_name):
+    # if model_name == 'base':
+        args = init_args('base')
+        under_model_name = \
+            '/home/huanting/PROM/examples/case_study/tlp/scripts/models/tlp_model_base_best.pkl'
+        train_model(args, under_model_name)
 
-if __name__ == "__main__":
-    print("initial parameters...")
-    args = init_args()
-    if args.mode=="train":
-        train_model(args)
-    elif args.mode=="deploy":
-        deploy_model(args)
+# ae_eval_model('base')
+    # elif model_name == 'tiny':
+    #     args = init_args('tiny')
+    #     under_model_name = \
+    #         '/home/huanting/PROM/examples/case_study/tlp/scripts/tlp_i7/bert_tiny.pkl'
+    #     train_model(args, under_model_name)
+    # elif model_name == 'mid':
+    #     args = init_args('mid')
+    #     under_model_name = \
+    #         '/home/huanting/PROM/examples/case_study/tlp/scripts/tlp_i7/medium.pkl'
+    #     train_model(args, under_model_name)
+    # elif model_name == 'large':
+    #     args = init_args('large')
+    #     under_model_name = \
+    #         '/home/huanting/PROM/examples/case_study/tlp/scripts/tlp_i7/large.pkl'
+    #     train_model(args,under_model_name)
+
+# ae_eval_model('base')
+
+# ae_eval_model('tiny')
+# ae_eval_model('mid')
+# ae_eval_model('large')
+# if __name__ == "__main__":
+#     print("initial parameters...")
+#     args = init_args()
+#     if args.mode=="train":
+#         train_model(args)
+#     elif args.mode=="deploy":
+#         deploy_model(args)
     # deploy_model(args)
 
     # train_model(args)
     # nnictl create --config /home/huanting/PROM/examples/case_study/tlp/scripts/config.yaml --port 8088
-    # --mode deploy --save_folder=models/il/tlp_i7_large --under_model=./models/train/tlp_i7_base/tlp_model_533_best.pkl --test_data=./data_model/bert_large_test.pkl --path=((bert_large*.task.pkl
-    # --mode deploy --save_folder models/il/tlp_i7_tiny --under_model ./models/train/tlp_i7_base/tlp_model_533_best.pkl --test_data ./data_model/bert_tiny_test.pkl --path ((bert_tiny*.task.pkl
-    # --mode deploy --save_folder=models/il/tlp_i7_med --under_model=./models/train/tlp_i7_base/tlp_model_533_best.pkl --test_data=./data_model/bert_medium_test.pkl' --path='((bert_medium*.task.pkl
-
-    """
-    python train_tlp.py --mode deploy 
-    --save_folder='models/il/tlp_i7_tiny' 
-    --under_model='./models/train/tlp_i7_base/tlp_model_533_best.pkl' 
-    --test_data='./data_model/bert_tiny_test.pkl' 
-    --path='((bert_tiny*.task.pkl'
-    """
+    # --mode deploy --save_folder=models/il/tlp_i7_large --under_model=./models/train/tlp_i7_base/tlp_model_533_best.pkl --test_data=../case_study/tlp/scripts/data_model/bert_large_test.pkl --path=((bert_large*.task.pkl
+    # --mode deploy --save_folder models/il/tlp_i7_tiny --under_model ./models/train/tlp_i7_base/tlp_model_533_best.pkl --test_data ../case_study/tlp/scripts/data_model/bert_tiny_test.pkl --path ((bert_tiny*.task.pkl
+    # --mode deploy --save_folder=models/il/tlp_i7_med --under_model=./models/train/tlp_i7_base/tlp_model_533_best.pkl --test_data=../case_study/tlp/scripts/data_model/bert_medium_test.pkl' --path='((bert_medium*.task.pkl

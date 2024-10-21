@@ -1,3 +1,7 @@
+import subprocess
+# setting the environments
+subprocess.run(["bash", "env.sh", "C3"])
+
 import sys
 sys.path.append('../case_study/DeviceM/')
 

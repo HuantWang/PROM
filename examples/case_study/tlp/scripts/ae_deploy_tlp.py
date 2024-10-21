@@ -211,7 +211,7 @@ class Tlp_prom(util.ModelDefinition):
         with open(train_dataset, 'rb') as f:
             datasets_global = pickle.load(f)
 
-        train_data = load_datas(datasets_global)
+        train_data = load_datas(datasets_global,args)
         # print('create dataloader done.')
         del datasets_global
 
@@ -239,7 +239,7 @@ class Tlp_prom(util.ModelDefinition):
     def feature_extraction(self, srcs):
         pass
 
-class AttentionModule(nn.Module):  
+class AttentionModule(nn.Module):
     def __init__(self):
         super().__init__()
         self.fea_size = args.fea_size
@@ -271,7 +271,7 @@ class AttentionModule(nn.Module):
         self.l_list = []
         for i in range(self.res_block_cnt):
             self.l_list.append(nn.Sequential(
-                nn.Linear(hidden_dim_1, hidden_dim_1), 
+                nn.Linear(hidden_dim_1, hidden_dim_1),
                 nn.ReLU()
             ))
         self.l_list = nn.Sequential(*self.l_list)
@@ -285,7 +285,7 @@ class AttentionModule(nn.Module):
             nn.ReLU(),
             nn.Linear(out_dim[2], out_dim[3]),
         )
-        
+
 
     def forward(self, batch_datas_steps):
 
@@ -744,7 +744,7 @@ class BertSegmentDataLoader:
     def __len__(self):
         return self.number
 
-def load_datas(datasets_global):
+def load_datas(datasets_global,args):
 
     datasets = np.array(datasets_global, dtype=object)
     if args.data_cnt > 0:
@@ -790,140 +790,6 @@ def validate(model, valid_loader, loss_func, device):
 
     return np.sum(valid_losses)
 
-
-def train(train_loader, val_dataloader, device, test_tlp):
-    performance=0
-    best_performance = 0
-    if args.attention_class == 'default':
-        args.hidden_dim = [64, 128, 256, 256]
-        args.out_dim = [256, 128, 64, 1]
-        net = AttentionModule().to(device)
-        net = net.to(torch.device("cpu"))
-    elif args.attention_class == 'transformer':
-        print('TransformerModule')
-        net = TransformerModule().to(device)
-        net = net.to(torch.device("cpu"))
-    elif args.attention_class == 'attention_encoder_layer':
-        print('TransformerEncoderLayerModule')
-        net = TransformerEncoderLayerModule().to(device)
-        net = net.to(torch.device("cpu"))
-    elif args.attention_class == 'lstm':
-        print('LSTMModule')
-        net = LSTMModule().to(device)
-        net = net.to(torch.device("cpu"))
-    elif args.attention_class == 'gpt':
-        print('GPTModule')
-        net = GPTModule().to(device)
-        net = net.to(torch.device("cpu"))
-    elif args.attention_class == 'bert':
-        print('BertModule')
-        net = BertModule().to(device)
-        net = net.to(torch.device("cpu"))
-    elif args.attention_class == 'attention_512':
-        args.hidden_dim = [64, 128, 256, 512]
-        args.out_dim = [256, 128, 64, 1]
-        print('Attention512Module')
-        net = AttentionModule().to(device)
-        net = net.to(torch.device("cpu"))
-    elif args.attention_class == 'attention_768':
-        args.hidden_dim = [64, 256, 512, 768]
-        args.out_dim = [512, 256, 128, 1]
-        print('Attention768Module')
-        net = AttentionModule().to(device)
-        net = net.to(torch.device("cpu"))
-    elif args.attention_class == 'attention_1024':
-        args.hidden_dim = [64, 256, 512, 1024]
-        args.out_dim = [512, 256, 128, 1]
-        print('Attention1024Module')
-        net = AttentionModule().to(device)
-        net = net.to(torch.device("cpu"))
-
-    if args.rank_mse == 'rank':
-        loss_func = LambdaRankLoss(device)
-    else:
-        loss_func = nn.MSELoss()
-
-    n_epoch = args.n_epoch
-    if args.optimizer == 'default':
-        optimizer = optim.Adam(net.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-        lr_scheduler = torch.optim.lr_scheduler.StepLR(
-            optimizer, step_size=n_epoch // 3, gamma=1)
-    elif args.optimizer == 'decrease_per_17_0.8':
-        print('optimizer', 'decrease_per_17_0.8')
-        optimizer = optim.Adam(net.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-        lr_scheduler = torch.optim.lr_scheduler.StepLR(
-            optimizer, step_size=n_epoch // 3, gamma=0.8)
-    elif args.optimizer == 'decrease_per_17_0.5':
-        print('optimizer', 'decrease_per_17_0.5')
-        optimizer = optim.Adam(net.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-        lr_scheduler = torch.optim.lr_scheduler.StepLR(
-            optimizer, step_size=n_epoch // 3, gamma=0.5)
-    elif args.optimizer == 'decrease_per_12_0.5':
-        print('optimizer', 'decrease_per_12_0.5')
-        optimizer = optim.Adam(net.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-        lr_scheduler = torch.optim.lr_scheduler.StepLR(
-            optimizer, step_size=n_epoch // 4, gamma=0.5)
-    elif args.optimizer == 'decrease_per_10_0.5':
-        print('optimizer', 'decrease_per_10_0.5')
-        optimizer = optim.Adam(net.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-        lr_scheduler = torch.optim.lr_scheduler.StepLR(
-            optimizer, step_size=n_epoch // 5, gamma=0.5)
-    elif args.optimizer == 'decrease_per_17_0.5_no_decay':
-        print('optimizer', 'decrease_per_17_0.5')
-        optimizer = optim.Adam(net.parameters(), lr=args.lr)
-        lr_scheduler = torch.optim.lr_scheduler.StepLR(
-            optimizer, step_size=n_epoch // 3, gamma=0.5)
-
-    train_loss = None
-    print('start train...')
-    # print(len(train_loader), len(val_dataloader))
-    best_valid_loss=1e6
-    for epoch in range(n_epoch):
-        tic = time.time()
-
-        net.train()
-        train_loss = 0
-        for batch, (batch_datas_steps, batch_labels) in enumerate(train_loader):
-            batch_datas_steps = batch_datas_steps.to(device)
-            batch_labels = batch_labels.to(device)
-
-            optimizer.zero_grad()
-            loss = loss_func(net(batch_datas_steps), batch_labels)
-            loss.backward()
-            nn.utils.clip_grad_norm_(net.parameters(), 0.5)
-            optimizer.step()
-            train_loss += loss.item()
-        lr_scheduler.step()
-
-        train_time = time.time() - tic
-
-        if epoch % 10 == 0 or epoch == n_epoch - 1:
-
-            valid_loss = validate(net, val_dataloader,
-                                  loss_func, device=device)
-            loss_msg = "Train Loss: %.4f\tValid Loss: %.4f" % (
-                train_loss, valid_loss)
-            print("Epoch: %d\tBatch: %d\t%s\tTrain Speed: %.0f" % (
-                epoch, batch, loss_msg, len(train_loader) / train_time,))
-            model_save_file_name = '%s/tlp_model_%d.pkl' % (args.save_folder, args.seed)
-
-        if best_valid_loss>valid_loss:
-            print("save the current model...")
-            best_valid_loss=valid_loss
-            with open(model_save_file_name, 'wb') as f:
-                pickle.dump(net.cpu(), f)
-            print("evaluating...")
-            performance = eval_model(model_file=model_save_file_name, test_datasets=test_tlp)
-
-            if best_performance< performance:
-                best_performance = performance
-                print("The best top-1 performance is", best_performance)
-                model_save_file_name = '%s/tlp_model_%d_best.pkl' % (args.save_folder, args.seed)
-                with open(model_save_file_name, 'wb') as f:
-                    pickle.dump(net.cpu(), f)
-
-    net = net.to(device)
-    return model_save_file_name, best_performance
 
 
 def il(test_loader, device, pre_trained_model,aug_data, args):
@@ -1043,6 +909,7 @@ def conformal_prediction(datas, task_pred_dict, model,mapie,task_drift_dict,task
     data_test = torch.cat(data_test, dim=0)
     y_test = labels_all
     alphas = np.arange(0.1, 1, 0.1)
+    # alphas=[0.6]
     y_pis = {}
     credibility_result, confidence_result,y_pis = mapie.predict(data_test, alpha=alphas)
     # results = [regression_coverage_score(y_test, y_pis[:, 0, i], y_pis[:, 1, i]) for i, _ in enumerate(alphas)]
@@ -1059,6 +926,7 @@ def conformal_prediction(datas, task_pred_dict, model,mapie,task_drift_dict,task
     indices_not_detec_dict = {}
     best_f1=0
     best_indices_detec=[]
+
     for index,pvalue in enumerate(alphas):
         # if index==num_set:
         #     if all(pvalue) or not any(pvalue):
@@ -1284,25 +1152,45 @@ def cp(train_loader, val_dataloader, test_datasets, underlying_path,file_pattern
 
     # print(coverage)
 
-def init_args():
+def init_args(model_name):
     params = nni.get_next_parameter()
-    if params == {}:
+    if params == {} and model_name == 'tiny':
         params = {
-            "seed": 533,
-        }
+            "seed": 5242,
+            "save_folder": 'models/il/tlp_i7_tiny',
+            "under_model": '../case_study/tlp/scripts/models/tlp_model_base_best.pkl',
+            "test_dataset": '../case_study/tlp/scripts/data_model/bert_tiny_test.pkl',
+            "path": '((bert_tiny*.task.pkl'
 
+        }
+    elif params == {} and model_name == 'medium':
+        params = {
+            "seed": 5652,
+            "save_folder": 'models/il/tlp_i7_med',
+            "under_model": '../case_study/tlp/scripts/models/tlp_model_base_best.pkl',
+            "test_dataset": '../case_study/tlp/scripts/data_model/bert_medium_test.pkl',
+            "path": '((bert_medium*.task.pkl'
+        }
+    elif params == {} and model_name == 'large':
+        params = {
+            "seed": 4694,
+            "save_folder": 'models/il/tlp_i7_large',
+            "under_model": '../case_study/tlp/scripts/models/tlp_model_base_best.pkl',
+            "test_dataset": '../case_study/tlp/scripts/data_model/bert_large_test.pkl',
+            "path": '((bert_large*.task.pkl'
+        }
     parser = argparse.ArgumentParser()
-    parser.add_argument("--save_folder", type=str, default='models/train/tlp_i7_base')
+    parser.add_argument("--save_folder", type=str, default=params['save_folder'])
     parser.add_argument('--mode', choices=['train', 'deploy'], help="Mode to run: train or deploy")
     parser.add_argument("--under_train_dataset", type=str,
-                        default='./data_model/bert_base_train_and_val.pkl')
+                        default='../case_study/tlp/scripts/data_model/bert_base_train_and_val.pkl')
     parser.add_argument("--under_test_dataset", type=str,
-                        default='./data_model/bert_base_test.pkl')
+                        default='../case_study/tlp/scripts/data_model/bert_base_test.pkl')
     parser.add_argument("--under_model", type=str,
-                        default='./models/tlp_i7_base/tlp_model_2705.pkl')
+                        default=params['under_model'])
     parser.add_argument("--test_dataset", type=str,
-                        default='./data_model/bert_large_test.pkl')
-    parser.add_argument("--path", type=str, default="((bert_large*.task.pkl")
+                        default=params['test_dataset'])
+    parser.add_argument("--path", type=str, default=params['path'])
     parser.add_argument("--cuda", type=str, default='cpu')
     parser.add_argument("--lr", type=float, default=7e-4)
     parser.add_argument("--weight_decay", type=float, default=1e-6)
@@ -1325,21 +1213,7 @@ def init_args():
     set_seed(args.seed)
     return args
 
-def train_model(args):
-    # init args
-    tlp_prom = Tlp_prom()
-    # split data to train and test
-    print("Load data and split data to train and test...")
-    # set test length
-    train_data, test_data = tlp_prom.data_partitioning \
-        (train_dataset=args.under_train_dataset, test_dataset=args.under_test_dataset, args=args)
-    under_model_name,performance=train(*train_data, device="cpu",test_tlp=test_data)
-    # origin_testdata = test_data
-    # under_model_name=\
-    #     '/home/huanting/PROM/examples/case_study/tlp/scripts/models/train/tlp_i7_base/tlp_model_7785_best.pkl'
-    # performance = eval_model(model_file=under_model_name, test_datasets=test_data)
-    print("Load data and evaluate the data on new benchmark...")
-    # nni.report_final_result(performance)
+
 
 def deploy_model(args):
     # init args
@@ -1369,26 +1243,36 @@ def deploy_model(args):
     print("improve_perm: ", improve_perm)
     nni.report_final_result(improve_perm)
 
-
-if __name__ == "__main__":
-    print("initial parameters...")
-    args = init_args()
-    if args.mode=="train":
-        train_model(args)
-    elif args.mode=="deploy":
+def ae_deploy_model(model_name):
+    # if model_name == 'tiny':
+        args = init_args('tiny')
         deploy_model(args)
+    # elif model_name == 'medium':
+        args = init_args('medium')
+        deploy_model(args)
+    # elif model_name == 'large':
+        args = init_args('large')
+        deploy_model(args)
+
+
+# ae_deploy_model('tiny')
+# ae_deploy_model('medium')
+# ae_deploy_model('large')
+
+# ae_eval_model('tiny')
+# ae_eval_model('mid')
+# ae_eval_model('large')
+# if __name__ == "__main__":
+#     print("initial parameters...")
+#     args = init_args()
+#     if args.mode=="train":
+#         train_model(args)
+#     elif args.mode=="deploy":
+#         deploy_model(args)
     # deploy_model(args)
 
     # train_model(args)
     # nnictl create --config /home/huanting/PROM/examples/case_study/tlp/scripts/config.yaml --port 8088
-    # --mode deploy --save_folder=models/il/tlp_i7_large --under_model=./models/train/tlp_i7_base/tlp_model_533_best.pkl --test_data=./data_model/bert_large_test.pkl --path=((bert_large*.task.pkl
-    # --mode deploy --save_folder models/il/tlp_i7_tiny --under_model ./models/train/tlp_i7_base/tlp_model_533_best.pkl --test_data ./data_model/bert_tiny_test.pkl --path ((bert_tiny*.task.pkl
-    # --mode deploy --save_folder=models/il/tlp_i7_med --under_model=./models/train/tlp_i7_base/tlp_model_533_best.pkl --test_data=./data_model/bert_medium_test.pkl' --path='((bert_medium*.task.pkl
-
-    """
-    python train_tlp.py --mode deploy 
-    --save_folder='models/il/tlp_i7_tiny' 
-    --under_model='./models/train/tlp_i7_base/tlp_model_533_best.pkl' 
-    --test_data='./data_model/bert_tiny_test.pkl' 
-    --path='((bert_tiny*.task.pkl'
-    """
+    # --mode deploy --save_folder=models/il/tlp_i7_large --under_model=../case_study/tlp/scripts/models/train/tlp_i7_base/tlp_model_533_best.pkl --test_data=../case_study/tlp/scripts/data_model/bert_large_test.pkl --path=((bert_large*.task.pkl
+    # --mode deploy --save_folder models/il/tlp_i7_tiny --under_model ../case_study/tlp/scripts/models/train/tlp_i7_base/tlp_model_533_best.pkl --test_data ../case_study/tlp/scripts/data_model/bert_tiny_test.pkl --path ((bert_tiny*.task.pkl
+    # --mode deploy --save_folder=models/il/tlp_i7_med --under_model=../case_study/tlp/scripts/models/train/tlp_i7_base/tlp_model_533_best.pkl --test_data=../case_study/tlp/scripts/data_model/bert_medium_test.pkl' --path='((bert_medium*.task.pkl

@@ -1,3 +1,8 @@
+import subprocess
+
+# setting the environments
+subprocess.run(["bash", "env.sh", "C1"])
+
 import sys
 sys.path.append('../case_study/Loop/')
 from ae_loop_SVM import ae_loop_svm_script

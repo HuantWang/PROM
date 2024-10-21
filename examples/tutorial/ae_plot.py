@@ -38,4 +38,4 @@ if __name__ == '__main__':
 
     # Call the plot script with the specified case
     # plot_script(case=args.case)
-    plot_script('tlp')
+    # plot_script('tlp')

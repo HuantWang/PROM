@@ -757,11 +757,11 @@ def deploy(args, train_dataset, model, tokenizer):
                                         old_train.append(json.loads(line))
 
                                 new_train = old_train + selected_content
-                                with open('../../../benchmark/Bug/new_train.jsonl', 'w') as selected_file:
+                                with open('../../benchmark/Bug/new_train.jsonl', 'w') as selected_file:
                                     for item in new_train:
                                         json.dump(item, selected_file)
                                         selected_file.write('\n')
-                                with open('../../../benchmark/Bug/new_test.jsonl', 'w') as selected_file:
+                                with open('../../benchmark/Bug/new_test.jsonl', 'w') as selected_file:
                                     for item in new_test:
                                         json.dump(item, selected_file)
                                         selected_file.write('\n')
@@ -771,7 +771,7 @@ def deploy(args, train_dataset, model, tokenizer):
                                 model.load_state_dict(torch.load(output_dir))
                                 model.to(args.device)
 
-                                train_dataset = TextDataset(tokenizer, args, '../../../benchmark/Bug/new_train.jsonl',
+                                train_dataset = TextDataset(tokenizer, args, '../../benchmark/Bug/new_train.jsonl',
                                                             args.one_hot_vectors,
                                                             args.suffixes)
                                 results_origin = evaluate_test(args, model, tokenizer)
@@ -1203,7 +1203,7 @@ def conformal_prediction(args, model, tokenizer):
 def evaluate_test(args, model, tokenizer, eval_when_training=False):
     # Loop to handle MNLI double evaluation (matched, mis-matched)
     eval_output_dir = args.output_dir
-    eval_dataset = TextDataset(tokenizer, args, "../../../benchmark/Bug/new_train.jsonl", args.one_hot_vectors, args.suffixes)
+    eval_dataset = TextDataset(tokenizer, args, "../../benchmark/Bug/new_train.jsonl", args.one_hot_vectors, args.suffixes)
 
     if not os.path.exists(eval_output_dir) and args.local_rank in [-1, 0]:
         os.makedirs(eval_output_dir)
@@ -1405,14 +1405,32 @@ def epoch_test(args, model, tokenizer):
     # return increment_acc
 
 
-def model_initial():
+def model_initial(mode):
     params = nni.get_next_parameter()
-    if params == {}:
+    # if params == {}:
+    #     params = {
+    #         "learning_rate": 0.002,
+    #         "alpha": 0.1,
+    #         "epoch": 3,
+    #         "seed": 4046,
+    #     }
+    if params == {} and mode == 'train':
+        params = {
+            "learning_rate": 0.002,
+            "epoch": 50,
+            "seed": 4185,
+            # "alpha": 0.1,
+            # "train_batch_size": 32,
+            # "eval_batch_size": 32,
+        }
+    elif params == {} and mode == 'deploy':
         params = {
             "learning_rate": 0.0002,
-            # "alpha": 0.1,
             "epoch": 40,
-            "seed": 2811,
+            "seed": 5902,
+            # "alpha": 0.1,
+            # "train_batch_size": 32,
+            # "eval_batch_size": 32,
         }
 
     parser = argparse.ArgumentParser()
@@ -1454,9 +1472,9 @@ def model_initial():
                         help="Run evaluation during training at each logging step.")
     parser.add_argument("--do_lower_case", action='store_true',
                         help="Set this flag if you are using an uncased model.")
-    parser.add_argument("--train_batch_size", default=32, type=int,
+    parser.add_argument("--train_batch_size", default=64, type=int,
                         help="Batch size per GPU/CPU for training.")
-    parser.add_argument("--eval_batch_size", default=32, type=int,
+    parser.add_argument("--eval_batch_size", default=64, type=int,
                         help="Batch size per GPU/CPU for evaluation.")
     parser.add_argument('--gradient_accumulation_steps', type=int, default=1,
                         help="Number of updates steps to accumulate before performing a backward/update pass.")
@@ -1588,7 +1606,7 @@ def codebert_train(model_pre, config, tokenizer, args):
 
     # dataset partition
     print("dataset partition...")
-    prom_loop.data_partitioning(dataset=r'../../../benchmark/Bug', random_seed=args.seed, num_folders=8)
+    prom_loop.data_partitioning(dataset=r'../../benchmark/Bug', random_seed=args.seed, num_folders=8)
     args.one_hot_vectors, args.suffixes = onehot(args.train_data_file, args.seed)
 
     if args.local_rank == 0:
@@ -1614,7 +1632,7 @@ def codebert_deploy(model_pre, config, tokenizer, args):
 
     # dataset partition
     print("dataset partition...")
-    prom_loop.data_partitioning(dataset=r'../../../benchmark/Bug', random_seed=args.seed, num_folders=8)
+    prom_loop.data_partitioning(dataset=r'../../benchmark/Bug', random_seed=args.seed, num_folders=8)
     args.one_hot_vectors, args.suffixes = onehot(args.train_data_file, args.seed)
 
     if args.local_rank == 0:
@@ -1634,16 +1652,21 @@ def codebert_deploy(model_pre, config, tokenizer, args):
         increment_acc = deploy(args, train_dataset, model, tokenizer)
         # increment_acc = train(args, train_dataset, model, tokenizer)
         print("The best incremental accuracy is: ", increment_acc)
-    nni.report_final_result(increment_acc)
+    # nni.report_final_result(increment_acc)
+def ae_vul_vulde():
+    model_pre, config, tokenizer, args = model_initial("train")
+    codebert_train(model_pre, config, tokenizer, args)
+    model_pre, config, tokenizer, args = model_initial("deploy")
+    codebert_deploy(model_pre, config, tokenizer, args)
 
-if __name__ == "__main__":
-    # initial the model parameters
-    print("initial the model parameters...")
-    model_pre, config, tokenizer, args = model_initial()
-    if args.mode == 'train':
-        codebert_train(model_pre, config, tokenizer, args)
-    elif args.mode == 'deploy':
-        codebert_deploy(model_pre, config, tokenizer, args)
+# if __name__ == "__main__":
+#     # initial the model parameters
+#     print("initial the model parameters...")
+#     model_pre, config, tokenizer, args = model_initial()
+#     if args.mode == 'train':
+#         codebert_train(model_pre, config, tokenizer, args)
+#     elif args.mode == 'deploy':
+#         codebert_deploy(model_pre, config, tokenizer, args)
     # codebert_train(model_pre, config, tokenizer, args)
     # codebert_deploy(model_pre, config, tokenizer, args)
     """

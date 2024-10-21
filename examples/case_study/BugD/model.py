@@ -28,14 +28,21 @@ class Bug_detection(util.ModelDefinition):
         # folder_path = "/home/huanting/model/bug_detect/CodeXGLUE-main/Defect-detection/data"  # 文件夹的路径
 
         num_files_per_folder = 20  # 每个文件夹中需要选择的文本文件数量
+        try:
 
-        # 获取文件夹列表
-        folders = [
-            folder
-            for folder in os.listdir(dataset)
-            if os.path.isdir(os.path.join(dataset, folder))
-        ]
-
+            # 获取文件夹列表
+            folders = [
+                folder
+                for folder in os.listdir(dataset)
+                if os.path.isdir(os.path.join(dataset, folder))
+            ]
+        except:
+            dataset = r"../../benchmark/Bug"
+            folders = [
+                folder
+                for folder in os.listdir(dataset)
+                if os.path.isdir(os.path.join(dataset, folder))
+            ]
         random.seed(random_seed)
         # 随机选择文件夹
         selected_folders = random.sample(folders, num_folders)

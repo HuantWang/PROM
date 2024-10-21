@@ -1410,11 +1410,11 @@ def model_initial():
     params = nni.get_next_parameter()
     if params == {}:
         params = {
-            "learning_rate": 0.002,
-            "alpha": 0.1,
-            "epoch": 3,
+            "learning_rate": 0.0002,
+            # "alpha": 0.1,
+            "epoch": 30,
 
-            "seed": 7959,
+            "seed": 3220,
         }
 
     parser = argparse.ArgumentParser()
@@ -1456,9 +1456,9 @@ def model_initial():
                         help="Run evaluation during training at each logging step.")
     parser.add_argument("--do_lower_case", action='store_true',
                         help="Set this flag if you are using an uncased model.")
-    parser.add_argument("--train_batch_size", default=64, type=int,
+    parser.add_argument("--train_batch_size", default=32, type=int,
                         help="Batch size per GPU/CPU for training.")
-    parser.add_argument("--eval_batch_size", default=64, type=int,
+    parser.add_argument("--eval_batch_size", default=32, type=int,
                         help="Batch size per GPU/CPU for evaluation.")
     parser.add_argument('--gradient_accumulation_steps', type=int, default=1,
                         help="Number of updates steps to accumulate before performing a backward/update pass.")
