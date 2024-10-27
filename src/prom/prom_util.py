@@ -322,6 +322,24 @@ class Prom_utils:
 
         return index_all_right, index_list_right,Acc_all,F1_all,Pre_all,Rec_all,index_list,self.common_elements
 
+    def evaluate_conformal_cd(self, y_preds, y_pss,p_value,all_pre,y, significance_level):
+
+        nulls, coverages, accuracies, confidence_sizes, credibility_sizes = {}, {}, {}, {}, {}
+        coverages_cd={}
+        coverages_cd_best=1
+        #step3 vote
+        for name, (method, include_last_label) in self.method_params.items():
+            coverages[name] = [classification_coverage_score(self.y_test, y_pss[name][:, :, i]) for i, _ in
+                               enumerate(self.alphas)]
+            coverages_cd[name] = abs(coverages[name][0] - (1-significance_level))
+            if coverages_cd_best>coverages_cd[name]:
+                coverages_cd_best=coverages_cd[name]
+        print(f"The coverage deviation is: {coverages_cd_best:.3f}")
+
+        print("______________________________________")
+
+        return 1
+
     def evaluate_mapie(self, y_preds, y_pss,p_value,all_pre,y, significance_level=0.05):
         nulls, coverages, accuracies, confidence_sizes, credibility_sizes = {}, {}, {}, {}, {}
         Acc_all = []
