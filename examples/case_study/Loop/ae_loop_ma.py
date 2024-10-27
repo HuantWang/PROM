@@ -53,7 +53,7 @@ def load_deeptune_args(mode=''):
     parser.add_argument('--mode', choices=['train', 'deploy'], help="Mode to run: train or deploy")
     args = parser.parse_args()
     args.seed=int(args.seed)
-    print("seeds is", args.seed)
+    # print("seeds is", args.seed)
     # train the underlying model
     # deeptune_model = DeepTune()
     # deeptune_model.init(args)
@@ -101,7 +101,7 @@ def loop_main(tasks="deeptune"):
     origin_speedup, all_pre = deeptune_make_prediction\
         (model=deeptune_model, X_seq=X_seq, y_1hot=y_1hot,
          time=time, test_index=test_index)
-    print(f"Loading successful, the speedup is {origin_speedup:.2%}")
+    print(f"Loading successful, the speedup during deployment is {origin_speedup:.2%}")
     # origin = sum(speed_up_all) / len(speed_up_all)
     # print("final percent:", origin)
     # nni.report_final_result(origin)
@@ -179,7 +179,7 @@ def loop_train_magni(args):
     # valid_index = valid_index[:100]
     # test_index = test_index[:100]
     #  init the model
-    print(f"Loading underlying model...")
+    print(f"Training underlying model...")
     prom_loop.model.init(args)
     seed_value = int(args.seed)
     prom_loop.model.train(
@@ -204,26 +204,26 @@ def loop_train_magni(args):
     origin_speedup, all_pre, data_distri = make_prediction \
         (model=prom_loop.model, X_feature=X_seq, y_1hot=y_1hot,
          time=time, test_index=test_index)
-    print(f"Loading successful, the speedup is {origin_speedup}")
+    print(f"Training successful, the speedup is {origin_speedup}")
 
     ######
-    import matplotlib.pyplot as plt
-    import seaborn as sns
-    import pandas as pd
-    plt.boxplot(data_distri)
-    data_df = pd.DataFrame({'Data': data_distri})
-    sns.violinplot(data=data_df, y='Data')
-    seed_save = str(int(seed_value))
-    plt.title('Box Plot Example ' + seed_save)
-    plt.ylabel('Values')
-
-    plt.savefig(plot_figure_path + str(origin_speedup) + '_' + str(
-        seed_save) + '.png')
-    data_df.to_pickle(
-        plot_figuredata_path + str(origin_speedup) + '_' + str(
-            seed_save) + '_data.pkl')
+    # import matplotlib.pyplot as plt
+    # import seaborn as sns
+    # import pandas as pd
+    # plt.boxplot(data_distri)
+    # data_df = pd.DataFrame({'Data': data_distri})
+    # sns.violinplot(data=data_df, y='Data')
+    # seed_save = str(int(seed_value))
+    # plt.title('Box Plot Example ' + seed_save)
+    # plt.ylabel('Values')
+    #
+    # plt.savefig(plot_figure_path + str(origin_speedup) + '_' + str(
+    #     seed_save) + '.png')
+    # data_df.to_pickle(
+    #     plot_figuredata_path + str(origin_speedup) + '_' + str(
+    #         seed_save) + '_data.pkl')
     # plt.show()
-    print("training finished")
+    # print("training finished")
     return origin_speedup
     # nni.report_final_result(origin_speedup)
 
@@ -277,23 +277,23 @@ def loop_deploy_magni(args):
     print(f"Loading successful, the speedup is {origin_speedup}")
 
     ######
-    import matplotlib.pyplot as plt
-    import seaborn as sns
-    import pandas as pd
-    plt.boxplot(data_distri)
-    data_df = pd.DataFrame({'Data': data_distri})
-    sns.violinplot(data=data_df, y='Data')
-    seed_save = str(int(seed_value))
-    plt.title('Box Plot Example ' + seed_save)
-    plt.ylabel('Values')
-
-    plt.savefig(plot_figure_path + str(origin_speedup) + '_' + str(
-        seed_save) + '.png')
-    data_df.to_pickle(
-        plot_figuredata_path + str(origin_speedup) + '_' + str(
-            seed_save) + '_data.pkl')
+    # import matplotlib.pyplot as plt
+    # import seaborn as sns
+    # import pandas as pd
+    # plt.boxplot(data_distri)
+    # data_df = pd.DataFrame({'Data': data_distri})
+    # sns.violinplot(data=data_df, y='Data')
+    # seed_save = str(int(seed_value))
+    # plt.title('Box Plot Example ' + seed_save)
+    # plt.ylabel('Values')
+    #
+    # plt.savefig(plot_figure_path + str(origin_speedup) + '_' + str(
+    #     seed_save) + '.png')
+    # data_df.to_pickle(
+    #     plot_figuredata_path + str(origin_speedup) + '_' + str(
+    #         seed_save) + '_data.pkl')
     # plt.show()
-    print("training finished")
+    # print("training finished")
     # print("final percent:", origin)
     # nni.report_final_result(origin)
 
@@ -324,13 +324,13 @@ def loop_deploy_magni(args):
 
     # evaluate conformal prediction
     # MAPIE
-    Prom_thread.evaluate_mapie \
-        (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y,
-         significance_level=0.05)
-
-    Prom_thread.evaluate_rise \
-        (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y,
-         significance_level=0.05)
+    # Prom_thread.evaluate_mapie \
+    #     (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y,
+    #      significance_level=0.05)
+    #
+    # Prom_thread.evaluate_rise \
+    #     (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y,
+    #      significance_level=0.05)
 
     index_all_right, index_list_right, Acc_all, F1_all, Pre_all, Rec_all,_,_ \
         = Prom_thread.evaluate_conformal_prediction \
@@ -356,7 +356,7 @@ def loop_deploy_magni(args):
 
     improved_spp_all = retrained_speedup-origin_speedup
     print(
-        f"origin speed up: {origin_speedup}, "
+        f"Origin speed up: {origin_speedup}, "
         f"Imroved speed up: {retrained_speedup}, "
         f"Imroved mean speed up: {improved_spp_all}, "
     )
@@ -364,9 +364,11 @@ def loop_deploy_magni(args):
     # nni.report_final_result(inproved_speedup)
 
 def ae_loop_ma_script():
+    print("_________Start training phase________")
     args = load_deeptune_args("train")
     loop_train_magni(args=args)
 
+    print("_________Start deploy phase________")
     args = load_deeptune_args("deploy")
     loop_deploy_magni(args=args)
 

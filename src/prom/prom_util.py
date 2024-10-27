@@ -331,7 +331,10 @@ class Prom_utils:
         for name, (method, include_last_label) in self.method_params.items():
             coverages[name] = [classification_coverage_score(self.y_test, y_pss[name][:, :, i]) for i, _ in
                                enumerate(self.alphas)]
-            coverages_cd[name] = abs(coverages[name][0] - (1-significance_level))
+            if significance_level != 'auto':
+                coverages_cd[name] = abs(coverages[name][0] - (1-significance_level))
+            else:
+                coverages_cd[name] = np.min(np.abs(coverages[name][0] - (1 - self.alphas)))
             if coverages_cd_best>coverages_cd[name]:
                 coverages_cd_best=coverages_cd[name]
         print(f"The coverage deviation is: {coverages_cd_best:.3f}")

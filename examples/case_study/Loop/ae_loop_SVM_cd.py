@@ -278,52 +278,9 @@ def loop_deploy_svm(args):
     #     (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y,
     #      significance_level="auto")
 
-    index_all_right, index_list_right, Acc_all, F1_all, Pre_all, Rec_all,_,_ \
-        = Prom_thread.evaluate_conformal_prediction \
-        (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y,
-         significance_level="auto")
+    Prom_thread.evaluate_conformal_cd \
+        (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y, significance_level='auto')
 
-    # Increment learning
-    print("Finding the most valuable instances for incremental learning...")
-    train_index, test_index = Prom_thread.incremental_learning \
-        (args.seed, test_index, train_index)
-    # retrain the model
-    print("Retraining the model...")
-    clf = SVC(probability=True,random_state=args.seed).fit(X_seq[train_index], y_1hot[train_index])
-    all_pre = clf.predict(X_seq[train_index])
-    ###
-
-
-    # test the pretrained model
-    for i, (o, p) in enumerate(zip(y_1hot[test_index], all_pre)):
-        # get runtime without thread coarsening
-        time_single = []
-        a = time[test_index]
-        for row in time[test_index][i]:
-            for num in row:
-                time_single.append(num)
-        non_runtime = time_single[0]
-        # get runtime of prediction
-        p_runtime = time_single[p]
-        # get runtime of oracle coarsening factor
-        o_runtime = min(time_single)
-        # speedup and % oracle
-        non_speedup = non_runtime / p_runtime
-        speedup_origin = non_runtime / o_runtime
-        speedup_prediction = non_runtime / p_runtime
-        percent = speedup_prediction / speedup_origin
-        non_speedup_all.append(percent)
-        data_distri.append(percent)
-    args = load_deeptune_args("")
-    current_speedup=loop_train_svm(args=args)
-    # current_speedup = sum(non_speedup_all) / len(non_speedup_all)
-    inproved_speedup = current_speedup - origin_speedup
-    print(
-        f"origin speed up: {origin_speedup}, "
-        f"Imroved speed up: {current_speedup}, "
-        f"Imroved mean speed up: {inproved_speedup}, "
-    )
-    # nni.report_final_result(inproved_speedup)
 
 def ae_loop_svm_script():
     print("_________Start training phase________")

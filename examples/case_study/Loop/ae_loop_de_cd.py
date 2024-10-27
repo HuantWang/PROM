@@ -164,35 +164,9 @@ def loop_deploy_de(args):
     #     (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y,
     #      significance_level=0.05)
 
-    index_all_right, index_list_right, Acc_all, F1_all, Pre_all, Rec_all, _, _ \
-        = Prom_thread.evaluate_conformal_prediction \
+    Prom_thread.evaluate_conformal_cd \
         (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y,significance_level='auto')
 
-    # Increment learning
-    print("Finding the most valuable instances for incremental learning...")
-    train_index, test_index = Prom_thread.incremental_learning \
-        (args.seed, test_index, train_index)
-    # retrain the model
-    print("Retraining the model...")
-
-    prom_loop.model.train(
-        sequences=X_seq[train_index], verbose=0, y_1hot=y_1hot[train_index]
-    )
-    # test the pretrained model
-    # retrained_speedup, inproved_speedup = deeptune_make_prediction_il \
-    #     (model_il=deeptune_model, X_seq=X_seq, y_1hot=y_1hot, time=time,
-    #      test_index=test_index, origin_speedup=origin_speedup)
-    args = load_deeptune_args("")
-    retrained_speedup=loop_train_de(args=args)
-    improved_speedup = retrained_speedup - origin_speedup
-
-    print(
-        f"origin speed up: {origin_speedup}, "
-        f"Imroved speed up: {retrained_speedup}, "
-        f"Imroved mean speed up: {improved_speedup}, "
-    )
-
-    # nni.report_final_result(inproved_speedup)
 
 
 def loop_train_de(args):
