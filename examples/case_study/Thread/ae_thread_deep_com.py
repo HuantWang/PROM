@@ -208,79 +208,29 @@ def Thread_DeepTune_deploy(args):
 
         # evaluate conformal prediction
         #MAPIE
-        # Prom_thread.evaluate_mapie \
-        #     (y_preds=y_preds,
-        #      y_pss=y_pss,
-        #      p_value=p_value,
-        #      all_pre=all_pre,
-        #      y=y[test_index],
-        #      significance_level=0.05)
-
-        # Prom_thread.evaluate_rise \
-        #     (y_preds=y_preds,
-        #      y_pss=y_pss,
-        #      p_value=p_value,
-        #      all_pre=all_pre,
-        #      y=y[test_index],
-        #      significance_level=0.05)
-
-        index_all_right, index_list_right, Acc_all, F1_all, Pre_all, Rec_all, _, _ \
-            = Prom_thread.evaluate_conformal_prediction \
+        Prom_thread.evaluate_mapie \
             (y_preds=y_preds,
              y_pss=y_pss,
              p_value=p_value,
              all_pre=all_pre,
              y=y[test_index],
              significance_level=0.05)
-        # Increment learning
-        print("Finding the most valuable instances for incremental learning...")
-        train_index, test_index=Prom_thread.incremental_learning\
-            (seed_value, test_index, train_index)
-        # retrain the model
-        print(f"Retraining the model...")
-        prom_thread.model.train(
-                sequences=X_seq[train_index],
-                verbose=True,
-                y_1hot=y_1hot[train_index])
-        # test the pretrained model
-        retrained_speedup,inproved_speedup,data_distri=make_prediction_ilDe\
-            (speed_up_all=speed_up_all, platform=platform,model=prom_thread.model,
-             test_x=X_seq[test_index],test_index=test_index, X_cc=X_cc,
-             origin_speedup=origin_speedup,improved_spp_all=improved_spp_all)
 
-        origin_speedup_all.append(origin_speedup)
-        speed_up_all.append(retrained_speedup)
-        improved_spp_all.append(inproved_speedup)
+        Prom_thread.evaluate_rise \
+            (y_preds=y_preds,
+             y_pss=y_pss,
+             p_value=p_value,
+             all_pre=all_pre,
+             y=y[test_index],
+             significance_level=0.05)
 
-        plt.boxplot(data_distri)
-        data_df = pd.DataFrame({'Data': data_distri})
-        sns.violinplot(data=data_df, y='Data')
-        seed_save = str(int(seed_value))
-        plt.title('Box Plot Example ' + seed_save)
-        plt.ylabel('Values')
-
-        plt.savefig(plot_figure_path + str(origin) + '_' + str(
-            seed_save) + '_il.png')
-        data_df.to_pickle(
-            plot_figuredata_path + str(origin) + '_' + str(
-                seed_save) + '_data_il.pkl')
-        # print("____________________________________")
-    mean_acc = sum(Acc_all) / len(Acc_all)
-    mean_f1 = sum(F1_all) / len(F1_all)
-    mean_pre = sum(Pre_all) / len(Pre_all)
-    mean_rec = sum(Rec_all) / len(Rec_all)
-    mean_speed_up = sum(speed_up_all) / len(speed_up_all)
-    meanimproved_speed_up = sum(improved_spp_all) / len(improved_spp_all)
-    print(
-        f"The average accuracy is: {mean_acc * 100:.2f}%, "
-        f"average precision is: {mean_pre * 100:.2f}%, "
-        f"average recall is: {mean_rec * 100:.2f}%, "
-        f"average F1 is: {mean_f1 * 100:.2f}%, "
-
-    )
-
-    print("The speedup of retrained model is:", meanimproved_speed_up)
-
+        Prom_thread.evaluate_T \
+            (y_preds=y_preds,
+             y_pss=y_pss,
+             p_value=p_value,
+             all_pre=all_pre,
+             y=y[test_index],
+             significance_level=0.05)
 
 def ae_thread_deep_script():
     print("_________Start training phase________")

@@ -1374,6 +1374,37 @@ def epoch_test(args, model, tokenizer):
     for key in sorted(result.keys()):
         logger.info("  %s = %s", key, str(round(result[key], 4)))
     return result
+    # preds = logits[:, 0] > 0.5
+    # with open(os.path.join(args.output_dir, "predictions.txt"), 'w') as f:
+    #     for example, pred in zip(eval_dataset.examples, preds):
+    #         if pred:
+    #             f.write(example.idx + '\t1\n')
+    #         else:
+    #             f.write(example.idx + '\t0\n')
+
+    # Evaluation
+    # results = {}
+    # if args.do_eval and args.local_rank in [-1, 0]:
+    # checkpoint_prefix = 'checkpoint-best-acc/model.bin'
+    # output_dir = os.path.join(args.output_dir, '{}'.format(checkpoint_prefix))
+    # model.load_state_dict(torch.load(output_dir))
+    # model.to(args.device)
+    # results = evaluate_test(args, model, tokenizer)
+    # logger.info("***** Eval results *****")
+    # # a=result['eval_f1']
+    # for key in sorted(results.keys()):
+    #     logger.info("  %s = %s", key, str(round(results[key], 4)))
+    # results=epoch_uq(args, model, tokenizer)
+    # nni.report_final_result(best_f1_uq)
+
+    # if args.do_test and args.local_rank in [-1, 0]:
+    # checkpoint_prefix = 'checkpoint-best-acc/model.bin'
+    # output_dir = os.path.join(args.output_dir, '{}'.format(checkpoint_prefix))
+    # model.load_state_dict(torch.load(output_dir))
+    # model.to(args.device)
+    # aates(args, model, tokenizer)
+
+    # return increment_acc
 
 
 def model_initial(mode):
@@ -1381,18 +1412,18 @@ def model_initial(mode):
     if params == {} and mode == 'train':
         params = {
             "learning_rate": 0.0002,
-            "epoch": 50,
-            "seed": 740,
-            "train_batch_size": 64,
-            "eval_batch_size": 64,
+            "epoch": 30,
+            "seed": 3220,
+            "train_batch_size": 32,
+            "eval_batch_size": 32,
         }
     elif params == {} and mode == 'deploy':
         params = {
             "learning_rate": 0.0002,
-            "epoch": 20,
-            "seed": 2865,
-            "train_batch_size": 32,
-            "eval_batch_size": 32,
+            "epoch": 30,
+            "seed": 3347,
+            "train_batch_size": 64,
+            "eval_batch_size": 64,
         }
     parser = argparse.ArgumentParser()
     ## Required parameters
@@ -1585,7 +1616,7 @@ def codebert_train(model_pre, config, tokenizer, args):
             torch.distributed.barrier()
         print("Training the underlying model...")
         best_acc = train(args, train_dataset, model, tokenizer)
-    # nni.report_final_result(best_acc)
+    nni.report_final_result(best_acc)
 
 def codebert_deploy(model_pre, config, tokenizer, args):
     model = Model(model_pre, config, tokenizer, args)
@@ -1615,7 +1646,7 @@ def codebert_deploy(model_pre, config, tokenizer, args):
         print("The best incremental accuracy is: ", increment_acc)
     # nni.report_final_result(increment_acc)
 
-def ae_vul_codebert():
+def ae_vul_linevul():
     model_pre, config, tokenizer, args = model_initial("train")
     codebert_train(model_pre, config, tokenizer, args)
     model_pre, config, tokenizer, args = model_initial("deploy")

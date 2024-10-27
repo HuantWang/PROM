@@ -12,11 +12,11 @@ fi
 
 if [ "$1" == "C1" ]; then
     conda activate thread
-    echo "Environment 'C1,C2,C4' activated."
+    echo "Environment for 'C1,C2,C4' activated."
 elif [ "$1" == "C3" ]; then
     conda activate dev
-    echo "Environment 'C3' activated."
+    echo "Environment for 'C3' activated."
 elif [ "$1" == "C5" ]; then
     conda activate tvm
-    echo "Environment 'C5' activated."
+    echo "Environment for 'C5' activated."
 fi

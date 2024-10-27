@@ -24,7 +24,6 @@ sys.path.append('/home/huanting/PROM')
 sys.path.append('/home/huanting/PROM/src')
 sys.path.append('/home/huanting/PROM/thirdpackage')
 sys.path.append('./case_study/BugD')
-
 import warnings
 warnings.filterwarnings("ignore")
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
@@ -43,7 +42,7 @@ from src.prom.prom_util import Prom_utils
 
 from tqdm import tqdm, trange
 import multiprocessing
-from model import Model
+from model import BiLSTMModel
 
 cpu_cont = multiprocessing.cpu_count()
 from transformers import (WEIGHTS_NAME, AdamW, get_linear_schedule_with_warmup,
@@ -556,7 +555,7 @@ def train(args, train_dataset, model, tokenizer):
                                 os.makedirs(output_dir)
                             model_to_save = model.module if hasattr(model, 'module') else model
                             output_dir = os.path.join(output_dir, '{}'.format('model.bin'))
-                            torch.save(model_to_save.state_dict(), output_dir)
+                            # torch.save(model_to_save.state_dict(), output_dir)
                             # logger.info("Saving model checkpoint to %s", output_dir)
                             # print("Saving model checkpoint to {}".format(output_dir))
 
@@ -699,7 +698,7 @@ def deploy(args, train_dataset, model, tokenizer):
                             output_dir = os.path.join(output_dir, '{}'.format('model.bin'))
                             torch.save(model_to_save.state_dict(), output_dir)
                             # logger.info("Saving model checkpoint to %s", output_dir)
-                            # print("Saving model checkpoint to {}".format(output_dir))
+                            print("Saving model checkpoint to {}".format(output_dir))
 
                         if results['eval_acc'] >= 0.1 and results['eval_acc'] <= 0.9:
                             print(
@@ -730,7 +729,7 @@ def deploy(args, train_dataset, model, tokenizer):
                                 model_to_save = model.module if hasattr(model, 'module') else model
                                 output_dir = os.path.join(output_dir, '{}'.format('model.bin'))
                                 torch.save(model_to_save.state_dict(), output_dir)
-                                # logger.info("Saving the retrained model checkpoint to %s", output_dir)
+                                logger.info("Saving the retrained model checkpoint to %s", output_dir)
                                 # 将 logger.info 语句改为 print 语句
                                 # print(f"Saving the retrained model checkpoint to {output_dir}")
                                 """increment learning"""
@@ -784,7 +783,6 @@ def deploy(args, train_dataset, model, tokenizer):
                                 print("*" * 60)
                                 if increment_acc < increment_acc_single:
                                     increment_acc = increment_acc_single
-                                break
                                 # if retrained_acc < increment_acc_single:
                                 #     increment_acc = increment_acc_single
                                 # if increment_acc < increment_acc_single:
@@ -989,7 +987,7 @@ def conformal_prediction(args, model, tokenizer):
         "lac": ("score", True),
         "top_k": ("top_k", True),
         "aps": ("cumulated_score", True),
-        # "raps": ("raps", True)
+        "raps": ("raps", True)
     }
     Prom_thread = Prom_utils(clf, method_params, task="bug")
 
@@ -1003,17 +1001,17 @@ def conformal_prediction(args, model, tokenizer):
 
     # Evaluate conformal prediction
     print("Detect the drifting samples...")
-    Prom_thread.evaluate_mapie \
-        (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y_test,
-         significance_level=0.05)
-
-    Prom_thread.evaluate_rise \
-        (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y_test,
-         significance_level=0.05)
+    # Prom_thread.evaluate_mapie \
+    #     (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y_test,
+    #      significance_level=0.05)
+    #
+    # Prom_thread.evaluate_rise \
+    #     (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y_test,
+    #      significance_level=0.05)
 
     index_all_right, index_list_right, Acc_all, F1_all, Pre_all, Rec_all,index_list,common_elements \
         = Prom_thread.evaluate_conformal_prediction \
-        (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y_test)
+        (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y_test,significance_level='auto')
 
     # Increment learning
     # print("Finding the most valuable instances for incremental learning...")
@@ -1374,26 +1372,67 @@ def epoch_test(args, model, tokenizer):
     for key in sorted(result.keys()):
         logger.info("  %s = %s", key, str(round(result[key], 4)))
     return result
+    # preds = logits[:, 0] > 0.5
+    # with open(os.path.join(args.output_dir, "predictions.txt"), 'w') as f:
+    #     for example, pred in zip(eval_dataset.examples, preds):
+    #         if pred:
+    #             f.write(example.idx + '\t1\n')
+    #         else:
+    #             f.write(example.idx + '\t0\n')
+
+    # Evaluation
+    # results = {}
+    # if args.do_eval and args.local_rank in [-1, 0]:
+    # checkpoint_prefix = 'checkpoint-best-acc/model.bin'
+    # output_dir = os.path.join(args.output_dir, '{}'.format(checkpoint_prefix))
+    # model.load_state_dict(torch.load(output_dir))
+    # model.to(args.device)
+    # results = evaluate_test(args, model, tokenizer)
+    # logger.info("***** Eval results *****")
+    # # a=result['eval_f1']
+    # for key in sorted(results.keys()):
+    #     logger.info("  %s = %s", key, str(round(results[key], 4)))
+    # results=epoch_uq(args, model, tokenizer)
+    # nni.report_final_result(best_f1_uq)
+
+    # if args.do_test and args.local_rank in [-1, 0]:
+    # checkpoint_prefix = 'checkpoint-best-acc/model.bin'
+    # output_dir = os.path.join(args.output_dir, '{}'.format(checkpoint_prefix))
+    # model.load_state_dict(torch.load(output_dir))
+    # model.to(args.device)
+    # aates(args, model, tokenizer)
+
+    # return increment_acc
 
 
 def model_initial(mode):
     params = nni.get_next_parameter()
+    # if params == {}:
+    #     params = {
+    #         "learning_rate": 0.002,
+    #         "alpha": 0.1,
+    #         "epoch": 3,
+    #         "seed": 4046,
+    #     }
     if params == {} and mode == 'train':
         params = {
-            "learning_rate": 0.0002,
+            "learning_rate": 0.002,
             "epoch": 50,
-            "seed": 740,
-            "train_batch_size": 64,
-            "eval_batch_size": 64,
+            "seed": 4185,
+            # "alpha": 0.1,
+            # "train_batch_size": 32,
+            # "eval_batch_size": 32,
         }
     elif params == {} and mode == 'deploy':
         params = {
             "learning_rate": 0.0002,
-            "epoch": 20,
-            "seed": 2865,
-            "train_batch_size": 32,
-            "eval_batch_size": 32,
+            "epoch": 40,
+            "seed": 5902,
+            # "alpha": 0.1,
+            # "train_batch_size": 32,
+            # "eval_batch_size": 32,
         }
+
     parser = argparse.ArgumentParser()
     ## Required parameters
     parser.add_argument("--train_data_file", default=None, type=str, required=True,
@@ -1482,7 +1521,7 @@ def model_initial(mode):
                         help="For distributed training: local_rank")
     parser.add_argument('--server_ip', type=str, default='', help="For distant debugging.")
     parser.add_argument('--server_port', type=str, default='', help="For distant debugging.")
-    # parser.add_argument('--method', type=str, default=params['method'])
+    parser.add_argument('--method', type=str, default='top_k')
     parser.add_argument('--mode', choices=['train', 'deploy'], help="Mode to run: train or deploy")
     args = parser.parse_args()
 
@@ -1562,7 +1601,7 @@ def model_initial(mode):
     return model, config, tokenizer, args
 
 def codebert_train(model_pre, config, tokenizer, args):
-    model = Model(model_pre, config, tokenizer, args)
+    model = BiLSTMModel(model_pre, config, tokenizer, args)
     prom_loop = Bug_detection(model=model)
 
     # dataset partition
@@ -1585,10 +1624,10 @@ def codebert_train(model_pre, config, tokenizer, args):
             torch.distributed.barrier()
         print("Training the underlying model...")
         best_acc = train(args, train_dataset, model, tokenizer)
-    # nni.report_final_result(best_acc)
+    nni.report_final_result(best_acc)
 
 def codebert_deploy(model_pre, config, tokenizer, args):
-    model = Model(model_pre, config, tokenizer, args)
+    model = BiLSTMModel(model_pre, config, tokenizer, args)
     prom_loop = Bug_detection(model=model)
 
     # dataset partition
@@ -1614,8 +1653,7 @@ def codebert_deploy(model_pre, config, tokenizer, args):
         # increment_acc = train(args, train_dataset, model, tokenizer)
         print("The best incremental accuracy is: ", increment_acc)
     # nni.report_final_result(increment_acc)
-
-def ae_vul_codebert():
+def ae_vul_vulde():
     model_pre, config, tokenizer, args = model_initial("train")
     codebert_train(model_pre, config, tokenizer, args)
     model_pre, config, tokenizer, args = model_initial("deploy")
@@ -1631,7 +1669,6 @@ def ae_vul_codebert():
 #         codebert_deploy(model_pre, config, tokenizer, args)
     # codebert_train(model_pre, config, tokenizer, args)
     # codebert_deploy(model_pre, config, tokenizer, args)
-    # nnictl create --config /home/huanting/PROM/examples/case_study/BugD/config.yaml --port 8088
     """
     --output_dir=./saved_models     --model_type=roberta     --tokenizer_name=microsoft/codebert-base     --model_name_or_path=microsoft/codebert-base   --do_train  --do_eval     --do_test     --train_data_file=../../../benchmark/Bug/train.jsonl     --eval_data_file=../../../benchmark/Bug/valid.jsonl     --test_data_file=../../../benchmark/Bug/test.jsonl --evaluate_during_training
     """

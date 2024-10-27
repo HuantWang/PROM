@@ -645,25 +645,7 @@ def deploy(max_depth, learning_rate, n_estimators, args, deploy_performance):
         cal_x=calibration_data, cal_y=cal_y, test_x=test_x, test_y=test_y, significance_level="auto")
 
     # evaluate conformal prediction
-    # Prom_thread.evaluate_mapie \
-    #     (y_preds=y_preds,
-    #      y_pss=y_pss,
-    #      p_value=p_value,
-    #      all_pre=prediction,
-    #      y=y[test_index],
-    #      significance_level=0.05)
-    #
-    # Prom_thread.evaluate_rise \
-    #     (y_preds=y_preds,
-    #      y_pss=y_pss,
-    #      p_value=p_value,
-    #      all_pre=prediction,
-    #      y=y[test_index],
-    #      significance_level=0.05)
-
-    # evaluate conformal prediction
-    index_all_right, index_list_right, Acc_all, F1_all, Pre_all, Rec_all, _, _ \
-        = Prom_thread.evaluate_conformal_prediction \
+    Prom_thread.evaluate_mapie \
         (y_preds=y_preds,
          y_pss=y_pss,
          p_value=p_value,
@@ -671,62 +653,21 @@ def deploy(max_depth, learning_rate, n_estimators, args, deploy_performance):
          y=y[test_index],
          significance_level=0.05)
 
-    # Increment learning
-    print("Finding the most valuable instances for incremental learning...")
-    train_index, test_index = Prom_thread.incremental_learning \
-        (args.seed, test_index, train_index)
-    # retrain the model
-    print(f"Retraining the model on {platform}...")
-    gbc.fit(embeddings[train_index], targetLabel[train_index])
+    Prom_thread.evaluate_rise \
+        (y_preds=y_preds,
+         y_pss=y_pss,
+         p_value=p_value,
+         all_pre=prediction,
+         y=y[test_index],
+         significance_level=0.05)
 
-    # test
-    prediction = gbc.predict(embeddings[test_index])
-    data_distri=[]
-    for prediction_single in prediction:
-        oracle_runtimes = np.array([float(x) for x in oracles["runtime_" + platform]])
-        prediction_single = min(
-            prediction_single, 2 ** (kernel_freq["kernel"][test_index[0] % 17] - 1)
-        )
-        # 再次转换 targetLabel 回实际标签
-        prediction_single = mapping[prediction_single]
-        oracle = targetLabel[test_index[0]]
-
-        rt_baseline = float(find_runtime(df, kernel, 1, platform))
-        # a=find_runtime(df, kernel, prediction, platform)
-        rt_pred = float(find_runtime(df, kernel, prediction_single, platform))
-        # a=oracle_runtimes[test_index[0] % 17]
-        rt_oracle = float(oracle_runtimes[test_index[0] % 17])
-        data_distri.append(rt_oracle / rt_pred)
-        data.append(
-            {
-                "Model": "IR2vec",
-                "Platform": _FLAG_TO_DEVICE_NAME[platform],
-                "Kernel": kernel,
-                "Oracle-CF": oracle,
-                "Predicted-CF": prediction,
-                "Speedup": rt_baseline / rt_pred,
-                "Oracle": rt_oracle / rt_pred,
-                "OracleSpeedUp": rt_baseline / rt_oracle,
-            }
-        )
-        ir2vec = pd.DataFrame(
-            data,
-            columns=[
-                "Model",
-                "Platform",
-                "Kernel",
-                "Oracle-CF",
-                "Predicted-CF",
-                "Speedup",
-                "Oracle",
-                "OracleSpeedUp",
-            ],
-        )
-
-    ir2vec_sp_vals = ir2vec.groupby(["Platform"])["Oracle"].mean().values
-    improved = ir2vec_sp_vals[0] - deploy_performance
-    print(f"The retrained model performance is: {ir2vec_sp_vals[0]} and the improved speedup is: {improved[0]}")
-
+    Prom_thread.evaluate_T \
+        (y_preds=y_preds,
+         y_pss=y_pss,
+         p_value=p_value,
+         all_pre=prediction,
+         y=y[test_index],
+         significance_level=0.05)
     #ir2vec_sp_vals_origin[0]
 
     # model_dir_path = "logs/deploy/models/i2v/"
