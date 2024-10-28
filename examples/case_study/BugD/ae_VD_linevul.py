@@ -362,7 +362,7 @@ def incre(args, train_dataset, model, tokenizer):
     # model.resize_token_embeddings(len(tokenizer))
     model.zero_grad()
 
-    for idx in range(args.start_epoch, int(args.num_train_epochs)):
+    for idx in range(args.start_epoch, int(17)):
         bar = tqdm(train_dataloader, total=len(train_dataloader),disable=True)
         tr_num = 0
         train_loss = 0
@@ -547,8 +547,8 @@ def train(args, train_dataset, model, tokenizer):
                             # logger.info("  Best rec:%s", round(results['eval_rec'], 4))
                             # logger.info("  Best acc:%s", round(results['eval_acc'], 4))
                             # logger.info("  " + "*" * 20)
-                            print(
-                                f"The current best accuracy is: {round(best_f1, 4)}")
+                            # print(
+                            #     f"The current best accuracy is: {round(best_f1, 4)}")
 
                             checkpoint_prefix = 'checkpoint-best-acc'
                             output_dir = os.path.join(args.output_dir, '{}'.format(checkpoint_prefix),)
@@ -559,7 +559,8 @@ def train(args, train_dataset, model, tokenizer):
                             torch.save(model_to_save.state_dict(), output_dir)
                             # logger.info("Saving model checkpoint to %s", output_dir)
                             # print("Saving model checkpoint to {}".format(output_dir))
-
+    print(
+        f"The best accuracy of trained model is: {round(best_f1, 4)}")
     return best_f1
 
 def deploy(args, train_dataset, model, tokenizer):
@@ -688,8 +689,8 @@ def deploy(args, train_dataset, model, tokenizer):
                             # logger.info("  Best rec:%s", round(results['eval_rec'], 4))
                             # logger.info("  Best acc:%s", round(results['eval_acc'], 4))
                             # logger.info("  " + "*" * 20)
-                            print(
-                                f"The current accuracy is: {round(best_f1, 4)}")
+                            # print(
+                            #     f"The current accuracy is: {round(best_f1, 4)}")
 
                             checkpoint_prefix = 'checkpoint-best-acc'
                             output_dir = os.path.join(args.output_dir, '{}'.format(checkpoint_prefix),)
@@ -703,7 +704,7 @@ def deploy(args, train_dataset, model, tokenizer):
 
                         if results['eval_acc'] >= 0.1 and results['eval_acc'] <= 0.9:
                             print(
-                                f"The current accuracy is: {round(best_f1, 4)}")
+                                f"The current accuracy during deployment phase is: {round(best_f1, 4)}")
                             results_uq, incre_index = conformal_prediction(args, model, tokenizer)
                             if results_uq['find_f1'] > best_f1_uq:
                                 best_f1_uq = results_uq['find_f1']
@@ -780,11 +781,11 @@ def deploy(args, train_dataset, model, tokenizer):
                                 increment_acc_single = retrained_acc - results_origin["test_acc"]
                                 print(f"The retrained accuracy is: {retrained_acc * 100:.2f}%, "
                                       f"The increment accuracy is: {increment_acc_single * 100:.2f}% "
-                                      f"The best increment accuracy is: {increment_acc * 100:.2f}%")
-                                print("*" * 60)
+                                      )
+                                # print("*" * 60)
                                 if increment_acc < increment_acc_single:
                                     increment_acc = increment_acc_single
-                                break
+                                return 0
                                 # if retrained_acc < increment_acc_single:
                                 #     increment_acc = increment_acc_single
                                 # if increment_acc < increment_acc_single:
@@ -989,7 +990,7 @@ def conformal_prediction(args, model, tokenizer):
         "lac": ("score", True),
         "top_k": ("top_k", True),
         "aps": ("cumulated_score", True),
-        # "raps": ("raps", True)
+        "raps": ("raps", True)
     }
     Prom_thread = Prom_utils(clf, method_params, task="bug")
 
@@ -1003,13 +1004,13 @@ def conformal_prediction(args, model, tokenizer):
 
     # Evaluate conformal prediction
     print("Detect the drifting samples...")
-    Prom_thread.evaluate_mapie \
-        (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y_test,
-         significance_level=0.05)
-
-    Prom_thread.evaluate_rise \
-        (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y_test,
-         significance_level=0.05)
+    # Prom_thread.evaluate_mapie \
+    #     (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y_test,
+    #      significance_level=0.05)
+    #
+    # Prom_thread.evaluate_rise \
+    #     (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y_test,
+    #      significance_level=0.05)
 
     index_all_right, index_list_right, Acc_all, F1_all, Pre_all, Rec_all,index_list,common_elements \
         = Prom_thread.evaluate_conformal_prediction \
@@ -1616,7 +1617,7 @@ def codebert_train(model_pre, config, tokenizer, args):
             torch.distributed.barrier()
         print("Training the underlying model...")
         best_acc = train(args, train_dataset, model, tokenizer)
-    nni.report_final_result(best_acc)
+    # nni.report_final_result(best_acc)
 
 def codebert_deploy(model_pre, config, tokenizer, args):
     model = Model(model_pre, config, tokenizer, args)
@@ -1640,15 +1641,17 @@ def codebert_deploy(model_pre, config, tokenizer, args):
         train_dataset = TextDataset(tokenizer, args, args.train_data_file, args.one_hot_vectors, args.suffixes)
         if args.local_rank == 0:
             torch.distributed.barrier()
-        print("Training the underlying model...")
+        print("Deploy the underlying model...")
         increment_acc = deploy(args, train_dataset, model, tokenizer)
         # increment_acc = train(args, train_dataset, model, tokenizer)
-        print("The best incremental accuracy is: ", increment_acc)
+        # print("The best incremental accuracy is: ", increment_acc)
     # nni.report_final_result(increment_acc)
 
 def ae_vul_linevul():
-    model_pre, config, tokenizer, args = model_initial("train")
-    codebert_train(model_pre, config, tokenizer, args)
+    # print("_________Start training phase________")
+    # model_pre, config, tokenizer, args = model_initial("train")
+    # codebert_train(model_pre, config, tokenizer, args)
+    print("_________Start deployment phase________")
     model_pre, config, tokenizer, args = model_initial("deploy")
     codebert_deploy(model_pre, config, tokenizer, args)
 

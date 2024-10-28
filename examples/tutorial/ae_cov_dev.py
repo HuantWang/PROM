@@ -21,17 +21,34 @@ import sys
 
 
 
-sys.path.append('../case_study/Loop/')
-from ae_loop_SVM_cd import ae_loop_svm_script
-from ae_loop_ma_cd import ae_loop_ma_script
-from ae_loop_de_cd import ae_loop_de_script
+# sys.path.append('../case_study/Loop/')
+# from ae_loop_SVM_cd import ae_loop_svm_script
+# from ae_loop_ma_cd import ae_loop_ma_script
+# from ae_loop_de_cd import ae_loop_de_script
+#
+# print("\nCase 2:\n")
+# print("\n--- Comparison Evaluation: DeepTune ---\n")
+# ae_loop_de_script()
+#
+# print("\n--- Comparison Evaluation: Magni ---\n")
+# ae_loop_ma_script()
+#
+# print("\n--- Comparison Evaluation: K.Stock ---\n")
+# ae_loop_svm_script()
 
-print("\nCase 2:\n")
-print("\n--- Comparison Evaluation: DeepTune ---\n")
-ae_loop_de_script()
+import sys
+sys.path.append('../case_study/BugD/')
 
-print("\n--- Comparison Evaluation: Magni ---\n")
-ae_loop_ma_script()
+from ae_VD_codebert_cd import ae_vul_codebert
+from ae_VD_linevul_cd import ae_vul_linevul
+from ae_VD_vulde_cd import ae_vul_vulde
 
-print("\n--- Comparison Evaluation: K.Stock ---\n")
-ae_loop_svm_script()
+print("\nCase 4:\n")
+print("\n--- Comparison Evaluation: CodeBERT ---\n")
+ae_vul_codebert()
+
+print("\n--- Comparison Evaluation: Linevul ---\n")
+ae_vul_linevul()
+
+print("\n--- Comparison Evaluation: VUlDE ---\n")
+ae_vul_vulde()

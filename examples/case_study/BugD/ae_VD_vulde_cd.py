@@ -361,7 +361,7 @@ def incre(args, train_dataset, model, tokenizer):
     # model.resize_token_embeddings(len(tokenizer))
     model.zero_grad()
 
-    for idx in range(args.start_epoch, int(17)):
+    for idx in range(args.start_epoch, int(args.num_train_epochs)):
         bar = tqdm(train_dataloader, total=len(train_dataloader),disable=True)
         tr_num = 0
         train_loss = 0
@@ -703,7 +703,8 @@ def deploy(args, train_dataset, model, tokenizer):
                         if results['eval_acc'] >= 0.1 and results['eval_acc'] <= 0.9:
                             print(
                                 f"The accuracy during deployment is: {round(best_f1, 4)}")
-                            results_uq, incre_index = conformal_prediction(args, model, tokenizer)
+                            conformal_prediction(args, model, tokenizer)
+                            return 0
                             if results_uq['find_f1'] > best_f1_uq:
                                 best_f1_uq = results_uq['find_f1']
                                 # # logger.info("  " + "*" * 20)
@@ -782,7 +783,7 @@ def deploy(args, train_dataset, model, tokenizer):
                                       )
                                 if increment_acc < increment_acc_single:
                                     increment_acc = increment_acc_single
-                                return 0
+                                return
                                 # if retrained_acc < increment_acc_single:
                                 #     increment_acc = increment_acc_single
                                 # if increment_acc < increment_acc_single:
@@ -1001,203 +1002,10 @@ def conformal_prediction(args, model, tokenizer):
 
     # Evaluate conformal prediction
     print("Detect the drifting samples...")
-    # Prom_thread.evaluate_mapie \
-    #     (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y_test,
-    #      significance_level=0.05)
-    #
-    # Prom_thread.evaluate_rise \
-    #     (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y_test,
-    #      significance_level=0.05)
+    Prom_thread.evaluate_conformal_cd \
+        (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y_test, significance_level='auto')
 
-    index_all_right, index_list_right, Acc_all, F1_all, Pre_all, Rec_all,index_list,common_elements \
-        = Prom_thread.evaluate_conformal_prediction \
-        (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y_test,significance_level='auto')
-
-    # Increment learning
-    # print("Finding the most valuable instances for incremental learning...")
-    #
-    # print("a")
-    # # y_preds, y_pss = {}, {}
-    # # alphas = np.arange(0.1, 1, 0.1)
-    # # # alphas=[0.1]
-    # # for name, (method, include_last_label) in method_params.items():
-    # #     mapie = MapieClassifier(estimator=clf, method=method, cv="prefit", random_state=42)
-    # #     mapie.fit(X_cal, y_cal)
-    # #     y_preds[name], y_pss[name] = mapie.predict(X_test, alpha=alphas, include_last_label=include_last_label)
-    #
-    # ##########
-    # # def count_null_set(y: np.ndarray) -> int:
-    # #     """
-    # #     Count the number of empty prediction sets.
-    # #
-    # #     Parameters
-    # #     ----------
-    # #     y: np.ndarray of shape (n_sample, )
-    # #
-    # #     Returns
-    # #     -------
-    # #     int
-    # #     """
-    # #     count = 0
-    # #     for pred in y[:, :]:
-    # #         if np.sum(pred) == 0:
-    # #             count += 1
-    # #     return count
-    #
-    # # nulls, coverages, accuracies, sizes = {}, {}, {}, {}
-    # # for name, (method, include_last_label) in method_params.items():
-    # #     accuracies[name] = accuracy_score(y_test, y_preds[name])
-    # #     nulls[name] = [
-    # #         count_null_set(y_pss[name][:, :, i]) for i, _ in enumerate(alphas)
-    # #     ]
-    # #     coverages[name] = [
-    # #         classification_coverage_score(
-    # #             y_test, y_pss[name][:, :, i]
-    # #         ) for i, _ in enumerate(alphas)
-    # #     ]
-    # #     sizes[name] = [
-    # #         y_pss[name][:, :, i].sum(axis=1).mean() for i, _ in enumerate(alphas)
-    # #     ]
-    # # # sizes里每个method最接近1的
-    # # result = {}  # 用于存储结果的字典
-    # # for key, lst in sizes.items():  # 遍历字典的键值对
-    # #     closest_index = min(range(len(lst)), key=lambda i: abs(lst[i] - 1))  # 找到最接近1的数字的索引
-    # #     result[key] = closest_index  # 将结果存入字典
-    # # # y_ps_90中提出来那个最接近1的位置
-    # # result_ps = {}
-    # # for method, y_ps in y_pss.items():
-    # #     result_ps[method] = y_ps[:, :, result[method]]
-    # #
-    # # index_all_tem = {}
-    # # index_all_right_tem = {}
-    # # for method, y_ps in result_ps.items():
-    # #     for index, i in enumerate(y_ps):
-    # #         num_true = sum(i)
-    # #         if method not in index_all_tem:
-    # #             index_all_tem[method] = []
-    # #             index_all_right_tem[method] = []
-    # #         if num_true != 1:
-    # #             index_all_tem[method].append(index)
-    # #         elif num_true == 1:
-    # #             index_all_right_tem[method].append(index)
-    # # index_all = []
-    # # index_list = []
-    # # # 遍历字典中的每个键值对
-    # # for key, value in index_all_tem.items():
-    # #     # 使用集合对列表中的元素进行去重，并转换为列表
-    # #     list_length = len(value)
-    # #     # print(f"Length of {key}: {list_length}")
-    # #     # 将去重后的列表添加到新列表中
-    # #     index_all.extend(value)
-    # #     index_list.append(value)
-    # # index_all = list(set(index_all))
-    # # # print(f"Length of index_all: {len(index_all)}")
-    # # index_list.append(index_all)
-    # #
-    # # index_all_right = []
-    # # index_list_right = []
-    # # # 遍历字典中的每个键值对
-    # # for key, value in index_all_right_tem.items():
-    # #     # 使用集合对列表中的元素进行去重，并转换为列表
-    # #     list_length = len(value)
-    # #     # print(f"Length of {key}: {list_length}")
-    # #     # 将去重后的列表添加到新列表中
-    # #     index_all_right.extend(value)
-    # #     index_list_right.append(value)
-    #
-    # index_all_right = list(set(list(range(len(y_test)))) - set(index_all))
-    # # print(f"Length of index_all: {len(index_all_right)}")
-    # index_list_right.append(index_all_right)
-    """metric"""
-    # acc_best = 0
-    # F1_best = 0
-    # pre_best = 0
-    # rec_best = 0
-    # # 投票
-    # method_name = {
-    #     # "naive": ("naive", False),
-    #     "score": ("score", False),
-    #     "cumulated_score": ("cumulated_score", True),
-    #     "random_cumulated_score": ("cumulated_score", "randomized"),
-    #     "top_k": ("top_k", False),
-    #     "mixture": ("mixture", False)
-    # }
-    # # 合并三个数组
-    # find_recall = 0
-    # find_pre = 0
-    # find_acc = 0
-    # random_element = []
-    # for index_all, method_name_single in zip(index_list, method_name):
-        # # 被错误分类的index
-        # find_right_wrong = []
-        # all_wrong = []
-        # # 模型预测不准确的并且是(beigien)de
-        # find_neg_right = []
-        # index_tem = 0
-        # predict_labels = model.predict(X_test)
-        # for label, predict in zip(y_test_single, predict_labels):
-        #     _, true_label = torch.topk(torch.tensor(label), k=1)
-        #     pred_label = predict
-        #     if index_tem in index_all:
-        #         if true_label != pred_label:
-        #             # 不确定的index中被错误分类的index（找到的不对的）
-        #             find_right_wrong.append(index_tem)
-        #             all_wrong.append(index_tem)
-        #         # 找到的对的
-        #     else:
-        #         if true_label != pred_label:
-        #             # 被错误分类的index（找到的不对的）
-        #             all_wrong.append(index_tem)
-        #         if true_label == pred_label:
-        #             find_neg_right.append(index_tem)
-        #     index_tem += 1
-        # find_acc = (len(find_right_wrong) + len(find_neg_right)) / len(y_test_single)
-        # # 找对了多少
-        # if index_all == []:
-        #     find_pre = 0
-        # else:
-        #     find_pre = len(find_right_wrong) / len(index_all)
-        # # 有多少被找出来了（找到的不对的/所有不对的）
-        # if len(all_wrong) == 0:
-        #     break
-        # find_recall = len(find_right_wrong) / len(all_wrong)
-        # try:
-        #     F1_find = 2 * find_pre * find_recall / (find_pre + find_recall)
-        # except:
-        #     F1_find = 0
-        # if F1_best < F1_find:
-        #     F1_best = F1_find
-        #     acc_best = find_acc
-        #     pre_best = find_pre
-        #     rec_best = find_recall
-        # logger.info(f"{method_name_single} find accuracy：{find_acc * 100:.2f}% "
-        #             f"find precision为：{find_pre * 100:.2f}% "
-        #             f"find recall为：{find_recall * 100:.2f}% "
-        #             f"find F1：{F1_find * 100:.2f}%")
-    """"IL"""
-
-    selected_count = max(int(len(y_test) * 0.05), 1)
-    np.random.seed(args.seed)
-    try:
-        random_element = np.random.choice(common_elements, selected_count, replace=False)
-    except:
-        random_element = np.random.choice(range(len(y_test_single)), selected_count)
-
-    # logger.info(f"Best find ACC_best：{acc_best * 100:.2f}% "
-    #             f"Best find pre_best：{pre_best * 100:.2f}% "
-    #             f"Best find rec_best：{rec_best * 100:.2f}% "
-    #             f"Best find F1_best：{F1_best * 100:.2f}%")
-    # F1_find = F1_best
-    #
-    # Acc_all, F1_all, Pre_all, Rec_all
-    result_find = {
-        "find_acc": round(Acc_all[0], 4),
-        "find_pre": round(Pre_all[0], 4),
-        "find_rec": round(Rec_all[0], 4),
-        "find_f1": round(F1_all[0], 4),
-    }
-
-    return result_find, random_element
+    return 0
 
 
 def evaluate_test(args, model, tokenizer, eval_when_training=False):
