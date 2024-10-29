@@ -9,9 +9,15 @@ sys.path.append('/home/huanting/PROM')
 sys.path.append('/home/huanting/PROM/src')
 sys.path.append('/home/huanting/PROM/thirdpackage')
 sys.path.append('./case_study/DeviceM')
-from examples.case_study.DeviceM.compy.models.graphs.pytorch_geom_model import Dev_gnn
-
+from compy.models.graphs.pytorch_geom_model import Dev_gnn
+#
+import numpy as np
+import nni
 import argparse
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.svm import SVC
+from src.prom.prom_util import Prom_utils
 import numpy as np
 import nni
 from sklearn.model_selection import StratifiedKFold
@@ -26,34 +32,8 @@ import sys
 import torch
 warnings.filterwarnings('ignore')
 
-def load_args(mode):
-    # get parameters from tuner
-    params = nni.get_next_parameter()
-
-    if params == {} and mode == 'train':
-        params = {
-            "seed": 8264,
-        }
-    elif params == {} and mode == 'deploy':
-        params = {
-            "seed": 93,
-        }
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--seed', type=int, default=params['seed'],
-                        help="random seed for initialization")
-    parser.add_argument('--method', choices=['Deeptune', 'Programl','Inst2vec'],default='Deeptune',
-                        help="The baseline method to run")
-    parser.add_argument('--mode', choices=['train', 'deploy'],  help="Mode to run: train or deploy")
-    args = parser.parse_args()
-    # print("seed: ", args.seed)
-    torch.manual_seed(args.seed)
-    dataset = D.OpenCLDevmapDataset()
-
-    return args,dataset
-
 # Load dataset
-def train(suite_train,suite_test,dataset,combinations,args=None):
+def train(suite_train,suite_test,dataset,combinations,args):
     for builder, visitor, model in combinations:
         print("Processing %s-%s-%s" % (builder.__name__, visitor.__name__, model.__name__))
 
@@ -68,7 +48,7 @@ def train(suite_train,suite_test,dataset,combinations,args=None):
         data_test = dataset.preprocess(builder(clang_driver), visitor, suite_test)
 
         # Train and test
-        kf = StratifiedKFold(n_splits=2, shuffle=True, random_state=args.seed) #
+        kf = StratifiedKFold(n_splits=3, shuffle=True, random_state=args.seed) #
         split = kf.split(data_train["samples"], [sample["info"][5] for sample in data_train["samples"]])
 
 
@@ -87,13 +67,18 @@ def train(suite_train,suite_test,dataset,combinations,args=None):
                 list(np.array(data_test["samples"])[test_idx]),
                 args
             )
-
+            best_speedup=np.max(il_speed_up)
             break
 
         # print("best improved speed up is : ", best_speedup)
+
+        # nni.report_final_result(percent_mean)
+
     return model_path,percent_mean
 
 def load_pickle( suite_train, suite_test, dataset,combinations,random_seed,model_path):
+
+
     for builder, visitor, model in combinations:
         print("Processing %s-%s-%s" % (builder.__name__, visitor.__name__, model.__name__))
 
@@ -153,8 +138,39 @@ def load_pickle( suite_train, suite_test, dataset,combinations,random_seed,model
         print("uq_accuracy:"" %.4f" % (uq_acc))
         print("uq_speed_up:"" %.4f"% (uq_speed_up))
 
+# def load_args():
+#     # random_seed = random.randint(0, 9999)
+#     random_seed=3407
+#     torch.manual_seed(random_seed)
+#     dataset = D.OpenCLDevmapDataset()
+#     return random_seed,dataset
+
+def load_args(mode):
+    # get parameters from tuner
+    params = nni.get_next_parameter()
+    if params == {} and mode == 'train':
+        params = {
+            "seed": 1150,
+        }
+    elif params == {} and mode == 'deploy':
+        params = {
+            "seed": 838,
+        }
 
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--seed', type=int, default=params['seed'],
+                        help="random seed for initialization")
+    parser.add_argument('--method', choices=['Deeptune', 'Programl','Inst2vec'],default='Programl',
+                        help="The baseline method to run")
+    parser.add_argument('--mode', choices=['train', 'deploy'], help="Mode to run: train or deploy")
+    args = parser.parse_args()
+    torch.manual_seed(args.seed)
+    dataset = D.OpenCLDevmapDataset()
+    # train the underlying model
+    # deeptune_model = DeepTune()
+    # deeptune_model.init(args)
+    return args,dataset
 
 def train_phase(args, dataset_ori):
     # print("Prepare the parameters")
@@ -164,9 +180,9 @@ def train_phase(args, dataset_ori):
         # (R.ASTGraphBuilder, R.ASTDataVisitor, M.GnnPytorchGeomModel),
         # meiyongdao (R.LLVMGraphBuilder, R.LLVMCDFGVisitor, M.GnnPytorchGeomModel),
         # Arxiv 20: ProGraML
-        # (R.LLVMGraphBuilder, R.LLVMProGraMLVisitor, M.GnnPytorchGeomModel),
+        (R.LLVMGraphBuilder, R.LLVMProGraMLVisitor, M.GnnPytorchGeomModel),
         # PACT 17: DeepTune
-        (R.SyntaxSeqBuilder, R.SyntaxTokenkindVariableVisitor, M.RnnTfModel),
+        # (R.SyntaxSeqBuilder, R.SyntaxTokenkindVariableVisitor, M.RnnTfModel),
         # Extra
         # (R.ASTGraphBuilder, R.ASTDataCFGVisitor, M.GnnPytorchGeomModel),
         # (R.LLVMGraphBuilder, R.LLVMCDFGCallVisitor, M.GnnPytorchGeomModel),
@@ -229,19 +245,15 @@ def train_phase(args, dataset_ori):
     prom_dev = Dev_gnn()
 
     print("Split the data to train, calibration and test set...")
-    # print("args.seed",args.seed)
     suite_train, suite_test = prom_dev.data_partitioning(dataset=suite, test_ratio=0.5, random_seed=args.seed)
     print("Training the model...")
 
     # train the model
-    model_path,percent_mean=train(suite_train, suite_test, dataset_ori, combinations, args=args)
-    print("The training performance is:", percent_mean)
+    _,percent_mean=train(suite_train, suite_test, dataset_ori, combinations, args)
     # nni.report_final_result(percent_mean)
+    print("The training performance is:",percent_mean)
 
-
-
-
-def deploy(args, dataset_ori):
+def deploy(args, dataset_ori,eva_flag):
     # print("Prepare the parameters")
 
     # Explore combinations
@@ -322,9 +334,9 @@ def deploy(args, dataset_ori):
     model_path,_ = train(suite_train, suite_test, dataset_ori, combinations, args)
     # load the model
     # model_path = \
-    #     r'./save_model/De/8264_0.8328986364257807.pkl'
-    # load_pickle(suite_train, suite_test, dataset_ori, combinations,
-    #             args.seed,
+    #     r'./save_model/Programl/1150_0.8169234319726472.pkl'
+    # load_pickle(suite_train, suite_test, dataset, combinations,
+    #             random_seed,
     #             model_path)
 
     # extract the features
@@ -386,9 +398,11 @@ def deploy(args, dataset_ori):
         #     list(np.array(data_test["samples"])[test_idx]),
         #     random_seed
         # )
+        if eva_flag == "compare" or "cd":
+            model_test.uq(train_data, cal_data, test_data, random_seed=args.seed,eva_flag=eva_flag)
+            return 0
         train_batches, test_batches = \
-            model_test.uq(train_data, cal_data, test_data, random_seed=args.seed)
-
+            model_test.uq(train_data, cal_data, test_data, random_seed=args.seed, eva_flag=eva_flag)
         print("Incremental training...")
         # model_il = model(num_types=num_types)
         il_speed_up, impoved_sp = \
@@ -398,24 +412,23 @@ def deploy(args, dataset_ori):
     # print("test_dict", suite_test)
 
     # nni
-    # nnictl create --config /home/huanting/model/compy-learn-master/config.yml --port 8088
-def ae_dev_deep():
+    # nnictl create --config /home/huanting/PROM/examples/case_study/DeviceM/config.yml --port 8088
+def ae_dev_programl(eva_flag=""):
     print("_________Start training phase________")
     args, dataset_ori = load_args("train")
     train_phase(args, dataset_ori)
 
     print("_________Start deploy phase________")
     args, dataset_ori = load_args("deploy")
-    deploy(args, dataset_ori)
+    deploy(args, dataset_ori,eva_flag=eva_flag)
+
 
 # if __name__ == '__main__':
-#     args, dataset_ori = load_args("train")
+#     args, dataset_ori = load_args()
 #     if args.mode == 'train':
 #         train_phase(args, dataset_ori)
 #     elif args.mode == 'deploy':
 #         deploy(args, dataset_ori)
-#     train_phase(args, dataset_ori)
-#     deploy(args, dataset_ori)
-#     # nnictl create --config /home/huanting/PROM/examples/case_study/DeviceM/config.yml --port 8088
-#     # train_phase(args, dataset_ori)
-#     # deploy(args, dataset_ori)
+    # deploy(args, dataset_ori)
+    # train_phase(args, dataset_ori)
+    # deploy(args, dataset_ori)

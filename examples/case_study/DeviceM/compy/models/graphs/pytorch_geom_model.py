@@ -350,7 +350,7 @@ class GnnPytorchGeomModel(Model):
 
         return valid_accuracy, pred, baseline_speedup,oracle_percent
 
-    def _predict_uq_batch(self, train_batches, valid_batches,test_batches,random_seed):
+    def _predict_uq_batch(self, train_batches, valid_batches,test_batches,random_seed,eva_flag=""):
         # print("start conformal prediction")
         F1_all=[]
         Pre_all=[]
@@ -359,11 +359,6 @@ class GnnPytorchGeomModel(Model):
         clf = self.model
 
         method_params = {
-            # "naive": ("naive", False),
-            # "score": ("score", False),
-            # "cumulated_score": ("cumulated_score", True),
-            # "random_cumulated_score": ("cumulated_score", "randomized"),
-            # "top_k": ("top_k", False),
         "lac": ("score", True),
         "top_k": ("top_k", True),
         "aps": ("cumulated_score", True),
@@ -485,23 +480,35 @@ class GnnPytorchGeomModel(Model):
         y_preds, y_pss, p_value = Prom_thread.conformal_prediction(
             cal_x=X_cal, cal_y=y_cal, test_x=X_test, test_y=y_test, significance_level="auto")
         #################
-        # MAPIE
-        # Prom_thread.evaluate_mapie \
-        #     (y_preds=y_preds,
-        #      y_pss=y_pss,
-        #      p_value=p_value,
-        #      all_pre=all_pre,
-        #      y=y_test,
-        #      significance_level=0.05)
-        #
-        # Prom_thread.evaluate_rise \
-        #     (y_preds=y_preds,
-        #      y_pss=y_pss,
-        #      p_value=p_value,
-        #      all_pre=all_pre,
-        #      y=y_test,
-        #      significance_level=0.05)
+        if eva_flag=="comapre":
+            Prom_thread.evaluate_mapie \
+                (y_preds=y_preds,
+                 y_pss=y_pss,
+                 p_value=p_value,
+                 all_pre=all_pre,
+                 y=y_test,
+                 significance_level='auto')
 
+            Prom_thread.evaluate_rise \
+                (y_preds=y_preds,
+                 y_pss=y_pss,
+                 p_value=p_value,
+                 all_pre=all_pre,
+                 y=y_test,
+                 significance_level='auto')
+
+            Prom_thread.evaluate_T \
+                (y_preds=y_preds,
+                 y_pss=y_pss,
+                 p_value=p_value,
+                 all_pre=all_pre,
+                 y=y_test,
+                 significance_level='auto')
+            return 0
+        if eva_flag == "cd":
+            Prom_thread.evaluate_conformal_cd \
+                (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y_test, significance_level='auto')
+            return 0
         index_all_right, index_list_right, Acc_all, F1_all, Pre_all, Rec_all, _, _ \
             = Prom_thread.evaluate_conformal_prediction \
             (y_preds=y_preds,
@@ -696,6 +703,9 @@ class GnnPytorchGeomModel(Model):
 
 
         return train_batches,test_batches
+
+
+
 
     def _predict_test_batch(self, batch):
         correct = 0

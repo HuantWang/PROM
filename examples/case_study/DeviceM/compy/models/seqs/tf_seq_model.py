@@ -9,6 +9,8 @@ from mapie.prom_classification import MapieClassifier
 from mapie.metrics import (classification_coverage_score,
                            classification_mean_width_score)
 
+
+
 class SummaryCallback(tf.keras.callbacks.Callback):
     def __init__(self, summary):
         self.__summary = summary

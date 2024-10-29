@@ -362,8 +362,6 @@ class Prom_utils:
                 for i, alpha in enumerate(self.alphas):
                     results_array[:, i] = np.array([value > (1 - significance_level) for value in p_value[name]])
             credibility_score[name] = results_array
-
-
         #step3 vote
         for name, (method, include_last_label) in self.method_params.items():
             accuracies[name] = accuracy_score(self.y_test, y_preds[name])

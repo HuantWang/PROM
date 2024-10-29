@@ -6,11 +6,11 @@ import warnings
 warnings.filterwarnings("ignore")
 import random
 sys.path.append('/home/huanting/PROM')
-sys.path.append('./case_study/DeviceM')
 sys.path.append('/home/huanting/PROM/src')
 sys.path.append('/home/huanting/PROM/thirdpackage')
+sys.path.append('./case_study/DeviceM')
 from compy.models.graphs.pytorch_geom_model import Dev_gnn
-
+#
 import numpy as np
 import nni
 import argparse
@@ -173,7 +173,7 @@ def load_args(mode):
     return args,dataset
 
 def train_phase(args, dataset_ori):
-    print("Prepare the parameters")
+    # print("Prepare the parameters")
     # Explore combinations
     combinations = [
         # CGO 20: AST+DF, CDFG
@@ -246,15 +246,15 @@ def train_phase(args, dataset_ori):
 
     print("Split the data to train, calibration and test set...")
     suite_train, suite_test = prom_dev.data_partitioning(dataset=suite, test_ratio=0.5, random_seed=args.seed)
-    print("Train/Load the model...")
+    print("Training the model...")
 
     # train the model
     _,percent_mean=train(suite_train, suite_test, dataset_ori, combinations, args)
     # nni.report_final_result(percent_mean)
-
+    print("The training performance is:",percent_mean)
 
 def deploy(args, dataset_ori):
-    print("Prepare the parameters")
+    # print("Prepare the parameters")
 
     # Explore combinations
     combinations = [
@@ -326,15 +326,15 @@ def deploy(args, dataset_ori):
     #     return train_dict, test_dict
     prom_dev = Dev_gnn()
 
-    print("Split the data to train, calibration and test set...")
+    print("Load dataset...")
     suite_train, suite_test = prom_dev.data_partitioning(dataset=suite, test_ratio=0.5, random_seed=args.seed)
-    print("Train/Load the model...")
+    print("Load the underlying model...")
 
     # train the model
     model_path,_ = train(suite_train, suite_test, dataset_ori, combinations, args)
     # load the model
     # model_path = \
-    #     r'/home/huanting/PROM/examples/case_study/DeviceM/compy/save_model/3407_0.8922865142803728.pkl'
+    #     r'./save_model/Programl/1150_0.8169234319726472.pkl'
     # load_pickle(suite_train, suite_test, dataset, combinations,
     #             random_seed,
     #             model_path)
@@ -382,8 +382,7 @@ def deploy(args, dataset_ori):
         test_acc, speed_up, test_batches, test_percent_mean = \
             model_test.test(list(np.array(data_test["samples"])[test_idx])
                             , cal_batches, mode_uq='reca')
-        print("The accuracy is: %.4f, The speed up is: %.4f, "
-              "The performance to oracle is: %.4f" % (test_acc, speed_up, test_percent_mean))
+        print("The underlying model performance during deployment to oracle is: %.4f" % (test_percent_mean))
 
         # conformal prediction
         # model_uq = model(num_types=num_types, mode='test', model_path=model_path)
@@ -406,16 +405,18 @@ def deploy(args, dataset_ori):
         # model_il = model(num_types=num_types)
         il_speed_up, impoved_sp = \
             model_test.Incremental_train(train_batches, test_batches, test_percent_mean, random_seed=args.seed)
-        nni.report_final_result(impoved_sp)
+        # nni.report_final_result(impoved_sp)
     # print("suite_train", suite_train)
     # print("test_dict", suite_test)
 
     # nni
     # nnictl create --config /home/huanting/PROM/examples/case_study/DeviceM/config.yml --port 8088
 def ae_dev_programl():
+    print("_________Start training phase________")
     args, dataset_ori = load_args("train")
     train_phase(args, dataset_ori)
 
+    print("_________Start deploy phase________")
     args, dataset_ori = load_args("deploy")
     deploy(args, dataset_ori)
 

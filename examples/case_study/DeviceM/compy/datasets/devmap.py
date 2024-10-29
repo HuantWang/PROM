@@ -136,7 +136,7 @@ class OpenCLDevmapDataset(dataset.Dataset):
 
         # Process the map of files
         processed = {}
-        for file_data in tqdm(to_process, desc="Source Code -> IR+"):
+        for file_data in to_process:
             (
                 bench_file,
                 source_code,
@@ -162,9 +162,7 @@ class OpenCLDevmapDataset(dataset.Dataset):
         # Map to dataset and extract representations
         samples = {}
         samples_test = {}
-        for file_data, function_datas in tqdm(
-            to_process.items(), desc="IR+ -> ML Representation"
-        ):
+        for file_data, function_datas in to_process.items():
             (
                 bench_file,
                 source_code,
@@ -182,7 +180,7 @@ class OpenCLDevmapDataset(dataset.Dataset):
                     item_info + (transfer, wgsize, label, cpu_time, gpu_time)
                 ] = builder.info_to_representation(processed[item_info], visitor)
 
-        print("Size of dataset:", len(samples))
+        # print("Size of dataset:", len(samples))
         # print("Number of unique tokens:", builder.num_tokens())
         # builder.print_tokens()
 

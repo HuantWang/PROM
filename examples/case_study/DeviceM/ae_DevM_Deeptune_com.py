@@ -241,7 +241,7 @@ def train_phase(args, dataset_ori):
 
 
 
-def deploy(args, dataset_ori):
+def deploy(args, dataset_ori,eva_flag=""):
     # print("Prepare the parameters")
 
     # Explore combinations
@@ -386,27 +386,26 @@ def deploy(args, dataset_ori):
         #     list(np.array(data_test["samples"])[test_idx]),
         #     random_seed
         # )
-        train_batches, test_batches = \
-            model_test.uq(train_data, cal_data, test_data, random_seed=args.seed)
+        model_test.uq(train_data, cal_data, test_data, random_seed=args.seed,eva_flag=eva_flag)
 
-        print("Incremental training...")
+        # print("Incremental training...")
         # model_il = model(num_types=num_types)
-        il_speed_up, impoved_sp = \
-            model_test.Incremental_train(train_batches, test_batches, test_percent_mean, random_seed=args.seed)
+        # il_speed_up, impoved_sp = \
+        #     model_test.Incremental_train(train_batches, test_batches, test_percent_mean, random_seed=args.seed)
         # nni.report_final_result(impoved_sp)
     # print("suite_train", suite_train)
     # print("test_dict", suite_test)
 
     # nni
     # nnictl create --config /home/huanting/model/compy-learn-master/config.yml --port 8088
-def ae_dev_deep():
+def ae_dev_deep(eva_flag=""):
     print("_________Start training phase________")
     args, dataset_ori = load_args("train")
     train_phase(args, dataset_ori)
 
     print("_________Start deploy phase________")
     args, dataset_ori = load_args("deploy")
-    deploy(args, dataset_ori)
+    deploy(args, dataset_ori,eva_flag=eva_flag)
 
 # if __name__ == '__main__':
 #     args, dataset_ori = load_args("train")

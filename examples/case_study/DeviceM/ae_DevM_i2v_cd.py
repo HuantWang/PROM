@@ -415,115 +415,21 @@ def deploy(max_depth=4, learning_rate=0.1, n_estimators=200, args=None):
         cal_x=calibration_data, cal_y=cal_y, test_x=test_x, test_y=test_y, significance_level="auto")
 
     # evaluate conformal prediction
-    # Prom_thread.evaluate_mapie \
-    #     (y_preds=y_preds,
-    #      y_pss=y_pss,
-    #      p_value=p_value,
-    #      all_pre=all_pre,
-    #      y=test_y,
-    #      significance_level=0.05)
-    #
-    # Prom_thread.evaluate_rise \
-    #     (y_preds=y_preds,
-    #      y_pss=y_pss,
-    #      p_value=p_value,
-    #      all_pre=all_pre,
-    #      y=test_y,
-    #      significance_level=0.05)
+    Prom_thread.evaluate_conformal_cd \
+        (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=test_y, significance_level='auto')
+
+
 
     # evaluate conformal prediction
-    index_all_right, index_list_right, Acc_all, F1_all, Pre_all, Rec_all, _, _ \
-        = Prom_thread.evaluate_conformal_prediction \
-        (y_preds=y_preds,
-         y_pss=y_pss,
-         p_value=p_value,
-         all_pre=all_pre,
-         y=test_y,
-         significance_level='auto')
+    # index_all_right, index_list_right, Acc_all, F1_all, Pre_all, Rec_all, _, _ \
+    #     = Prom_thread.evaluate_conformal_prediction \
+    #     (y_preds=y_preds,
+    #      y_pss=y_pss,
+    #      p_value=p_value,
+    #      all_pre=all_pre,
+    #      y=test_y,
+    #      significance_level='auto')
 
-    # Increment learning
-    print("Finding the most valuable instances for incremental learning...")
-    train_index, test_index = Prom_thread.incremental_learning \
-        (args.seed, test, train)
-    # 保存列表到文件
-    # import pickle
-    # with open('/home/huanting/PROM/examples/case_study/Thread/logs/file.pkl', 'wb') as f:
-    #     pickle.dump(train_index, f)
-
-    # 从文件加载列表
-    # with open('/home/huanting/PROM/examples/case_study/Thread/logs/file.pkl', 'rb') as f:
-    #     loaded_list = pickle.load(f)
-    # print(loaded_list == train_index)
-    # retrain the model
-    print(f"Retraining the model...")
-
-
-    model.fit(embeddings[train_index], targetLabel[train_index])
-
-    # test
-    predictions = model.predict(embeddings[test])
-    all_pre = predictions
-    predictions = [
-        "CPU" if prediction == 0 else "GPU" for prediction in predictions
-    ]
-    test_df = df.iloc[test].reset_index()
-    assert test_df.shape[0] == len(predictions)
-    test_df = pd.concat(
-        [test_df, pd.DataFrame(predictions, columns=["predictions"])], axis=1
-    )
-
-    rt_label = rt_label_dict[platform]
-    for idx, row in test_df.iterrows():
-        oracle = row["oracle"]
-        pred = row["predictions"]
-        rt_baseline = row[rt_label]
-        rt_oracle = (
-            row["runtime_cpu"] if oracle == "CPU" else row["runtime_gpu"]
-        )
-        rt_pred = row["runtime_cpu"] if pred == "CPU" else row["runtime_gpu"]
-        data.append(
-            {
-                "Model": "IR2vec",
-                "Platform": platform_name,
-                "Oracle Mapping": oracle,
-                "Predicted Mapping": pred,
-                "Correct?": oracle == pred,
-                "Speedup": rt_oracle / rt_pred,
-                "OracleSpeedUp": rt_oracle / rt_pred,
-            }
-        )
-    ir2vec = pd.DataFrame(data, index=range(1, len(data) + 1))
-
-    # print("\nSpeedup Matrix: IR2Vec Vs. others\n")
-    ir2vec_sp_vals = ir2vec.groupby(["Platform"])["Speedup"].apply(lambda x: gmean(x)).values
-    ir2vec_sp_mean = ir2vec_sp_vals.mean()
-    sp_df = pd.DataFrame(
-        {
-            "IR2Vec": list(ir2vec_sp_vals) + [ir2vec_sp_mean],
-        },
-        index=["AMD Tahiti 7970", "Average"],
-    )
-    # print(sp_df)
-    current_performance = ir2vec_sp_mean
-    print("The retrained performance is", current_performance)
-    improved_performance = current_performance - original_performance
-    print("Improved perf. is", improved_performance)
-
-    # o_percent_all = ir2vec.groupby(["Platform"])["Speedup"].apply(lambda x: x).values
-    ###
-    # plt.boxplot(o_percent_all)
-    # data_df = pd.DataFrame({'Data': o_percent_all})
-    # sns.violinplot(data=data_df, y='Data')
-    # seed_save = str(int(args.seed))
-    # plt.title('Box Plot Example ' + seed_save)
-    # plt.ylabel('Values')
-    # plt.savefig('/home/huanting/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_IL' +
-    #             str(ir2vec_sp_mean) + '_' + str(seed_save) + '.png')
-    # data_df.to_pickle('/home/huanting/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_IL' +
-    #                   str(ir2vec_sp_mean) + '_' + str(seed_save) + '_data.pkl')
-    # plt.show()
-
-    # nni.report_final_result(improved_performance)
 
 
 import nni
