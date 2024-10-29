@@ -20,8 +20,10 @@ from ae_deploy_tlp import ae_deploy_model
 
 
 
-
+# print("\nThe evaluation on BERT-base\n")
 # ae_eval_model("all")
+
+
 ae_deploy_model("all")
 
 """

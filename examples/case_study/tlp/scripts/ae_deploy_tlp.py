@@ -123,33 +123,33 @@ def eval_model(model_file='',test_datasets=''):
         top10_total += latencies[2]
         top20_total += latencies[3]
 
-    if top1_total == 0:
-        print(f"average top 1 score is {0}")
-        top_1_total.append(0)
-    else:
-        print(f"average top 1 score is {best_latency_total / top1_total}")
-        top_1_total.append(best_latency_total / top1_total)
+    # if top1_total == 0:
+    #     print(f"average top 1 score is {0}")
+    #     top_1_total.append(0)
+    # else:
+    #     print(f"average top 1 score is {best_latency_total / top1_total}")
+    #     top_1_total.append(best_latency_total / top1_total)
 
     if top5_total == 0:
-        print(f"average top 5 score is {0}")
+        print(f"The performance is {0}")
         top_5_total.append(0)
     else:
-        print(f"average top 5 score is {best_latency_total / top5_total}")
+        print(f"The performance is {best_latency_total / top5_total}")
         top_5_total.append(best_latency_total / top5_total)
 
-    if top10_total == 0:
-        print(f"average top 10 score is {0}")
-        top_10_total.append(0)
-    else:
-        print(f"average top 10 score is {best_latency_total / top10_total}")
-        top_10_total.append(best_latency_total / top10_total)
-
-    if top20_total == 0:
-        print(f"average top 20 score is {0}")
-        top_20_total.append(0)
-    else:
-        print(f"average top 20 score is {best_latency_total / top20_total}")
-        top_20_total.append(best_latency_total / top20_total)
+    # if top10_total == 0:
+    #     print(f"average top 10 score is {0}")
+    #     top_10_total.append(0)
+    # else:
+    #     print(f"average top 10 score is {best_latency_total / top10_total}")
+    #     top_10_total.append(best_latency_total / top10_total)
+    #
+    # if top20_total == 0:
+    #     print(f"average top 20 score is {0}")
+    #     top_20_total.append(0)
+    # else:
+    #     print(f"average top 20 score is {best_latency_total / top20_total}")
+    #     top_20_total.append(best_latency_total / top20_total)
 
     return best_latency_total / top5_total
 
@@ -844,16 +844,16 @@ def il(test_loader, device, pre_trained_model,aug_data, args):
         lr_scheduler.step()
 
         # 打印进度和验证
-        if epoch % 5 == 0 or epoch == args.n_epoch - 1:
-            valid_loss = validate(net, test_dataset_loader, loss_func, device)
-            print(f"Epoch: {epoch} Train Loss: {train_loss:.4f} Valid Loss: {valid_loss:.4f}")
+        # if epoch % 5 == 0 or epoch == args.n_epoch - 1:
+        #     valid_loss = validate(net, test_dataset_loader, loss_func, device)
+        #     print(f"Epoch: {epoch} Train Loss: {train_loss:.4f} Valid Loss: {valid_loss:.4f}")
 
         # 保存模型
     model_save_file_name = f'{args.save_folder}/tlp_model_{args.seed}.pkl'
     with open(model_save_file_name, 'wb') as f:
         pickle.dump(net.cpu(), f)
     net.to(device)
-
+    print("Training finished")
     return model_save_file_name
 
 
@@ -904,7 +904,7 @@ def conformal_prediction(datas, task_pred_dict, model,mapie,task_drift_dict,task
     percentage_difference = np.abs((test_loader.min_latency.min() - labels_all) / labels_all) * 100
     # 找到差异大于 20% 的索引
     indices_real = np.where(percentage_difference > 20)[0]
-    print("The size of indices is :",indices_real.size)
+    # print("The size of indices is :",indices_real.size)
     """cp"""
     data_test = torch.cat(data_test, dim=0)
     y_test = labels_all
@@ -927,6 +927,10 @@ def conformal_prediction(datas, task_pred_dict, model,mapie,task_drift_dict,task
     best_f1=0
     best_indices_detec=[]
 
+    f1_score_best = 0
+    accuracy_best = 0
+    precision_best = 0
+    recall_best = 0
     for index,pvalue in enumerate(alphas):
         # if index==num_set:
         #     if all(pvalue) or not any(pvalue):
@@ -966,10 +970,21 @@ def conformal_prediction(datas, task_pred_dict, model,mapie,task_drift_dict,task
         if best_f1<f1_score:
             best_f1 = f1_score
             best_indices_detec=indices_detec
-        print("The alpha is:",pvalue)
-        print(f"Detection f1_score is: {f1_score:.2%}, "
-              f"accuracy is: {accuracy:.2%}, "
-              f"precision is: {precision:.2%}, recall is: {recall:.2%}")
+
+            f1_score_best = f1_score
+            accuracy_best = accuracy
+            precision_best = precision
+            recall_best = recall
+
+        # print("The alpha is:",pvalue)
+        # print(f"Detection f1_score is: {f1_score:.2%}, "
+        #       f"accuracy is: {accuracy:.2%}, "
+        #       f"precision is: {precision:.2%}, recall is: {recall:.2%}")
+    # print("The alpha is:",pvalue)
+    print(f"Detection f1_score is: {f1_score_best:.2%}, "
+          f"accuracy is: {accuracy_best:.2%}, "
+          f"precision is: {precision_best:.2%}, recall is: {recall_best:.2%}")
+
 
 
     task_after_dict[workloadkey] = (preds_all[indices_detec].detach().cpu().numpy(),
@@ -1209,7 +1224,7 @@ def init_args(model_name):
     parser.add_argument("--n_epoch", type=int, default=50)
     args = parser.parse_args()
     args.seed = int(args.seed)
-    print("seed: ", args.seed)
+    # print("seed: ", args.seed)
     set_seed(args.seed)
     return args
 
@@ -1219,7 +1234,7 @@ def deploy_model(args):
     # init args
     tlp_prom = Tlp_prom()
     # split data to train and test
-    print("Load data and split data to train and test...")
+    print("Data preprocessing...")
     train_data, test_data = tlp_prom.data_partitioning \
         (train_dataset=args.under_train_dataset, test_dataset=args.test_dataset, args=args)
 
@@ -1240,17 +1255,19 @@ def deploy_model(args):
     print("Evaluate the data on new benchmark...")
     il_perm=eval_model(model_file=il_model, test_datasets=test_data)
     improve_perm= il_perm-deploy_perm
-    print("improve_perm: ", improve_perm)
-    nni.report_final_result(improve_perm)
+    print("The improvement performance is: ", improve_perm)
+    # nni.report_final_result(improve_perm)
 
 def ae_deploy_model(model_name):
-    # if model_name == 'tiny':
+        print("\nEvaluation on the BERT-tiny\n")
         args = init_args('tiny')
         deploy_model(args)
-    # elif model_name == 'medium':
+
+        print("\nEvaluation on the BERT-medium\n")
         args = init_args('medium')
         deploy_model(args)
-    # elif model_name == 'large':
+
+        print("\nEvaluation on the BERT-large\n")
         args = init_args('large')
         deploy_model(args)
 

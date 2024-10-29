@@ -22,6 +22,8 @@ import src.prom.prom_util as util
 from sklearn.neural_network import MLPRegressor
 from prom.regression import MapieQuantileRegressor, MapieRegressor
 from prom.metrics import regression_coverage_score
+import warnings
+warnings.filterwarnings("ignore")
 
 def pred_a_dataset(datas, task_pred_dict, model):
 
@@ -123,33 +125,33 @@ def eval_model(model_file='',test_datasets=''):
         top10_total += latencies[2]
         top20_total += latencies[3]
 
-    if top1_total == 0:
-        print(f"average top 1 score is {0}")
-        top_1_total.append(0)
-    else:
-        print(f"average top 1 score is {best_latency_total / top1_total}")
-        top_1_total.append(best_latency_total / top1_total)
+    # if top1_total == 0:
+    #     print(f"average top 1 score is {0}")
+    #     top_1_total.append(0)
+    # else:
+    #     print(f"average top 1 score is {best_latency_total / top1_total}")
+    #     top_1_total.append(best_latency_total / top1_total)
 
     if top5_total == 0:
-        print(f"average top 5 score is {0}")
+        print(f"The performance is {0}")
         top_5_total.append(0)
     else:
-        print(f"average top 5 score is {best_latency_total / top5_total}")
+        print(f"The performance is {best_latency_total / top5_total}")
         top_5_total.append(best_latency_total / top5_total)
 
-    if top10_total == 0:
-        print(f"average top 10 score is {0}")
-        top_10_total.append(0)
-    else:
-        print(f"average top 10 score is {best_latency_total / top10_total}")
-        top_10_total.append(best_latency_total / top10_total)
-
-    if top20_total == 0:
-        print(f"average top 20 score is {0}")
-        top_20_total.append(0)
-    else:
-        print(f"average top 20 score is {best_latency_total / top20_total}")
-        top_20_total.append(best_latency_total / top20_total)
+    # if top10_total == 0:
+    #     print(f"average top 10 score is {0}")
+    #     top_10_total.append(0)
+    # else:
+    #     print(f"average top 10 score is {best_latency_total / top10_total}")
+    #     top_10_total.append(best_latency_total / top10_total)
+    #
+    # if top20_total == 0:
+    #     print(f"average top 20 score is {0}")
+    #     top_20_total.append(0)
+    # else:
+    #     print(f"average top 20 score is {best_latency_total / top20_total}")
+    #     top_20_total.append(best_latency_total / top20_total)
 
     return best_latency_total / top5_total
 
@@ -1340,7 +1342,7 @@ def init_args(model_name):
     parser.add_argument("--n_epoch", type=int, default=50)
     args = parser.parse_args()
     args.seed = int(args.seed)
-    print("seed: ", args.seed)
+    # print("seed: ", args.seed)
     set_seed(args.seed)
     return args
 
@@ -1354,10 +1356,10 @@ def train_model(args,under_model_name):
         (train_dataset=args.under_train_dataset, test_dataset=args.under_test_dataset, args=args)
     # under_model_name,performance=train(*train_data, device="cpu",test_tlp=test_data)
     # origin_testdata = test_data
-
+    print("Loading the BERT-base model and evaluate on BERT-base dataset...")
     performance = eval_model(model_file=under_model_name, test_datasets=test_data)
-    print("Load data and evaluate the data on new benchmark...")
-    nni.report_final_result(performance)
+    # print("Load data and evaluate the data on new benchmark...")
+    # nni.report_final_result(performance)
 
 def deploy_model(args):
     # init args
