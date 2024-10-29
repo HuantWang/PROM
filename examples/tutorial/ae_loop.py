@@ -1,7 +1,4 @@
-import subprocess
 
-# setting the environments
-subprocess.run(["bash", "env.sh", "C1"])
 
 import sys
 sys.path.append('../case_study/Loop/')

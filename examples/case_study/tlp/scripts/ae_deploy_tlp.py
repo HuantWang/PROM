@@ -22,6 +22,8 @@ import src.prom.prom_util as util
 from sklearn.neural_network import MLPRegressor
 from prom.regression import MapieQuantileRegressor, MapieRegressor
 from prom.metrics import regression_coverage_score
+import warnings
+warnings.filterwarnings("ignore")
 
 def pred_a_dataset(datas, task_pred_dict, model):
 

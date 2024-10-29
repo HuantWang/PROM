@@ -1,8 +1,6 @@
-import subprocess
-
-# setting the environments
-subprocess.run(["bash", "env.sh", "C1"])
 import sys
+import warnings
+warnings.filterwarnings("ignore")
 
 
 sys.path.append('../case_study/DeviceM/')

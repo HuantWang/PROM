@@ -443,12 +443,12 @@ class Model(object):
 
         test_count = 0
         pre_speedup_total = []
-        if eva_flag == "comapre" or "cd":
+        if eva_flag == "comapre" or eva_flag == "cd":
             self._predict_uq_batch \
                 (data_train, data_cal, data_test, random_seed, eva_flag=eva_flag)
             return 0
         train_batches, test_batches = self._predict_uq_batch\
-            (data_train, data_cal, data_test, random_seed,eva_flag=eva_flag)
+            (data_train, data_cal, data_test, random_seed)
         return train_batches, test_batches
 
     def Incremental_train(self, train_batches, test_batches, test_percent_mean, random_seed=1234, batch_size=64):

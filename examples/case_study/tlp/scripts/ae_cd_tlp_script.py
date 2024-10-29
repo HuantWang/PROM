@@ -17,8 +17,6 @@ sys.path.append('/home/huanting/PROM/examples/case_study/tlp/python')
 sys.path.append('/home/huanting/PROM/thirdpackage')
 sys.path.append('/home/huanting/PROM')
 sys.path.append('/home/huanting/PROM/src')
-import warnings
-warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 import src.prom.prom_util as util
 from sklearn.neural_network import MLPRegressor
@@ -227,7 +225,7 @@ class Tlp_prom(util.ModelDefinition):
         random.shuffle(test_datasets)
         length = len(test_datasets)
         # print("length", length)
-        test_dataset = test_datasets[:length]
+        test_dataset = test_datasets[:1]
 
         return train_data,test_dataset
 
@@ -795,140 +793,6 @@ def validate(model, valid_loader, loss_func, device):
     return np.sum(valid_losses)
 
 
-def train(train_loader, val_dataloader, device, test_tlp):
-    performance=0
-    best_performance = 0
-    if args.attention_class == 'default':
-        args.hidden_dim = [64, 128, 256, 256]
-        args.out_dim = [256, 128, 64, 1]
-        net = AttentionModule().to(device)
-        net = net.to(torch.device("cpu"))
-    elif args.attention_class == 'transformer':
-        print('TransformerModule')
-        net = TransformerModule().to(device)
-        net = net.to(torch.device("cpu"))
-    elif args.attention_class == 'attention_encoder_layer':
-        print('TransformerEncoderLayerModule')
-        net = TransformerEncoderLayerModule().to(device)
-        net = net.to(torch.device("cpu"))
-    elif args.attention_class == 'lstm':
-        print('LSTMModule')
-        net = LSTMModule().to(device)
-        net = net.to(torch.device("cpu"))
-    elif args.attention_class == 'gpt':
-        print('GPTModule')
-        net = GPTModule().to(device)
-        net = net.to(torch.device("cpu"))
-    elif args.attention_class == 'bert':
-        print('BertModule')
-        net = BertModule().to(device)
-        net = net.to(torch.device("cpu"))
-    elif args.attention_class == 'attention_512':
-        args.hidden_dim = [64, 128, 256, 512]
-        args.out_dim = [256, 128, 64, 1]
-        print('Attention512Module')
-        net = AttentionModule().to(device)
-        net = net.to(torch.device("cpu"))
-    elif args.attention_class == 'attention_768':
-        args.hidden_dim = [64, 256, 512, 768]
-        args.out_dim = [512, 256, 128, 1]
-        print('Attention768Module')
-        net = AttentionModule().to(device)
-        net = net.to(torch.device("cpu"))
-    elif args.attention_class == 'attention_1024':
-        args.hidden_dim = [64, 256, 512, 1024]
-        args.out_dim = [512, 256, 128, 1]
-        print('Attention1024Module')
-        net = AttentionModule().to(device)
-        net = net.to(torch.device("cpu"))
-
-    if args.rank_mse == 'rank':
-        loss_func = LambdaRankLoss(device)
-    else:
-        loss_func = nn.MSELoss()
-
-    n_epoch = args.n_epoch
-    if args.optimizer == 'default':
-        optimizer = optim.Adam(net.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-        lr_scheduler = torch.optim.lr_scheduler.StepLR(
-            optimizer, step_size=n_epoch // 3, gamma=1)
-    elif args.optimizer == 'decrease_per_17_0.8':
-        print('optimizer', 'decrease_per_17_0.8')
-        optimizer = optim.Adam(net.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-        lr_scheduler = torch.optim.lr_scheduler.StepLR(
-            optimizer, step_size=n_epoch // 3, gamma=0.8)
-    elif args.optimizer == 'decrease_per_17_0.5':
-        print('optimizer', 'decrease_per_17_0.5')
-        optimizer = optim.Adam(net.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-        lr_scheduler = torch.optim.lr_scheduler.StepLR(
-            optimizer, step_size=n_epoch // 3, gamma=0.5)
-    elif args.optimizer == 'decrease_per_12_0.5':
-        print('optimizer', 'decrease_per_12_0.5')
-        optimizer = optim.Adam(net.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-        lr_scheduler = torch.optim.lr_scheduler.StepLR(
-            optimizer, step_size=n_epoch // 4, gamma=0.5)
-    elif args.optimizer == 'decrease_per_10_0.5':
-        print('optimizer', 'decrease_per_10_0.5')
-        optimizer = optim.Adam(net.parameters(), lr=args.lr, weight_decay=args.weight_decay)
-        lr_scheduler = torch.optim.lr_scheduler.StepLR(
-            optimizer, step_size=n_epoch // 5, gamma=0.5)
-    elif args.optimizer == 'decrease_per_17_0.5_no_decay':
-        print('optimizer', 'decrease_per_17_0.5')
-        optimizer = optim.Adam(net.parameters(), lr=args.lr)
-        lr_scheduler = torch.optim.lr_scheduler.StepLR(
-            optimizer, step_size=n_epoch // 3, gamma=0.5)
-
-    train_loss = None
-    print('start train...')
-    # print(len(train_loader), len(val_dataloader))
-    best_valid_loss=1e6
-    for epoch in range(n_epoch):
-        tic = time.time()
-
-        net.train()
-        train_loss = 0
-        for batch, (batch_datas_steps, batch_labels) in enumerate(train_loader):
-            batch_datas_steps = batch_datas_steps.to(device)
-            batch_labels = batch_labels.to(device)
-
-            optimizer.zero_grad()
-            loss = loss_func(net(batch_datas_steps), batch_labels)
-            loss.backward()
-            nn.utils.clip_grad_norm_(net.parameters(), 0.5)
-            optimizer.step()
-            train_loss += loss.item()
-        lr_scheduler.step()
-
-        train_time = time.time() - tic
-
-        if epoch % 10 == 0 or epoch == n_epoch - 1:
-
-            valid_loss = validate(net, val_dataloader,
-                                  loss_func, device=device)
-            loss_msg = "Train Loss: %.4f\tValid Loss: %.4f" % (
-                train_loss, valid_loss)
-            print("Epoch: %d\tBatch: %d\t%s\tTrain Speed: %.0f" % (
-                epoch, batch, loss_msg, len(train_loader) / train_time,))
-            model_save_file_name = '%s/tlp_model_%d.pkl' % (args.save_folder, args.seed)
-
-        if best_valid_loss>valid_loss:
-            print("save the current model...")
-            best_valid_loss=valid_loss
-            with open(model_save_file_name, 'wb') as f:
-                pickle.dump(net.cpu(), f)
-            print("evaluating...")
-            performance = eval_model(model_file=model_save_file_name, test_datasets=test_tlp)
-
-            if best_performance< performance:
-                best_performance = performance
-                print("The best top-1 performance is", best_performance)
-                model_save_file_name = '%s/tlp_model_%d_best.pkl' % (args.save_folder, args.seed)
-                with open(model_save_file_name, 'wb') as f:
-                    pickle.dump(net.cpu(), f)
-
-    net = net.to(device)
-    return model_save_file_name, best_performance
-
 
 def il(test_loader, device, pre_trained_model,aug_data, args):
     # 加载预训练模型
@@ -982,16 +846,16 @@ def il(test_loader, device, pre_trained_model,aug_data, args):
         lr_scheduler.step()
 
         # 打印进度和验证
-        if epoch % 5 == 0 or epoch == args.n_epoch - 1:
-            valid_loss = validate(net, test_dataset_loader, loss_func, device)
-            print(f"Epoch: {epoch} Train Loss: {train_loss:.4f} Valid Loss: {valid_loss:.4f}")
+        # if epoch % 5 == 0 or epoch == args.n_epoch - 1:
+        #     valid_loss = validate(net, test_dataset_loader, loss_func, device)
+        #     print(f"Epoch: {epoch} Train Loss: {train_loss:.4f} Valid Loss: {valid_loss:.4f}")
 
         # 保存模型
     model_save_file_name = f'{args.save_folder}/tlp_model_{args.seed}.pkl'
     with open(model_save_file_name, 'wb') as f:
         pickle.dump(net.cpu(), f)
     net.to(device)
-
+    print("Training finished")
     return model_save_file_name
 
 
@@ -1042,86 +906,19 @@ def conformal_prediction(datas, task_pred_dict, model,mapie,task_drift_dict,task
     percentage_difference = np.abs((test_loader.min_latency.min() - labels_all) / labels_all) * 100
     # 找到差异大于 20% 的索引
     indices_real = np.where(percentage_difference > 20)[0]
-    print("The size of indices is :",indices_real.size)
+    # print("The size of indices is :",indices_real.size)
     """cp"""
     data_test = torch.cat(data_test, dim=0)
     y_test = labels_all
     alphas = np.arange(0.1, 1, 0.1)
+    # alphas=[0.6]
     y_pis = {}
     credibility_result, confidence_result,y_pis = mapie.predict(data_test, alpha=alphas)
-    # results = [regression_coverage_score(y_test, y_pis[:, 0, i], y_pis[:, 1, i]) for i, _ in enumerate(alphas)]
-    # coverage = [result[0] for result in results]
-    # TF = [result[1] for result in results]
-
-    task_pred_dict[workloadkey] = (preds_all.detach().cpu().numpy(
-    ), test_loader.min_latency.min().numpy(), labels_all.numpy())
-
-    all_indices = np.arange(credibility_result.shape[0])
-
-    # 创建一个字典来存储每个 alpha 的结果
-    indices_detec_dict = {}
-    indices_not_detec_dict = {}
-    best_f1=0
-    best_indices_detec=[]
-    for index,pvalue in enumerate(alphas):
-        # if index==num_set:
-        #     if all(pvalue) or not any(pvalue):
-        #         print("all ture/false, break")
-
-        # indices_p = np.where(pvalue == False)[0]
-        indices_cre = np.where(credibility_result[:, index] == True)[0]
-        indices_con = np.where(confidence_result[:, index] == True)[0]
-
-        indices_detec = np.union1d(indices_cre, indices_con) # np.intersect1d 交
-        indices_detec_dict[pvalue] = indices_detec
-        # 获取所有索引中不在 indices_detec 中的索引
-        indices_not_detec = np.setdiff1d(all_indices, indices_detec)
-        indices_not_detec_dict[pvalue] = indices_not_detec
-
-        true_positives = np.sum(np.isin(indices_real, indices_detec))
-        # 计算假正例（False Positives）
-        false_positives = len(indices_detec) - true_positives
-
-        # 计算真负例（True Negatives）
-        true_negatives = np.sum(indices_real != indices_detec)
-
-        # 计算假负例（False Negatives）
-        false_negatives = len(indices_real) - true_positives
-
-        # 计算准确率（Accuracy）
-        accuracy = (true_positives + true_negatives) / len(indices_real)
-
-        # 计算精度（Precision）
-        precision = true_positives / (true_positives + false_positives)
-
-        # 计算召回率（Recall）
-        recall = true_positives / (true_positives + false_negatives)
-
-        # 计算 F1 分数
-        f1_score = 2 * (precision * recall) / (precision + recall)
-        if best_f1<f1_score:
-            best_f1 = f1_score
-            best_indices_detec=indices_detec
-        print("The alpha is:",pvalue)
-        print(f"Detection f1_score is: {f1_score:.2%}, "
-              f"accuracy is: {accuracy:.2%}, "
-              f"precision is: {precision:.2%}, recall is: {recall:.2%}")
-
-
-    task_after_dict[workloadkey] = (preds_all[indices_detec].detach().cpu().numpy(),
-                                    test_loader.min_latency[indices_detec].min().numpy(),
-                                    labels_all[indices_detec].numpy()
-                                    )
-    try:
-        task_drift_dict[workloadkey] = (preds_all[indices_not_detec].detach().cpu().numpy(),
-                                        test_loader.min_latency[indices_not_detec].min().numpy(),
-                                        labels_all[indices_not_detec].numpy()
-                                        )
-    except:
-        task_drift_dict[workloadkey] = (preds_all[indices_not_detec].detach().cpu().numpy(),
-                                        test_loader.min_latency[indices_detec].min().numpy(),
-                                        labels_all[indices_not_detec].numpy()
-                                        )
+    results = [regression_coverage_score(y_test, y_pis[:, 0, i], y_pis[:, 1, i]) for i, _ in enumerate(alphas)]
+    results = np.array(results)
+    cd = np.min(np.abs(results - (1-alphas)))
+    print(f"The coverage deviation is: {cd:.3f}")
+    return 0
 
     return best_indices_detec
 
@@ -1290,42 +1087,43 @@ def cp(train_loader, val_dataloader, test_datasets, underlying_path,file_pattern
 
 def init_args(model_name):
     params = nni.get_next_parameter()
-    if params == {} and model_name == 'base':
+    if params == {} and model_name == 'tiny':
         params = {
-            "seed": 533,
-            "under_train_dataset": '../case_study/tlp/scripts/data_model/bert_base_train_and_val.pkl',
-            "under_test_dataset": '../case_study/tlp/scripts/data_model/bert_base_test.pkl'
+            "seed": 5242,
+            "save_folder": 'models/il/tlp_i7_tiny',
+            "under_model": '../case_study/tlp/scripts/models/tlp_model_base_best.pkl',
+            "test_dataset": '../case_study/tlp/scripts/data_model/bert_tiny_test.pkl',
+            "path": '((bert_tiny*.task.pkl'
+
         }
-    elif params == {} and model_name == 'tiny':
+    elif params == {} and model_name == 'medium':
         params = {
-            "seed": 2628,
-            "under_train_dataset": '../case_study/tlp/scripts/data_model/bert_tiny_train_and_val.pkl',
-            "under_test_dataset": '../case_study/tlp/scripts/data_model/bert_tiny_test.pkl'
-        }
-    elif params == {} and model_name == 'mid':
-        params = {
-            "seed": 7194,
-            "under_train_dataset": '../case_study/tlp/scripts/data_model/bert_medium_train_and_val.pkl',
-            "under_test_dataset": '../case_study/tlp/scripts/data_model/bert_medium_test.pkl'
+            "seed": 5652,
+            "save_folder": 'models/il/tlp_i7_med',
+            "under_model": '../case_study/tlp/scripts/models/tlp_model_base_best.pkl',
+            "test_dataset": '../case_study/tlp/scripts/data_model/bert_medium_test.pkl',
+            "path": '((bert_medium*.task.pkl'
         }
     elif params == {} and model_name == 'large':
         params = {
-            "seed": 1538,
-            "under_train_dataset": '../case_study/tlp/scripts/data_model/bert_large_train_and_val.pkl',
-            "under_test_dataset": '../case_study/tlp/scripts/data_model/bert_large_test.pkl'
+            "seed": 4694,
+            "save_folder": 'models/il/tlp_i7_large',
+            "under_model": '../case_study/tlp/scripts/models/tlp_model_base_best.pkl',
+            "test_dataset": '../case_study/tlp/scripts/data_model/bert_large_test.pkl',
+            "path": '((bert_large*.task.pkl'
         }
     parser = argparse.ArgumentParser()
-    parser.add_argument("--save_folder", type=str, default='models/train/tlp_i7_base')
+    parser.add_argument("--save_folder", type=str, default=params['save_folder'])
     parser.add_argument('--mode', choices=['train', 'deploy'], help="Mode to run: train or deploy")
     parser.add_argument("--under_train_dataset", type=str,
                         default='../case_study/tlp/scripts/data_model/bert_base_train_and_val.pkl')
     parser.add_argument("--under_test_dataset", type=str,
                         default='../case_study/tlp/scripts/data_model/bert_base_test.pkl')
     parser.add_argument("--under_model", type=str,
-                        default='./models/tlp_i7_base/tlp_model_2705.pkl')
+                        default=params['under_model'])
     parser.add_argument("--test_dataset", type=str,
-                        default='../case_study/tlp/scripts/data_model/bert_large_test.pkl')
-    parser.add_argument("--path", type=str, default="((bert_large*.task.pkl")
+                        default=params['test_dataset'])
+    parser.add_argument("--path", type=str, default=params['path'])
     parser.add_argument("--cuda", type=str, default='cpu')
     parser.add_argument("--lr", type=float, default=7e-4)
     parser.add_argument("--weight_decay", type=float, default=1e-6)
@@ -1337,7 +1135,7 @@ def init_args(model_name):
     parser.add_argument("--fea_size", type=int, default=22)
     parser.add_argument("--res_block_cnt", type=int, default=2)
     parser.add_argument("--self_sup_model", type=str, default='')
-    parser.add_argument("--data_cnt", type=int, default=50)  # data_cnt * 1000
+    parser.add_argument("--data_cnt", type=int, default=1)  # data_cnt * 1000
     parser.add_argument("--seed", type=int, default=params["seed"])
     parser.add_argument("--train_size_per_gpu", type=int, default=64)
     parser.add_argument("--val_size_per_gpu", type=int, default=64)
@@ -1348,26 +1146,13 @@ def init_args(model_name):
     set_seed(args.seed)
     return args
 
-def train_model(args,under_model_name):
-    # init args
-    tlp_prom = Tlp_prom()
-    # split data to train and test
-    print("Load data and split data to train and test...")
-    # set test length
-    train_data, test_data = tlp_prom.data_partitioning \
-        (train_dataset=args.under_train_dataset, test_dataset=args.under_test_dataset, args=args)
-    # under_model_name,performance=train(*train_data, device="cpu",test_tlp=test_data)
-    # origin_testdata = test_data
-    print("Loading the BERT-base model and evaluate on BERT-base dataset...")
-    performance = eval_model(model_file=under_model_name, test_datasets=test_data)
-    # print("Load data and evaluate the data on new benchmark...")
-    # nni.report_final_result(performance)
+
 
 def deploy_model(args):
     # init args
     tlp_prom = Tlp_prom()
     # split data to train and test
-    print("Load data and split data to train and test...")
+    print("Data preprocessing...")
     train_data, test_data = tlp_prom.data_partitioning \
         (train_dataset=args.under_train_dataset, test_dataset=args.test_dataset, args=args)
 
@@ -1377,60 +1162,21 @@ def deploy_model(args):
 
     """cp"""
     print("Conformal prediction...")
-    indices_detec= cp(*train_data, test_datasets=test_data,
+    cp(*train_data, test_datasets=test_data,
        underlying_path=underlying_model_name, file_pattern=args.path)
+    return 0
 
-    """incremental learning"""
-    print("Incremental learning...")
 
-    il_model=il(test_data, device="cpu", pre_trained_model=underlying_model_name,
-                          aug_data=indices_detec, args=args)
-    print("Evaluate the data on new benchmark...")
-    il_perm=eval_model(model_file=il_model, test_datasets=test_data)
-    improve_perm= il_perm-deploy_perm
-    print("improve_perm: ", improve_perm)
-    nni.report_final_result(improve_perm)
+def ae_cd_model(model_name):
+    print("\nEvaluation on the BERT-tiny\n")
+    args = init_args('tiny')
+    deploy_model(args)
 
-def ae_eval_model(model_name):
-    # if model_name == 'base':
-        args = init_args('base')
-        under_model_name = \
-            '/home/huanting/PROM/examples/case_study/tlp/scripts/models/tlp_model_base_best.pkl'
-        train_model(args, under_model_name)
+    print("\nEvaluation on the BERT-medium\n")
+    args = init_args('medium')
+    deploy_model(args)
 
-# ae_eval_model('base')
-    # elif model_name == 'tiny':
-    #     args = init_args('tiny')
-    #     under_model_name = \
-    #         '/home/huanting/PROM/examples/case_study/tlp/scripts/tlp_i7/bert_tiny.pkl'
-    #     train_model(args, under_model_name)
-    # elif model_name == 'mid':
-    #     args = init_args('mid')
-    #     under_model_name = \
-    #         '/home/huanting/PROM/examples/case_study/tlp/scripts/tlp_i7/medium.pkl'
-    #     train_model(args, under_model_name)
-    # elif model_name == 'large':
-    #     args = init_args('large')
-    #     under_model_name = \
-    #         '/home/huanting/PROM/examples/case_study/tlp/scripts/tlp_i7/large.pkl'
-    #     train_model(args,under_model_name)
+    print("\nEvaluation on the BERT-large\n")
+    args = init_args('large')
+    deploy_model(args)
 
-# ae_eval_model('base')
-
-# ae_eval_model('tiny')
-# ae_eval_model('mid')
-# ae_eval_model('large')
-# if __name__ == "__main__":
-#     print("initial parameters...")
-#     args = init_args()
-#     if args.mode=="train":
-#         train_model(args)
-#     elif args.mode=="deploy":
-#         deploy_model(args)
-    # deploy_model(args)
-
-    # train_model(args)
-    # nnictl create --config /home/huanting/PROM/examples/case_study/tlp/scripts/config.yaml --port 8088
-    # --mode deploy --save_folder=models/il/tlp_i7_large --under_model=./models/train/tlp_i7_base/tlp_model_533_best.pkl --test_data=../case_study/tlp/scripts/data_model/bert_large_test.pkl --path=((bert_large*.task.pkl
-    # --mode deploy --save_folder models/il/tlp_i7_tiny --under_model ./models/train/tlp_i7_base/tlp_model_533_best.pkl --test_data ../case_study/tlp/scripts/data_model/bert_tiny_test.pkl --path ((bert_tiny*.task.pkl
-    # --mode deploy --save_folder=models/il/tlp_i7_med --under_model=./models/train/tlp_i7_base/tlp_model_533_best.pkl --test_data=../case_study/tlp/scripts/data_model/bert_medium_test.pkl' --path='((bert_medium*.task.pkl

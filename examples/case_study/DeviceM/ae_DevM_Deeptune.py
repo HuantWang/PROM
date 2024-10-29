@@ -283,7 +283,7 @@ def deploy(args, dataset_ori):
             },
         },  # 27
         "rodinia-3.1": {"subdir": "opencl", }, #28
-        "shoc-1.1.5": {"subdir": "src/opencl/level1"}, #48
+        # "shoc-1.1.5": {"subdir": "src/opencl/level1"}, #48
     }
     # suite_test = {
     #     "nvidia-4.2": {"subdir": "OpenCL/src", "benchmark_name_prefix": "ocl"},
