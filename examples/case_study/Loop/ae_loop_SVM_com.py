@@ -7,8 +7,9 @@ os.environ['CURL_CA_BUNDLE'] = ''
 warnings.filterwarnings("ignore")
 import random
 sys.path.append('./case_study/Loop')
-sys.path.append('/home/huanting/PROM/src')
-sys.path.append('/home/huanting/PROM/thirdpackage')
+sys.path.append('/cgo/prom/PROM/')
+sys.path.append('/cgo/prom/PROM/src')
+sys.path.append('/cgo/prom/PROM/thirdpackage')
 
 from Magni_utils import Magni,LoopT,make_prediction,make_prediction_il
 

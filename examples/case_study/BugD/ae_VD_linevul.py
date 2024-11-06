@@ -20,9 +20,9 @@ from sklearn.naive_bayes import GaussianNB
 import sys
 os.environ['CURL_CA_BUNDLE'] = ''
 # sys.path.append('./case_study/DeviceM')
-sys.path.append('/home/huanting/PROM')
-sys.path.append('/home/huanting/PROM/src')
-sys.path.append('/home/huanting/PROM/thirdpackage')
+sys.path.append('/cgo/prom/PROM')
+sys.path.append('/cgo/prom/PROM/src')
+sys.path.append('/cgo/prom/PROM/thirdpackage')
 sys.path.append('./case_study/BugD')
 
 import warnings
@@ -362,7 +362,7 @@ def incre(args, train_dataset, model, tokenizer):
     # model.resize_token_embeddings(len(tokenizer))
     model.zero_grad()
 
-    for idx in range(args.start_epoch, int(17)):
+    for idx in range(args.start_epoch, 29):
         bar = tqdm(train_dataloader, total=len(train_dataloader),disable=True)
         tr_num = 0
         train_loss = 0
@@ -409,7 +409,8 @@ def incre(args, train_dataset, model, tokenizer):
 
                     if args.local_rank == -1 and args.evaluate_during_training:  # Only evaluate when single GPU otherwise metrics may not average well
                         results = evaluate_test(args, model, tokenizer, eval_when_training=True)
-
+                        # print("epoch", idx)
+                        # print("results",results)
                         for key, value in results.items():
                             logger.info("  %s = %s", key, round(value, 4))
                             # Save model checkpoint
@@ -1412,19 +1413,19 @@ def model_initial(mode):
     params = nni.get_next_parameter()
     if params == {} and mode == 'train':
         params = {
-            "learning_rate": 0.0002,
+            "learning_rate":0.0002,
             "epoch": 30,
-            "seed": 3220,
-            "train_batch_size": 32,
-            "eval_batch_size": 32,
+            "seed": 7604,
+            # "train_batch_size": 32,
+            # "eval_batch_size": 32,
         }
     elif params == {} and mode == 'deploy':
         params = {
-            "learning_rate": 0.0002,
-            "epoch": 30,
-            "seed": 3347,
-            "train_batch_size": 64,
-            "eval_batch_size": 64,
+            "learning_rate": 0.00002,
+            "epoch": 40,
+            "seed": 196,
+            # "train_batch_size": 64,
+            # "eval_batch_size": 64,
         }
     parser = argparse.ArgumentParser()
     ## Required parameters
@@ -1465,9 +1466,9 @@ def model_initial(mode):
                         help="Run evaluation during training at each logging step.")
     parser.add_argument("--do_lower_case", action='store_true',
                         help="Set this flag if you are using an uncased model.")
-    parser.add_argument("--train_batch_size", default=64, type=int,
+    parser.add_argument("--train_batch_size", default=32, type=int,
                         help="Batch size per GPU/CPU for training.")
-    parser.add_argument("--eval_batch_size", default=64, type=int,
+    parser.add_argument("--eval_batch_size", default=32, type=int,
                         help="Batch size per GPU/CPU for evaluation.")
     parser.add_argument('--gradient_accumulation_steps', type=int, default=1,
                         help="Number of updates steps to accumulate before performing a backward/update pass.")
@@ -1648,9 +1649,9 @@ def codebert_deploy(model_pre, config, tokenizer, args):
     # nni.report_final_result(increment_acc)
 
 def ae_vul_linevul():
-    # print("_________Start training phase________")
-    # model_pre, config, tokenizer, args = model_initial("train")
-    # codebert_train(model_pre, config, tokenizer, args)
+    print("_________Start training phase________")
+    model_pre, config, tokenizer, args = model_initial("train")
+    codebert_train(model_pre, config, tokenizer, args)
     print("_________Start deployment phase________")
     model_pre, config, tokenizer, args = model_initial("deploy")
     codebert_deploy(model_pre, config, tokenizer, args)

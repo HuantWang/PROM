@@ -1007,15 +1007,15 @@ def conformal_prediction(args, model, tokenizer):
     print("Detect the drifting samples...")
     Prom_thread.evaluate_mapie \
         (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y_test,
-         significance_level=0.05)
+         significance_level="auto")
 
     Prom_thread.evaluate_rise \
         (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y_test,
-         significance_level=0.05)
+         significance_level="auto")
 
     Prom_thread.evaluate_T \
         (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y_test,
-         significance_level=0.05)
+         significance_level="auto")
     return 0
     # index_all_right, index_list_right, Acc_all, F1_all, Pre_all, Rec_all,index_list,common_elements \
     #     = Prom_thread.evaluate_conformal_prediction \
@@ -1203,16 +1203,16 @@ def model_initial(mode):
             "learning_rate": 0.0002,
             "epoch": 50,
             "seed": 740,
-            "train_batch_size": 64,
-            "eval_batch_size": 64,
+            # "train_batch_size": 64,
+            # "eval_batch_size": 64,
         }
     elif params == {} and mode == 'deploy':
         params = {
             "learning_rate": 0.0002,
-            "epoch": 20,
-            "seed": 2865,
-            "train_batch_size": 32,
-            "eval_batch_size": 32,
+            "epoch": 10,
+            "seed": 695,
+            # "train_batch_size": 32,
+            # "eval_batch_size": 32,
         }
     parser = argparse.ArgumentParser()
     ## Required parameters
@@ -1253,9 +1253,9 @@ def model_initial(mode):
                         help="Run evaluation during training at each logging step.")
     parser.add_argument("--do_lower_case", action='store_true',
                         help="Set this flag if you are using an uncased model.")
-    parser.add_argument("--train_batch_size", default=64, type=int,
+    parser.add_argument("--train_batch_size", default=32, type=int,
                         help="Batch size per GPU/CPU for training.")
-    parser.add_argument("--eval_batch_size", default=64, type=int,
+    parser.add_argument("--eval_batch_size", default=32, type=int,
                         help="Batch size per GPU/CPU for evaluation.")
     parser.add_argument('--gradient_accumulation_steps', type=int, default=1,
                         help="Number of updates steps to accumulate before performing a backward/update pass.")

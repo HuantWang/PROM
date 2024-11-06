@@ -1225,20 +1225,20 @@ def model_initial(mode):
     if params == {} and mode == 'train':
         params = {
             "learning_rate": 0.002,
-            "epoch": 50,
-            "seed": 4185,
+            "epoch": 30,
+            "seed": 9860,
             # "alpha": 0.1,
-            "train_batch_size": 32,
-            "eval_batch_size": 32,
+            # "train_batch_size": 32,
+            # "eval_batch_size": 32,
         }
     elif params == {} and mode == 'deploy':
         params = {
-            "learning_rate": 0.0002,
-            "epoch": 40,
-            "seed": 5902,
+            "learning_rate": 0.002,
+            "epoch": 7,
+            "seed": 360,
             # "alpha": 0.1,
-            "train_batch_size": 32,
-            "eval_batch_size": 32,
+            # "train_batch_size": 32,
+            # "eval_batch_size": 32,
         }
 
     parser = argparse.ArgumentParser()

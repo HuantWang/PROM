@@ -20,10 +20,10 @@ from sklearn.naive_bayes import GaussianNB
 import sys
 os.environ['CURL_CA_BUNDLE'] = ''
 # sys.path.append('./case_study/DeviceM')
-sys.path.append('/home/huanting/PROM')
-sys.path.append('/home/huanting/PROM/src')
-sys.path.append('/home/huanting/PROM/thirdpackage')
 sys.path.append('./case_study/BugD')
+sys.path.append('/cgo/prom/PROM')
+sys.path.append('/cgo/prom/PROM/thirdpackage')
+sys.path.append('/cgo/prom/PROM/src')
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -556,7 +556,7 @@ def train(args, train_dataset, model, tokenizer):
                                 os.makedirs(output_dir)
                             model_to_save = model.module if hasattr(model, 'module') else model
                             output_dir = os.path.join(output_dir, '{}'.format('model.bin'))
-                            torch.save(model_to_save.state_dict(), output_dir)
+                            # torch.save(model_to_save.state_dict(), output_dir)
                             # logger.info("Saving model checkpoint to %s", output_dir)
                             # print("Saving model checkpoint to {}".format(output_dir))
 
@@ -988,7 +988,7 @@ def conformal_prediction(args, model, tokenizer):
         "lac": ("score", True),
         "top_k": ("top_k", True),
         "aps": ("cumulated_score", True),
-        # "raps": ("raps", True)
+        "raps": ("raps", True)
     }
     Prom_thread = Prom_utils(clf, method_params, task="bug")
 
@@ -1002,13 +1002,13 @@ def conformal_prediction(args, model, tokenizer):
 
     # Evaluate conformal prediction
     print("Detect the drifting samples...")
-    Prom_thread.evaluate_mapie \
-        (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y_test,
-         significance_level=0.05)
-
-    Prom_thread.evaluate_rise \
-        (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y_test,
-         significance_level=0.05)
+    # Prom_thread.evaluate_mapie \
+    #     (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y_test,
+    #      significance_level="auto")
+    #
+    # Prom_thread.evaluate_rise \
+    #     (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y_test,
+    #      significance_level="auto")
 
     index_all_right, index_list_right, Acc_all, F1_all, Pre_all, Rec_all,index_list,common_elements \
         = Prom_thread.evaluate_conformal_prediction \
@@ -1412,9 +1412,9 @@ def model_initial():
         params = {
             "learning_rate": 0.0002,
             # "alpha": 0.1,
-            "epoch": 30,
+            "epoch": 15,
 
-            "seed": 3220,
+            "seed": 695,
         }
 
     parser = argparse.ArgumentParser()
@@ -1647,10 +1647,10 @@ if __name__ == "__main__":
     elif args.mode == 'deploy':
         codebert_deploy(model_pre, config, tokenizer, args)
     # codebert_train(model_pre, config, tokenizer, args)
-    # codebert_deploy(model_pre, config, tokenizer, args)
+
     # nnictl create --config /home/huanting/PROM/examples/case_study/BugD/config.yaml --port 8088
     """
     --output_dir=./saved_models     --model_type=roberta     --tokenizer_name=microsoft/codebert-base     --model_name_or_path=microsoft/codebert-base   --do_train  --do_eval     --do_test     --train_data_file=../../../benchmark/Bug/train.jsonl     --eval_data_file=../../../benchmark/Bug/valid.jsonl     --test_data_file=../../../benchmark/Bug/test.jsonl --evaluate_during_training
     """
-
-
+codebert_deploy(model_pre, config, tokenizer, args)
+# codebert_train(model_pre, config, tokenizer, args)

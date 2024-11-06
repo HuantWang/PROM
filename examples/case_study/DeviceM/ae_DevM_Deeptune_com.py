@@ -5,9 +5,9 @@ import warnings
 # from sklearn.metrics import accuracy_score
 warnings.filterwarnings("ignore")
 import random
-sys.path.append('/home/huanting/PROM')
-sys.path.append('/home/huanting/PROM/src')
-sys.path.append('/home/huanting/PROM/thirdpackage')
+sys.path.append('/cgo/prom/PROM')
+sys.path.append('/cgo/prom/PROM/src')
+sys.path.append('/cgo/prom/PROM/thirdpackage')
 sys.path.append('./case_study/DeviceM')
 from examples.case_study.DeviceM.compy.models.graphs.pytorch_geom_model import Dev_gnn
 
@@ -415,6 +415,6 @@ def ae_dev_deep(eva_flag=""):
 #         deploy(args, dataset_ori)
 #     train_phase(args, dataset_ori)
 #     deploy(args, dataset_ori)
-#     # nnictl create --config /home/huanting/PROM/examples/case_study/DeviceM/config.yml --port 8088
+#     # nnictl create --config /cgo/prom/PROM/examples/case_study/DeviceM/config.yml --port 8088
 #     # train_phase(args, dataset_ori)
 #     # deploy(args, dataset_ori)

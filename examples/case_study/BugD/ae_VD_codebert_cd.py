@@ -1196,16 +1196,16 @@ def model_initial(mode):
             "learning_rate": 0.0002,
             "epoch": 50,
             "seed": 740,
-            "train_batch_size": 64,
-            "eval_batch_size": 64,
+            # "train_batch_size": 64,
+            # "eval_batch_size": 64,
         }
     elif params == {} and mode == 'deploy':
         params = {
             "learning_rate": 0.0002,
-            "epoch": 20,
-            "seed": 2865,
-            "train_batch_size": 32,
-            "eval_batch_size": 32,
+            "epoch": 10,
+            "seed": 695,
+            # "train_batch_size": 32,
+            # "eval_batch_size": 32,
         }
     parser = argparse.ArgumentParser()
     ## Required parameters
@@ -1246,9 +1246,9 @@ def model_initial(mode):
                         help="Run evaluation during training at each logging step.")
     parser.add_argument("--do_lower_case", action='store_true',
                         help="Set this flag if you are using an uncased model.")
-    parser.add_argument("--train_batch_size", default=64, type=int,
+    parser.add_argument("--train_batch_size", default=32, type=int,
                         help="Batch size per GPU/CPU for training.")
-    parser.add_argument("--eval_batch_size", default=64, type=int,
+    parser.add_argument("--eval_batch_size", default=32, type=int,
                         help="Batch size per GPU/CPU for evaluation.")
     parser.add_argument('--gradient_accumulation_steps', type=int, default=1,
                         help="Number of updates steps to accumulate before performing a backward/update pass.")

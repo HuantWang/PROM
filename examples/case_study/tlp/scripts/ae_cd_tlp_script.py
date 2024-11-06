@@ -10,13 +10,13 @@ from torch import optim
 import argparse
 import sys
 import nni
-# sys.path.append('/home/huanting/PROM/src')
+# sys.path.append('/cgo/prom/PROM/src')
 
 
-sys.path.append('/home/huanting/PROM/examples/case_study/tlp/python')
-sys.path.append('/home/huanting/PROM/thirdpackage')
-sys.path.append('/home/huanting/PROM')
-sys.path.append('/home/huanting/PROM/src')
+sys.path.append('/cgo/prom/PROM/examples/case_study/tlp/python')
+sys.path.append('/cgo/prom/PROM/thirdpackage')
+sys.path.append('/cgo/prom/PROM')
+sys.path.append('/cgo/prom/PROM/src')
 
 import src.prom.prom_util as util
 from sklearn.neural_network import MLPRegressor
@@ -69,7 +69,7 @@ def eval_model(model_file='',test_datasets=''):
         file, file_idx, workloadkey_idx, workloadkey, workload_args, flop_ct, line_vecs = data
         pred_a_dataset_dict[workloadkey] = data
 
-    folder_path = '/home/huanting/PROM/benchmark/TensorT/network_info'  # 替换成你的文件夹路径
+    folder_path = '/cgo/prom/PROM/benchmark/TensorT/network_info'  # 替换成你的文件夹路径
     # 获取文件夹中所有文件名
     file_names = os.listdir(folder_path)
     # 筛选出满足条件的文件名
@@ -219,7 +219,7 @@ class Tlp_prom(util.ModelDefinition):
 
         # random.seed(args.seed)
         with open(test_dataset, 'rb') as f:
-        # with open(r'/home/huanting/PROM/examples/case_study/tlp/scripts/data_model/bert_tiny_test.pkl', 'rb') as f:
+        # with open(r'/cgo/prom/PROM/examples/case_study/tlp/scripts/data_model/bert_tiny_test.pkl', 'rb') as f:
             test_datasets = pickle.load(f)
 
         random.shuffle(test_datasets)
@@ -967,7 +967,7 @@ def cp(train_loader, val_dataloader, test_datasets, underlying_path,file_pattern
     # data_test = torch.cat(data_test, dim=0)
     # y_test = torch.cat(y_test, dim=0)
 
-    folder_path = '/home/huanting/PROM/benchmark/TensorT/network_info'  #
+    folder_path = '/cgo/prom/PROM/benchmark/TensorT/network_info'  #
 
     import glob
     files = glob.glob(f"{folder_path}/{file_pattern}")

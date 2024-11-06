@@ -1004,15 +1004,15 @@ def conformal_prediction(args, model, tokenizer):
     print("Detect the drifting samples...")
     Prom_thread.evaluate_mapie \
         (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y_test,
-         significance_level=0.05)
+         significance_level="auto")
 
     Prom_thread.evaluate_rise \
         (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y_test,
-         significance_level=0.05)
+         significance_level="auto")
 
     Prom_thread.evaluate_T \
         (y_preds=y_preds, y_pss=y_pss, p_value=p_value, all_pre=all_pre, y=y_test,
-         significance_level=0.05)
+         significance_level="auto")
 
     return 0
 
@@ -1234,20 +1234,20 @@ def model_initial(mode):
     if params == {} and mode == 'train':
         params = {
             "learning_rate": 0.002,
-            "epoch": 50,
-            "seed": 4185,
+            "epoch": 30,
+            "seed": 9860,
             # "alpha": 0.1,
-            "train_batch_size": 32,
-            "eval_batch_size": 32,
+            # "train_batch_size": 32,
+            # "eval_batch_size": 32,
         }
     elif params == {} and mode == 'deploy':
         params = {
-            "learning_rate": 0.0002,
-            "epoch": 40,
-            "seed": 5902,
+            "learning_rate": 0.002,
+            "epoch": 7,
+            "seed": 360,
             # "alpha": 0.1,
-            "train_batch_size": 32,
-            "eval_batch_size": 32,
+            # "train_batch_size": 32,
+            # "eval_batch_size": 32,
         }
 
     parser = argparse.ArgumentParser()

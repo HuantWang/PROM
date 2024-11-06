@@ -17,10 +17,10 @@ from scipy.stats.mstats import gmean
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
-sys.path.append('/home/huanting/PROM')
+sys.path.append('/cgo/prom/PROM')
 sys.path.append('./case_study/DeviceM')
-sys.path.append('/home/huanting/PROM/src')
-sys.path.append('/home/huanting/PROM/thirdpackage')
+sys.path.append('/cgo/prom/PROM/src')
+sys.path.append('/cgo/prom/PROM/thirdpackage')
 from src.prom.prom_util import Prom_utils
 def readEmd_program(filename):
     lines = [line.strip("\n\t") for line in open(filename)]
@@ -195,9 +195,9 @@ def train(max_depth=4, learning_rate=0.1, n_estimators=200, args=None):
     seed_save = str(int(args.seed))
     plt.title('Box Plot Example ' + seed_save)
     plt.ylabel('Values')
-    plt.savefig('/home/huanting/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_train' +
+    plt.savefig('/cgo/prom/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_train' +
                 str(ir2vec_sp_mean) + '_' + str(seed_save) + '.png')
-    data_df.to_pickle('/home/huanting/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_train' +
+    data_df.to_pickle('/cgo/prom/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_train' +
                       str(ir2vec_sp_mean) + '_' + str(seed_save) + '_data.pkl')
     # plt.show()
 
@@ -384,9 +384,9 @@ def deploy(max_depth=4, learning_rate=0.1, n_estimators=200, args=None):
     seed_save = str(int(args.seed))
     plt.title('Box Plot Example ' + seed_save)
     plt.ylabel('Values')
-    plt.savefig('/home/huanting/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_deploy' +
+    plt.savefig('/cgo/prom/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_deploy' +
                 str(ir2vec_sp_mean) + '_' + str(seed_save) + '.png')
-    data_df.to_pickle('/home/huanting/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_deploy' +
+    data_df.to_pickle('/cgo/prom/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_deploy' +
                       str(ir2vec_sp_mean) + '_' + str(seed_save) + '_data.pkl')
     # plt.show()
 
@@ -412,7 +412,7 @@ def deploy(max_depth=4, learning_rate=0.1, n_estimators=200, args=None):
     Prom_thread = Prom_utils(clf, method_params, task="thread")
     # conformal prediction
     y_preds, y_pss, p_value = Prom_thread.conformal_prediction(
-        cal_x=calibration_data, cal_y=cal_y, test_x=test_x, test_y=test_y, significance_level="auto")
+        cal_x=calibration_data, cal_y=cal_y, test_x=test_x, test_y=test_y, significance_level=0.05)
 
     # evaluate conformal prediction
     # Prom_thread.evaluate_mapie \
@@ -447,11 +447,11 @@ def deploy(max_depth=4, learning_rate=0.1, n_estimators=200, args=None):
         (args.seed, test, train)
     # 保存列表到文件
     # import pickle
-    # with open('/home/huanting/PROM/examples/case_study/Thread/logs/file.pkl', 'wb') as f:
+    # with open('/cgo/prom/PROM/examples/case_study/Thread/logs/file.pkl', 'wb') as f:
     #     pickle.dump(train_index, f)
 
     # 从文件加载列表
-    # with open('/home/huanting/PROM/examples/case_study/Thread/logs/file.pkl', 'rb') as f:
+    # with open('/cgo/prom/PROM/examples/case_study/Thread/logs/file.pkl', 'rb') as f:
     #     loaded_list = pickle.load(f)
     # print(loaded_list == train_index)
     # retrain the model
@@ -517,9 +517,9 @@ def deploy(max_depth=4, learning_rate=0.1, n_estimators=200, args=None):
     # seed_save = str(int(args.seed))
     # plt.title('Box Plot Example ' + seed_save)
     # plt.ylabel('Values')
-    # plt.savefig('/home/huanting/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_IL' +
+    # plt.savefig('/cgo/prom/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_IL' +
     #             str(ir2vec_sp_mean) + '_' + str(seed_save) + '.png')
-    # data_df.to_pickle('/home/huanting/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_IL' +
+    # data_df.to_pickle('/cgo/prom/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_IL' +
     #                   str(ir2vec_sp_mean) + '_' + str(seed_save) + '_data.pkl')
     # plt.show()
 
@@ -572,4 +572,4 @@ def ae_dev_i2v():
     # train(max_depth=10, learning_rate=0.5, n_estimators=70, args=args)
     # deploy(max_depth=10, learning_rate=0.5, n_estimators=70, args=args)
 
-    # nnictl create --config /home/huanting/PROM/examples/case_study/DeviceM/config.yml --port 8088
+    # nnictl create --config /cgo/prom/PROM/examples/case_study/DeviceM/config.yml --port 8088

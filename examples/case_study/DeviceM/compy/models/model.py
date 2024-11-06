@@ -108,9 +108,9 @@ class Model(object):
         # seed_save = str(int(args.seed))
         # plt.title('Box Plot Example ' + seed_save)
         # plt.ylabel('Values')
-        # plt.savefig('/home/huanting/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_deploy' +
+        # plt.savefig('/cgo/prom/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_deploy' +
         #             str(percent_mean) + '_' + str(seed_save) + '.png')
-        # data_df.to_pickle('/home/huanting/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_deploy' +
+        # data_df.to_pickle('/cgo/prom/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_deploy' +
         #                   str(percent_mean) + '_' + str(seed_save) + '_data.pkl')
         # plt.show()
 
@@ -172,12 +172,12 @@ class Model(object):
         model_path = ''
         import os
         if args.method == 'Deeptune':
-            model_dir_path = f'/home/huanting/PROM/examples/case_study/DeviceM/save_model/De/'
+            model_dir_path = f'/cgo/prom/PROM/examples/case_study/DeviceM/save_model/De/'
             os.makedirs(os.path.dirname(model_dir_path), exist_ok=True)
             model_path = model_dir_path+ \
                          f'{args.seed}_{percent_mean}.pkl'
         elif args.method == 'Programl':
-            model_dir_path = f'/home/huanting/PROM/examples/case_study/DeviceM/save_model/Programl/'
+            model_dir_path = f'/cgo/prom/PROM/examples/case_study/DeviceM/save_model/Programl/'
             model_path = model_dir_path + \
                             f'{args.seed}_{percent_mean}.pkl'
 
@@ -282,9 +282,9 @@ class Model(object):
         # seed_save = str(int(args.seed))
         # plt.title('Box Plot Example ' + seed_save)
         # plt.ylabel('Values')
-        # plt.savefig('/home/huanting/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_deploy' +
+        # plt.savefig('/cgo/prom/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_deploy' +
         #             str(percent_mean) + '_' + str(seed_save) + '.png')
-        # data_df.to_pickle('/home/huanting/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_deploy' +
+        # data_df.to_pickle('/cgo/prom/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_deploy' +
         #                   str(percent_mean) + '_' + str(seed_save) + '_data.pkl')
         # plt.show()
 
@@ -346,12 +346,12 @@ class Model(object):
         model_path = ''
         import os
         if args.method == 'Deeptune':
-            model_dir_path = f'/home/huanting/PROM/examples/case_study/DeviceM/save_model/De/'
+            model_dir_path = f'/cgo/prom/PROM/examples/case_study/DeviceM/save_model/De/'
             os.makedirs(os.path.dirname(model_dir_path), exist_ok=True)
             model_path = model_dir_path+ \
                          f'{args.seed}_{percent_mean}.pkl'
         elif args.method == 'Programl':
-            model_dir_path = f'/home/huanting/PROM/examples/case_study/DeviceM/save_model/Programl/'
+            model_dir_path = f'/cgo/prom/PROM/examples/case_study/DeviceM/save_model/Programl/'
             model_path = model_dir_path + \
                             f'{args.seed}_{percent_mean}.pkl'
 
@@ -511,9 +511,9 @@ class Model(object):
         seed_save = str(int(random_seed))
         plt.title('Box Plot Example ' + seed_save)
         plt.ylabel('Values')
-        plt.savefig('/home/huanting/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_IL' +
+        plt.savefig('/cgo/prom/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_IL' +
                     str(il_percent_mean) + '_' + str(seed_save) + '.png')
-        data_df.to_pickle('/home/huanting/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_IL' +
+        data_df.to_pickle('/cgo/prom/PROM/examples/case_study/DeviceM/save_model/plot/' + 'box_plot_IL' +
                           str(il_percent_mean) + '_' + str(seed_save) + '_data.pkl')
         # plt.show()
 

@@ -20,10 +20,12 @@ from sklearn.naive_bayes import GaussianNB
 import sys
 os.environ['CURL_CA_BUNDLE'] = ''
 # sys.path.append('./case_study/DeviceM')
-sys.path.append('/home/huanting/PROM')
-sys.path.append('/home/huanting/PROM/src')
-sys.path.append('/home/huanting/PROM/thirdpackage')
 sys.path.append('./case_study/BugD')
+sys.path.append('/cgo/prom/PROM')
+sys.path.append('/cgo/prom/PROM/thirdpackage')
+sys.path.append('/cgo/prom/PROM/src')
+
+
 
 import warnings
 warnings.filterwarnings("ignore")
@@ -409,15 +411,16 @@ def incre(args, train_dataset, model, tokenizer):
 
                     if args.local_rank == -1 and args.evaluate_during_training:  # Only evaluate when single GPU otherwise metrics may not average well
                         results = evaluate_test(args, model, tokenizer, eval_when_training=True)
-
+                        # print("epoch", idx)
+                        # print("results",results)
                         for key, value in results.items():
                             logger.info("  %s = %s", key, round(value, 4))
                             # Save model checkpoint
                         if results['test_acc'] > best_acc:
                             best_acc = results['test_acc']
-                            logger.info("  " + "*" * 20)
-                            logger.info("  Best acc:%s", round(results['test_acc'], 4))
-                            logger.info("  " + "*" * 20)
+                            # logger.info("  " + "*" * 20)
+                            # logger.info("  Best acc:%s", round(results['test_acc'], 4))
+                            # logger.info("  " + "*" * 20)
     return best_acc
 
 def train(args, train_dataset, model, tokenizer):
@@ -988,7 +991,7 @@ def conformal_prediction(args, model, tokenizer):
     # raps cumulated_score naive
     method_params = {
         "lac": ("score", True),
-        "top_k": ("top_k", True),
+        # "top_k": ("top_k", True),
         "aps": ("cumulated_score", True),
         "raps": ("raps", True)
     }
@@ -1045,7 +1048,8 @@ def conformal_prediction(args, model, tokenizer):
 def evaluate_test(args, model, tokenizer, eval_when_training=False):
     # Loop to handle MNLI double evaluation (matched, mis-matched)
     eval_output_dir = args.output_dir
-    eval_dataset = TextDataset(tokenizer, args, "../../benchmark/Bug/new_train.jsonl", args.one_hot_vectors, args.suffixes)
+    eval_dataset = TextDataset(tokenizer, args, "../../benchmark/Bug/new_train.jsonl",
+                               args.one_hot_vectors, args.suffixes)
 
     if not os.path.exists(eval_output_dir) and args.local_rank in [-1, 0]:
         os.makedirs(eval_output_dir)
@@ -1222,17 +1226,17 @@ def model_initial(mode):
         params = {
             "learning_rate": 0.0002,
             "epoch": 50,
-            "seed": 740,
-            "train_batch_size": 64,
-            "eval_batch_size": 64,
+            "seed": 7913,
+            # "train_batch_size": 64,
+            # "eval_batch_size": 64,
         }
     elif params == {} and mode == 'deploy':
         params = {
             "learning_rate": 0.0002,
-            "epoch": 20,
-            "seed": 2865,
-            "train_batch_size": 32,
-            "eval_batch_size": 32,
+            "epoch": 10,
+            "seed": 695,
+            # "train_batch_size": 32,
+            # "eval_batch_size": 32,
         }
     parser = argparse.ArgumentParser()
     ## Required parameters
@@ -1273,9 +1277,9 @@ def model_initial(mode):
                         help="Run evaluation during training at each logging step.")
     parser.add_argument("--do_lower_case", action='store_true',
                         help="Set this flag if you are using an uncased model.")
-    parser.add_argument("--train_batch_size", default=64, type=int,
+    parser.add_argument("--train_batch_size", default=32, type=int,
                         help="Batch size per GPU/CPU for training.")
-    parser.add_argument("--eval_batch_size", default=64, type=int,
+    parser.add_argument("--eval_batch_size", default=32, type=int,
                         help="Batch size per GPU/CPU for evaluation.")
     parser.add_argument('--gradient_accumulation_steps', type=int, default=1,
                         help="Number of updates steps to accumulate before performing a backward/update pass.")
@@ -1456,9 +1460,9 @@ def codebert_deploy(model_pre, config, tokenizer, args):
     # nni.report_final_result(increment_acc)
 
 def ae_vul_codebert():
-    # print("_________Start training phase________")
-    # model_pre, config, tokenizer, args = model_initial("train")
-    # codebert_train(model_pre, config, tokenizer, args)
+    print("_________Start training phase________")
+    model_pre, config, tokenizer, args = model_initial("train")
+    codebert_train(model_pre, config, tokenizer, args)
 
     print("_________Start deployment phase________")
     model_pre, config, tokenizer, args = model_initial("deploy")

@@ -1,8 +1,11 @@
 import warnings
+
 warnings.filterwarnings("ignore")
 import os
+
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
 from transformers import logging
+
 logging.set_verbosity_error()
 from transformers import AutoTokenizer
 from keras_preprocessing.sequence import pad_sequences
@@ -26,9 +29,11 @@ from mapie.classification import MapieClassifier
 from mapie.metrics import classification_coverage_score, classification_mean_width_score
 from progressbar import ProgressBar
 import matplotlib.pyplot as plt
+
 filterwarnings("ignore", category=ConvergenceWarning)
 import tensorflow as tf
 import os
+
 sys.path.append('./case_study/Loop')
 sys.path.append('/home/huanting/PROM/src')
 sys.path.append('/home/huanting/PROM/thirdpackage')
@@ -40,13 +45,14 @@ from sklearn.model_selection import GridSearchCV, KFold
 
 
 class LoopT(util.ModelDefinition):
-    def __init__(self,model=None,dataset=None,calibration_data=None,args=None):
+    def __init__(self, model=None, dataset=None, calibration_data=None, args=None):
         self.model = Magni()
         self.calibration_data = None
         self.dataset = None
 
-    def data_partitioning(self, dataset=r'data_dict.pkl', calibration_ratio=0.2,args=None):
+    def data_partitioning(self, dataset=r'data_dict.pkl', calibration_ratio=0.2, args=None):
         X_seq, y_1hot, time = get_feature(path=dataset)
+
         numbers = np.arange(1, len(y_1hot))
         # for j, (train_index, test_index) in enumerate(kf.split(y)):
         seed = int(args.seed)
@@ -58,15 +64,14 @@ class LoopT(util.ModelDefinition):
             temp_set, train_size=0.5, random_state=seed
         )
 
-        return X_seq, y_1hot,time,train_index, valid_index, test_index
-
+        return X_seq, y_1hot, time, train_index, valid_index, test_index
 
     def predict(self, X, significant_level=0.1):
         if self.model is None:
             raise ValueError("Model is not initialized.")
 
-        pred=self.model.predict(self, sequences='')
-        probability=self.model.predict_proba(self, sequences='')
+        pred = self.model.predict(self, sequences='')
+        probability = self.model.predict_proba(self, sequences='')
         return pred, probability
 
     def feature_extraction(self, srcs):
@@ -129,12 +134,12 @@ class Magni():
             self.model = pickle.load(infile)
 
     def train(
-        self, cascading_features: np.array, cascading_y: np.array, verbose: bool = False
+            self, cascading_features: np.array, cascading_y: np.array, verbose: bool = False
     ) -> None:
         self.model.fit(cascading_features, cascading_y)
 
     def predict_proba(
-        self, cascading_features: np.array, sequences: np.array
+            self, cascading_features: np.array, sequences: np.array
     ) -> np.ndarray:
         """
         Returns the predicted probabilities of the images in X.
@@ -157,7 +162,6 @@ class Magni():
 
     def predict(self, sequences: np.array) -> np.array:
         # directly predict optimal thread coarsening factor from source sequences:
-
 
         p = self.model.predict(sequences)
         preds = torch.softmax(torch.tensor(p, dtype=torch.float32), dim=1)
@@ -206,6 +210,7 @@ class Magni():
     #             break
     #     p = cfs[i]
     #     return [cfs[i]]
+
 
 def get_c_code_from_file(file_name):
     with open(file_name, "r") as file:
@@ -266,6 +271,7 @@ def extract_loops_from_files(file_list):
         all_loops.append(loops)
     return all_loops
 
+
 def make_prediction(model=None, X_feature=None, y_1hot=None, time=None, test_index=None):
     # make prediction
     all_pre = []
@@ -299,10 +305,11 @@ def make_prediction(model=None, X_feature=None, y_1hot=None, time=None, test_ind
         data_distri.append(percent)
     origin_speedup = sum(non_speedup_all) / len(non_speedup_all)
     # print("origin_speedup is", origin_speedup)
-    return origin_speedup, all_pre,data_distri
+    return origin_speedup, all_pre, data_distri
+
 
 def make_prediction_il(model_il=None, X_feature=None, y_1hot=None, time=None,
-                       test_index=None,  origin_speedup=None):
+                       test_index=None, origin_speedup=None):
     # make prediction
     all_pre = []
     for i in range(len(X_feature[test_index])):
@@ -338,7 +345,8 @@ def make_prediction_il(model_il=None, X_feature=None, y_1hot=None, time=None,
     # print("origin_speedup",origin_speedup,"il_speedup : ", il_speedup,"improved_speedup : ", improved_sp)
     print("The retrained speed up is ", retrained_speedup,
           "the improved speed up is ", inproved_speedup)
-    return retrained_speedup,inproved_speedup
+    return retrained_speedup, inproved_speedup
+
 
 def load_data(path="/home/huanting/model/loop/deeptune/data/bruteforce_runtimes.pkl"):
     import pickle
@@ -373,17 +381,17 @@ def load_data(path="/home/huanting/model/loop/deeptune/data/bruteforce_runtimes.
     for i in file_name_cut:
         file_path_single = os.path.join(folder_path, i)
         file_path.append(file_path_single)
-    #time
+    # time
     time = dict_all.get("all_program_runtimes")
-    time_all=[]
+    time_all = []
     for key in time:
         value = time[key]
         time_all.append(value)
     data_dict = {}  # 创建一个空字典
 
     all_loops = extract_loops_from_files(file_path)
-    filtered_data = [(a, b, c, d) for a, b, c,d in zip(all_loops, label, time_all,file_path) if a and b and c and d]
-    all_loops, label, time_all,file_path = zip(*filtered_data)
+    filtered_data = [(a, b, c, d) for a, b, c, d in zip(all_loops, label, time_all, file_path) if a and b and c and d]
+    all_loops, label, time_all, file_path = zip(*filtered_data)
     # data_dict = {"feature": all_loops, "label": label}
     for i, file_name in enumerate(file_path):
         data_dict[file_name] = {
@@ -395,7 +403,6 @@ def load_data(path="/home/huanting/model/loop/deeptune/data/bruteforce_runtimes.
         pickle.dump(data_dict, f)
 
     # print("a")
-
 
 
 def get_feature(path="data_dict.pkl"):
@@ -419,7 +426,7 @@ def get_feature(path="data_dict.pkl"):
     seqs = [tokenizer.convert_tokens_to_ids(src) for src in code_tokens]
     pad_val = len(seqs)
     encoded = np.array(pad_sequences(seqs, maxlen=100, value=pad_val))
-    return np.vstack([np.expand_dims(x, axis=0) for x in encoded]), np.array(label), np.array(time)
 
+    return np.vstack([np.expand_dims(x, axis=0) for x in encoded]), np.array(label), np.array(time)
 
 # main()

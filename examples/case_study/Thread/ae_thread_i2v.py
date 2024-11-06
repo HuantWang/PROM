@@ -14,10 +14,10 @@ from sklearn.model_selection import KFold
 import os
 import xgboost as xgb
 from scipy.stats import gmean
-sys.path.append('/home/huanting/PROM')
+sys.path.append('/cgo/prom/PROM')
 sys.path.append('./case_study/Thread')
-sys.path.append('/home/huanting/PROM/src')
-sys.path.append('/home/huanting/PROM/thirdpackage')
+sys.path.append('/cgo/prom/PROM/src')
+sys.path.append('/cgo/prom/PROM/thirdpackage')
 from src.prom.prom_util import Prom_utils
 
 #%%

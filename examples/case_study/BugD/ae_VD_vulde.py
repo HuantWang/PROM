@@ -20,9 +20,9 @@ from sklearn.naive_bayes import GaussianNB
 import sys
 os.environ['CURL_CA_BUNDLE'] = ''
 # sys.path.append('./case_study/DeviceM')
-sys.path.append('/home/huanting/PROM')
-sys.path.append('/home/huanting/PROM/src')
-sys.path.append('/home/huanting/PROM/thirdpackage')
+sys.path.append('/cgo/prom/PROM')
+sys.path.append('/cgo/prom/PROM/src')
+sys.path.append('/cgo/prom/PROM/thirdpackage')
 sys.path.append('./case_study/BugD')
 import warnings
 warnings.filterwarnings("ignore")
@@ -361,7 +361,7 @@ def incre(args, train_dataset, model, tokenizer):
     # model.resize_token_embeddings(len(tokenizer))
     model.zero_grad()
 
-    for idx in range(args.start_epoch, int(17)):
+    for idx in range(args.start_epoch, int(args.num_train_epochs)):
         bar = tqdm(train_dataloader, total=len(train_dataloader),disable=True)
         tr_num = 0
         train_loss = 0
@@ -408,7 +408,8 @@ def incre(args, train_dataset, model, tokenizer):
 
                     if args.local_rank == -1 and args.evaluate_during_training:  # Only evaluate when single GPU otherwise metrics may not average well
                         results = evaluate_test(args, model, tokenizer, eval_when_training=True)
-
+                        # print("epoch",idx)
+                        # print("results",results)
                         for key, value in results.items():
                             logger.info("  %s = %s", key, round(value, 4))
                             # Save model checkpoint
@@ -687,8 +688,8 @@ def deploy(args, train_dataset, model, tokenizer):
                             # logger.info("  Best rec:%s", round(results['eval_rec'], 4))
                             # logger.info("  Best acc:%s", round(results['eval_acc'], 4))
                             # logger.info("  " + "*" * 20)
-                            print(
-                                f"The current accuracy is: {round(best_f1, 4)}")
+                            # print(
+                            #     f"The current accuracy is: {round(best_f1, 4)}")
 
                             checkpoint_prefix = 'checkpoint-best-acc'
                             output_dir = os.path.join(args.output_dir, '{}'.format(checkpoint_prefix),)
@@ -698,7 +699,7 @@ def deploy(args, train_dataset, model, tokenizer):
                             output_dir = os.path.join(output_dir, '{}'.format('model.bin'))
                             torch.save(model_to_save.state_dict(), output_dir)
                             # logger.info("Saving model checkpoint to %s", output_dir)
-                            print("Saving model checkpoint to {}".format(output_dir))
+                            # print("Saving model checkpoint to {}".format(output_dir))
 
                         if results['eval_acc'] >= 0.1 and results['eval_acc'] <= 0.9:
                             print(
@@ -1417,20 +1418,20 @@ def model_initial(mode):
     if params == {} and mode == 'train':
         params = {
             "learning_rate": 0.002,
-            "epoch": 50,
-            "seed": 4185,
+            "epoch": 30,
+            "seed": 9860,
             # "alpha": 0.1,
-            "train_batch_size": 32,
-            "eval_batch_size": 32,
+            # "train_batch_size": 32,
+            # "eval_batch_size": 32,
         }
     elif params == {} and mode == 'deploy':
         params = {
-            "learning_rate": 0.0002,
-            "epoch": 40,
-            "seed": 5902,
+            "learning_rate": 0.002,
+            "epoch": 7,
+            "seed": 360,
             # "alpha": 0.1,
-            "train_batch_size": 32,
-            "eval_batch_size": 32,
+            # "train_batch_size": 32,
+            # "eval_batch_size": 32,
         }
 
     parser = argparse.ArgumentParser()
@@ -1655,9 +1656,9 @@ def codebert_deploy(model_pre, config, tokenizer, args):
     # nni.report_final_result(increment_acc)
 
 def ae_vul_vulde():
-    # print("_________Start training phase________")
-    # model_pre, config, tokenizer, args = model_initial("train")
-    # codebert_train(model_pre, config, tokenizer, args)
+    print("_________Start training phase________")
+    model_pre, config, tokenizer, args = model_initial("train")
+    codebert_train(model_pre, config, tokenizer, args)
 
     print("_________Start deployment phase________")
     model_pre, config, tokenizer, args = model_initial("deploy")

@@ -7,8 +7,8 @@ import warnings
 warnings.filterwarnings("ignore")
 import random
 sys.path.append('./case_study/Loop')
-sys.path.append('/home/huanting/PROM/src')
-sys.path.append('/home/huanting/PROM/thirdpackage')
+sys.path.append('/cgo/prom/PROM/src')
+sys.path.append('/cgo/prom/PROM/thirdpackage')
 from Deeptune_utils import DeepTune, LoopT, deeptune_make_prediction, deeptune_make_prediction_il
 
 import numpy as np

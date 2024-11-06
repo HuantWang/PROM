@@ -18,8 +18,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import GaussianNB
 import sys
 sys.path.append('./case_study/DeviceM')
-sys.path.append('/home/huanting/PROM/src')
-sys.path.append('/home/huanting/PROM/thirdpackage')
+sys.path.append('/cgo/prom/PROM/src')
+sys.path.append('/cgo/prom/PROM/thirdpackage')
 import src.prom.prom_util as prom_utils
 from src.prom.prom_util import Prom_utils
 from prom.prom_classification import MapieClassifier

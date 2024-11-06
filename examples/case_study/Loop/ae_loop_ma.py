@@ -7,8 +7,8 @@ import warnings
 warnings.filterwarnings("ignore")
 import random
 sys.path.append('./case_study/Loop')
-sys.path.append('/home/huanting/PROM/src')
-sys.path.append('/home/huanting/PROM/thirdpackage')
+sys.path.append('/cgo/prom/PROM/src')
+sys.path.append('/cgo/prom/PROM/thirdpackage')
 
 from Magni_utils import Magni,LoopT,make_prediction,make_prediction_il
 
@@ -26,19 +26,22 @@ def load_deeptune_args(mode=''):
     params = nni.get_next_parameter()
     if params == {} and mode == 'train':
         params = {
+            # "seed": 3343,
+            # "epoch": 20,
+            # "batch_size": 64,
             "seed": 1641,
             "epoch": 20,
             "batch_size": 64,
         }
     elif params == {} and mode == 'deploy':
         params = {
-            "seed": 9408,
-            "epoch": 20,
+            "seed": 641,
+            "epoch": 10,
             "batch_size": 64,
         }
     elif params == {} and mode == '':
         params = {
-            "seed": 3343,
+            "seed": 9408,
             "epoch": 20,
             "batch_size": 64,
         }

@@ -11,7 +11,7 @@ ae_vul_codebert()
 
 print("\n--- Comparison Evaluation: Linevul ---\n")
 ae_vul_linevul()
-
+#
 print("\n--- Comparison Evaluation: VUlDE ---\n")
 ae_vul_vulde()
 

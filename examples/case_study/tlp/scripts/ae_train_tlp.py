@@ -10,13 +10,13 @@ from torch import optim
 import argparse
 import sys
 import nni
-# sys.path.append('/home/huanting/PROM/src')
+# sys.path.append('/cgo/prom/PROM/src')
 
 
-sys.path.append('/home/huanting/PROM/examples/case_study/tlp/python')
-sys.path.append('/home/huanting/PROM/thirdpackage')
-sys.path.append('/home/huanting/PROM')
-sys.path.append('/home/huanting/PROM/src')
+sys.path.append('/cgo/prom/PROM/examples/case_study/tlp/python')
+sys.path.append('/cgo/prom/PROM/thirdpackage')
+sys.path.append('/cgo/prom/PROM')
+sys.path.append('/cgo/prom/PROM/src')
 import warnings
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
@@ -71,7 +71,7 @@ def eval_model(model_file='',test_datasets=''):
         file, file_idx, workloadkey_idx, workloadkey, workload_args, flop_ct, line_vecs = data
         pred_a_dataset_dict[workloadkey] = data
 
-    folder_path = '/home/huanting/PROM/benchmark/TensorT/network_info'  # 替换成你的文件夹路径
+    folder_path = '/cgo/prom/PROM/benchmark/TensorT/network_info'  # 替换成你的文件夹路径
     # 获取文件夹中所有文件名
     file_names = os.listdir(folder_path)
     # 筛选出满足条件的文件名
@@ -221,7 +221,7 @@ class Tlp_prom(util.ModelDefinition):
 
         # random.seed(args.seed)
         with open(test_dataset, 'rb') as f:
-        # with open(r'/home/huanting/PROM/examples/case_study/tlp/scripts/data_model/bert_tiny_test.pkl', 'rb') as f:
+        # with open(r'/cgo/prom/PROM/examples/case_study/tlp/scripts/data_model/bert_tiny_test.pkl', 'rb') as f:
             test_datasets = pickle.load(f)
 
         random.shuffle(test_datasets)
@@ -1170,7 +1170,7 @@ def cp(train_loader, val_dataloader, test_datasets, underlying_path,file_pattern
     # data_test = torch.cat(data_test, dim=0)
     # y_test = torch.cat(y_test, dim=0)
 
-    folder_path = '/home/huanting/PROM/benchmark/TensorT/network_info'  #
+    folder_path = '/cgo/prom/PROM/benchmark/TensorT/network_info'  #
 
     import glob
     files = glob.glob(f"{folder_path}/{file_pattern}")
@@ -1337,11 +1337,11 @@ def init_args(model_name):
     parser.add_argument("--fea_size", type=int, default=22)
     parser.add_argument("--res_block_cnt", type=int, default=2)
     parser.add_argument("--self_sup_model", type=str, default='')
-    parser.add_argument("--data_cnt", type=int, default=50)  # data_cnt * 1000
+    parser.add_argument("--data_cnt", type=int, default=1)  # data_cnt * 1000
     parser.add_argument("--seed", type=int, default=params["seed"])
     parser.add_argument("--train_size_per_gpu", type=int, default=64)
     parser.add_argument("--val_size_per_gpu", type=int, default=64)
-    parser.add_argument("--n_epoch", type=int, default=50)
+    parser.add_argument("--n_epoch", type=int, default=1)
     args = parser.parse_args()
     args.seed = int(args.seed)
     # print("seed: ", args.seed)
@@ -1395,24 +1395,24 @@ def ae_eval_model(model_name):
     # if model_name == 'base':
         args = init_args('base')
         under_model_name = \
-            '/home/huanting/PROM/examples/case_study/tlp/scripts/models/tlp_model_base_best.pkl'
+            '/cgo/prom/PROM/examples/case_study/tlp/scripts/models/tlp_model_base_best.pkl'
         train_model(args, under_model_name)
 
 # ae_eval_model('base')
     # elif model_name == 'tiny':
     #     args = init_args('tiny')
     #     under_model_name = \
-    #         '/home/huanting/PROM/examples/case_study/tlp/scripts/tlp_i7/bert_tiny.pkl'
+    #         '/cgo/prom/PROM/examples/case_study/tlp/scripts/tlp_i7/bert_tiny.pkl'
     #     train_model(args, under_model_name)
     # elif model_name == 'mid':
     #     args = init_args('mid')
     #     under_model_name = \
-    #         '/home/huanting/PROM/examples/case_study/tlp/scripts/tlp_i7/medium.pkl'
+    #         '/cgo/prom/PROM/examples/case_study/tlp/scripts/tlp_i7/medium.pkl'
     #     train_model(args, under_model_name)
     # elif model_name == 'large':
     #     args = init_args('large')
     #     under_model_name = \
-    #         '/home/huanting/PROM/examples/case_study/tlp/scripts/tlp_i7/large.pkl'
+    #         '/cgo/prom/PROM/examples/case_study/tlp/scripts/tlp_i7/large.pkl'
     #     train_model(args,under_model_name)
 
 # ae_eval_model('base')
@@ -1430,7 +1430,7 @@ def ae_eval_model(model_name):
     # deploy_model(args)
 
     # train_model(args)
-    # nnictl create --config /home/huanting/PROM/examples/case_study/tlp/scripts/config.yaml --port 8088
+    # nnictl create --config /cgo/prom/PROM/examples/case_study/tlp/scripts/config.yaml --port 8088
     # --mode deploy --save_folder=models/il/tlp_i7_large --under_model=./models/train/tlp_i7_base/tlp_model_533_best.pkl --test_data=../case_study/tlp/scripts/data_model/bert_large_test.pkl --path=((bert_large*.task.pkl
     # --mode deploy --save_folder models/il/tlp_i7_tiny --under_model ./models/train/tlp_i7_base/tlp_model_533_best.pkl --test_data ../case_study/tlp/scripts/data_model/bert_tiny_test.pkl --path ((bert_tiny*.task.pkl
     # --mode deploy --save_folder=models/il/tlp_i7_med --under_model=./models/train/tlp_i7_base/tlp_model_533_best.pkl --test_data=../case_study/tlp/scripts/data_model/bert_medium_test.pkl' --path='((bert_medium*.task.pkl

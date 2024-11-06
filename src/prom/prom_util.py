@@ -308,7 +308,7 @@ class Prom_utils:
                 pre_best = precision
                 rec_best = recall
         print(
-            f"{method_name_best} is the best approach，"
+            f"The PROM detection performance is: "
             f"the accuracy is: {accuracy * 100:.2f}%, "
             f"the precision is: {pre_best * 100:.2f}%, "
             f"the recall is: {rec_best * 100:.2f}%, "

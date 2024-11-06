@@ -1,10 +1,10 @@
 
 import sys
-sys.path.append('/home/huanting/PROM/examples/case_study/tlp/scripts/')
-sys.path.append('/home/huanting/PROM/examples/case_study/tlp/python')
-sys.path.append('/home/huanting/PROM/thirdpackage')
-sys.path.append('/home/huanting/PROM')
-sys.path.append('/home/huanting/PROM/src')
+sys.path.append('/cgo/prom/PROM/examples/case_study/tlp/scripts/')
+sys.path.append('/cgo/prom/PROM/examples/case_study/tlp/python')
+sys.path.append('/cgo/prom/PROM/thirdpackage')
+sys.path.append('/cgo/prom/PROM')
+sys.path.append('/cgo/prom/PROM/src')
 
 import src.prom.prom_util as util
 from sklearn.neural_network import MLPRegressor

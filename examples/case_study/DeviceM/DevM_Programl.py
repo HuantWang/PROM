@@ -4,10 +4,10 @@ import warnings
 # from sklearn.metrics import accuracy_score
 warnings.filterwarnings("ignore")
 import random
-sys.path.append('/home/huanting/PROM')
+sys.path.append('/cgo/prom/PROM')
 sys.path.append('./case_study/DeviceM')
-sys.path.append('/home/huanting/PROM/src')
-sys.path.append('/home/huanting/PROM/thirdpackage')
+sys.path.append('/cgo/prom/PROM/src')
+sys.path.append('/cgo/prom/PROM/thirdpackage')
 from compy.models.graphs.pytorch_geom_model import Dev_gnn
 
 import numpy as np
@@ -329,7 +329,7 @@ def deploy(args, dataset_ori):
     model_path,_ = train(suite_train, suite_test, dataset_ori, combinations, args)
     # load the model
     # model_path = \
-    #     r'/home/huanting/PROM/examples/case_study/DeviceM/compy/save_model/3407_0.8922865142803728.pkl'
+    #     r'/cgo/prom/PROM/examples/case_study/DeviceM/compy/save_model/3407_0.8922865142803728.pkl'
     # load_pickle(suite_train, suite_test, dataset, combinations,
     #             random_seed,
     #             model_path)
@@ -406,7 +406,7 @@ def deploy(args, dataset_ori):
     # print("test_dict", suite_test)
 
     # nni
-    # nnictl create --config /home/huanting/PROM/examples/case_study/DeviceM/config.yml --port 8088
+    # nnictl create --config /cgo/prom/PROM/examples/case_study/DeviceM/config.yml --port 8088
 
 if __name__ == '__main__':
     args, dataset_ori = load_args()
@@ -414,6 +414,6 @@ if __name__ == '__main__':
         train_phase(args, dataset_ori)
     elif args.mode == 'deploy':
         deploy(args, dataset_ori)
-    deploy(args, dataset_ori)
+    # deploy(args, dataset_ori)
     # train_phase(args, dataset_ori)
     # deploy(args, dataset_ori)

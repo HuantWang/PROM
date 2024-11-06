@@ -5,9 +5,9 @@ import warnings
 # from sklearn.metrics import accuracy_score
 warnings.filterwarnings("ignore")
 import random
-sys.path.append('/home/huanting/PROM')
-sys.path.append('/home/huanting/PROM/src')
-sys.path.append('/home/huanting/PROM/thirdpackage')
+sys.path.append('/cgo/prom/PROM')
+sys.path.append('/cgo/prom/PROM/src')
+sys.path.append('/cgo/prom/PROM/thirdpackage')
 sys.path.append('./case_study/DeviceM')
 from compy.models.graphs.pytorch_geom_model import Dev_gnn
 #
@@ -154,7 +154,7 @@ def load_args(mode):
         }
     elif params == {} and mode == 'deploy':
         params = {
-            "seed": 838,
+            "seed": 4486,
         }
 
 
@@ -407,7 +407,7 @@ def deploy(args, dataset_ori,eva_flag=""):
     # print("test_dict", suite_test)
 
     # nni
-    # nnictl create --config /home/huanting/PROM/examples/case_study/DeviceM/config.yml --port 8088
+    # nnictl create --config /cgo/prom/PROM/examples/case_study/DeviceM/config.yml --port 8088
 def ae_dev_programl(eva_flag=""):
     print("_________Start training phase________")
     args, dataset_ori = load_args("train")

@@ -5,9 +5,9 @@ import warnings
 # from sklearn.metrics import accuracy_score
 warnings.filterwarnings("ignore")
 import random
-sys.path.append('/home/huanting/PROM')
-sys.path.append('/home/huanting/PROM/src')
-sys.path.append('/home/huanting/PROM/thirdpackage')
+sys.path.append('/cgo/prom/PROM')
+sys.path.append('/cgo/prom/PROM/src')
+sys.path.append('/cgo/prom/PROM/thirdpackage')
 sys.path.append('./case_study/DeviceM')
 from compy.models.graphs.pytorch_geom_model import Dev_gnn
 #
@@ -154,7 +154,7 @@ def load_args(mode):
         }
     elif params == {} and mode == 'deploy':
         params = {
-            "seed": 838,
+            "seed": 4486,
         }
 
 
@@ -398,21 +398,20 @@ def deploy(args, dataset_ori,eva_flag):
         #     list(np.array(data_test["samples"])[test_idx]),
         #     random_seed
         # )
-        if eva_flag == "compare" or "cd":
-            model_test.uq(train_data, cal_data, test_data, random_seed=args.seed,eva_flag=eva_flag)
-            return 0
-        train_batches, test_batches = \
-            model_test.uq(train_data, cal_data, test_data, random_seed=args.seed, eva_flag=eva_flag)
-        print("Incremental training...")
+        # if eva_flag == "compare" or "cd":
+        model_test.uq(train_data, cal_data, test_data, random_seed=args.seed,eva_flag=eva_flag)
+        #     return 0
+        # model_test.uq(train_data, cal_data, test_data, random_seed=args.seed, eva_flag=eva_flag)
+        # print("Incremental training...")
         # model_il = model(num_types=num_types)
-        il_speed_up, impoved_sp = \
-            model_test.Incremental_train(train_batches, test_batches, test_percent_mean, random_seed=args.seed)
-        # nni.report_final_result(impoved_sp)
+        # il_speed_up, impoved_sp = \
+        #     model_test.Incremental_train(train_batches, test_batches, test_percent_mean, random_seed=args.seed)
+        # # nni.report_final_result(impoved_sp)
     # print("suite_train", suite_train)
     # print("test_dict", suite_test)
 
     # nni
-    # nnictl create --config /home/huanting/PROM/examples/case_study/DeviceM/config.yml --port 8088
+    # nnictl create --config /cgo/prom/PROM/examples/case_study/DeviceM/config.yml --port 8088
 def ae_dev_programl(eva_flag=""):
     print("_________Start training phase________")
     args, dataset_ori = load_args("train")

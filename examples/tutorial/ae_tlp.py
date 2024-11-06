@@ -1,10 +1,10 @@
 
 import sys
-sys.path.append('/home/huanting/PROM/examples/case_study/tlp/scripts/')
-sys.path.append('/home/huanting/PROM/examples/case_study/tlp/python')
-sys.path.append('/home/huanting/PROM/thirdpackage')
-sys.path.append('/home/huanting/PROM')
-sys.path.append('/home/huanting/PROM/src')
+sys.path.append('/cgo/prom/PROM/examples/case_study/tlp/scripts/')
+sys.path.append('/cgo/prom/PROM/examples/case_study/tlp/python')
+sys.path.append('/cgo/prom/PROM/thirdpackage')
+sys.path.append('/cgo/prom/PROM')
+sys.path.append('/cgo/prom/PROM/src')
 
 import src.prom.prom_util as util
 from sklearn.neural_network import MLPRegressor
@@ -16,11 +16,8 @@ from ae_train_tlp import ae_eval_model,AttentionModule
 from ae_deploy_tlp import ae_deploy_model
 
 
-
-
 print("\nThe evaluation on BERT-base\n")
 ae_eval_model("all")
-
 
 ae_deploy_model("all")
 

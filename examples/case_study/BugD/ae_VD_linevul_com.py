@@ -362,7 +362,7 @@ def incre(args, train_dataset, model, tokenizer):
     # model.resize_token_embeddings(len(tokenizer))
     model.zero_grad()
 
-    for idx in range(args.start_epoch, int(17)):
+    for idx in range(args.start_epoch, int(args.num_train_epochs)):
         bar = tqdm(train_dataloader, total=len(train_dataloader),disable=True)
         tr_num = 0
         train_loss = 0
@@ -1419,16 +1419,16 @@ def model_initial(mode):
             "learning_rate": 0.0002,
             "epoch": 30,
             "seed": 3220,
-            "train_batch_size": 32,
-            "eval_batch_size": 32,
+            # "train_batch_size": 32,
+            # "eval_batch_size": 32,
         }
     elif params == {} and mode == 'deploy':
         params = {
-            "learning_rate": 0.0002,
-            "epoch": 30,
-            "seed": 3347,
-            "train_batch_size": 64,
-            "eval_batch_size": 64,
+            "learning_rate": 0.00002,
+            "epoch": 39,
+            "seed": 196,
+            # "train_batch_size": 64,
+            # "eval_batch_size": 64,
         }
     parser = argparse.ArgumentParser()
     ## Required parameters
@@ -1469,9 +1469,9 @@ def model_initial(mode):
                         help="Run evaluation during training at each logging step.")
     parser.add_argument("--do_lower_case", action='store_true',
                         help="Set this flag if you are using an uncased model.")
-    parser.add_argument("--train_batch_size", default=64, type=int,
+    parser.add_argument("--train_batch_size", default=32, type=int,
                         help="Batch size per GPU/CPU for training.")
-    parser.add_argument("--eval_batch_size", default=64, type=int,
+    parser.add_argument("--eval_batch_size", default=32, type=int,
                         help="Batch size per GPU/CPU for evaluation.")
     parser.add_argument('--gradient_accumulation_steps', type=int, default=1,
                         help="Number of updates steps to accumulate before performing a backward/update pass.")

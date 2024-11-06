@@ -4,10 +4,10 @@ import warnings
 warnings.filterwarnings("ignore")
 import random
 # 将根目录添加到path中
-sys.path.append('/home/huanting/PROM')
+sys.path.append('/cgo/prom/PROM')
 sys.path.append('./case_study/Thread')
-sys.path.append('/home/huanting/PROM/src')
-sys.path.append('/home/huanting/PROM/thirdpackage')
+sys.path.append('/cgo/prom/PROM/src')
+sys.path.append('/cgo/prom/PROM/thirdpackage')
 import nni
 import argparse
 from Deeptune_utils import ThreadCoarseningDe,DeepTune,make_predictionDe,make_prediction_ilDe
@@ -74,7 +74,7 @@ def Thread_train_magni(args):
 
         end_time = time.time()
         training_time = end_time - start_time
-        print(f"The time about the training model: {training_time} s")
+        # print(f"The time about the training model: {training_time} s")
 
 
         # load the model

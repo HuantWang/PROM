@@ -20,10 +20,10 @@ from sklearn.naive_bayes import GaussianNB
 import sys
 os.environ['CURL_CA_BUNDLE'] = ''
 # sys.path.append('./case_study/DeviceM')
-sys.path.append('/home/huanting/PROM')
-sys.path.append('/home/huanting/PROM/src')
-sys.path.append('/home/huanting/PROM/thirdpackage')
 sys.path.append('./case_study/BugD')
+sys.path.append('/cgo/prom/PROM')
+sys.path.append('/cgo/prom/PROM/thirdpackage')
+sys.path.append('/cgo/prom/PROM/src')
 import warnings
 warnings.filterwarnings("ignore")
 os.environ["TF_CPP_MIN_LOG_LEVEL"] = "3"
@@ -1649,5 +1649,5 @@ if __name__ == "__main__":
     """
     --output_dir=./saved_models     --model_type=roberta     --tokenizer_name=microsoft/codebert-base     --model_name_or_path=microsoft/codebert-base   --do_train  --do_eval     --do_test     --train_data_file=../../../benchmark/Bug/train.jsonl     --eval_data_file=../../../benchmark/Bug/valid.jsonl     --test_data_file=../../../benchmark/Bug/test.jsonl --evaluate_during_training
     """
-
+# codebert_train(model_pre, config, tokenizer, args)
 

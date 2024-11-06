@@ -5,9 +5,9 @@ import warnings
 # from sklearn.metrics import accuracy_score
 warnings.filterwarnings("ignore")
 import random
-sys.path.append('/home/huanting/PROM')
-sys.path.append('/home/huanting/PROM/src')
-sys.path.append('/home/huanting/PROM/thirdpackage')
+sys.path.append('/cgo/prom/PROM')
+sys.path.append('/cgo/prom/PROM/src')
+sys.path.append('/cgo/prom/PROM/thirdpackage')
 sys.path.append('./case_study/DeviceM')
 from examples.case_study.DeviceM.compy.models.graphs.pytorch_geom_model import Dev_gnn
 
@@ -283,7 +283,7 @@ def deploy(args, dataset_ori):
             },
         },  # 27
         "rodinia-3.1": {"subdir": "opencl", }, #28
-        # "shoc-1.1.5": {"subdir": "src/opencl/level1"}, #48
+        "shoc-1.1.5": {"subdir": "src/opencl/level1"}, #48
     }
     # suite_test = {
     #     "nvidia-4.2": {"subdir": "OpenCL/src", "benchmark_name_prefix": "ocl"},

@@ -5,9 +5,9 @@ import warnings
 # from sklearn.metrics import accuracy_score
 warnings.filterwarnings("ignore")
 import random
-sys.path.append('/home/huanting/PROM')
-sys.path.append('/home/huanting/PROM/src')
-sys.path.append('/home/huanting/PROM/thirdpackage')
+sys.path.append('/cgo/prom/PROM')
+sys.path.append('/cgo/prom/PROM/src')
+sys.path.append('/cgo/prom/PROM/thirdpackage')
 sys.path.append('./case_study/DeviceM')
 from compy.models.graphs.pytorch_geom_model import Dev_gnn
 #
@@ -154,7 +154,7 @@ def load_args(mode):
         }
     elif params == {} and mode == 'deploy':
         params = {
-            "seed": 838,
+            "seed": 4486,
         }
 
 

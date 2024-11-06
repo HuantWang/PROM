@@ -39,7 +39,7 @@ See [INSTALL.md](INSTALL.md) for further details.
 
 ## Usage
 
-See [usage](./usage.md) for a step-by-step demo of Prom.
+See [usage](./AE.md) for a step-by-step demo of Prom.
 
 More detailed documents for using Prom can be checked on our [website](./docs/build/html/index.html).
 

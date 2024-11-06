@@ -7,10 +7,12 @@ from torch.autograd import Variable
 import copy
 from torch.nn import CrossEntropyLoss, MSELoss
 import sys
-sys.path.append('/home/huanting/PROM')
-sys.path.append('/home/huanting/PROM/src')
-sys.path.append('/home/huanting/PROM/thirdpackage')
+
+
 sys.path.append('./case_study/BugD')
+sys.path.append('/cgo/prom/PROM')
+sys.path.append('/cgo/prom/PROM/thirdpackage')
+sys.path.append('/cgo/prom/PROM/src')
 import src.prom.prom_util as util
 import os
 import json

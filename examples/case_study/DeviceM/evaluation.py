@@ -20,17 +20,17 @@ def is_experiment_completed(result_json):
 
     return True  # 所有实验都已结束
 
-# 配置文件路径 nnictl create --config /home/huanting/PROM/examples/case_study/Thread/config.yaml --port 8088
-yaml_file = "/home/huanting/PROM/examples/case_study/DeviceM/config.yml"
+# 配置文件路径 nnictl create --config /cgo/prom/PROM/examples/case_study/Thread/config.yaml --port 8088
+yaml_file = "/cgo/prom/PROM/examples/case_study/DeviceM/config.yml"
 
 # 要运行的命令列表和对应的端口
 experiments = [
-    {"command": "python DevM_Deeptune.py --mode train --method Deeptune", "port": 8094},
-    {"command": "python DevM_Deeptune.py --mode deploy --method Deeptune", "port": 8095},
-    {"command": "python DevM_Programl.py --mode train --method Programl", "port": 8096},
-    {"command": "python DevM_Programl.py --mode deploy --method Programl", "port": 8097},
-    {"command": "python DevM_i2v.py --mode train", "port": 8098},
-    {"command": "python DevM_i2v.py --mode deploy", "port": 8099},
+    # {"command": "python DevM_Deeptune.py --mode train --method Deeptune", "port": 8094},
+    # {"command": "python DevM_Deeptune.py --mode deploy --method Deeptune", "port": 8095},
+    # {"command": "python DevM_Programl.py --mode train --method Programl", "port": 8096},
+    {"command": "python DevM_Programl.py --mode deploy --method Programl", "port": 8090},
+    # {"command": "python DevM_i2v.py --mode train", "port": 8098},
+    # {"command": "python DevM_i2v.py --mode deploy", "port": 8099},
 ]
 subprocess.run(["nnictl", "stop", "-a"], capture_output=True, text=True)
 
