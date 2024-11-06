@@ -430,7 +430,7 @@ This section presents an analysis of certain parameters, corresponding to Sectio
 
 ```
 # The results correspond to Figure 13(a).
-python ae_parameter.py
+
 ```
 
 ```
