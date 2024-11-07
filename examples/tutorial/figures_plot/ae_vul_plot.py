@@ -56,10 +56,10 @@ def drifting_vul(path, name):
 
     ax.set_xticks(np.arange(0, 4, 1)+0.3)
     ax.set_xticklabels(x, fontdict={'horizontalalignment': 'center', 'size': 20,'family': 'Arial'})
-    ax.set_yticks(np.arange(0.85, 1.01, 0.05))
-    ax.set_yticklabels([0.85, 0.9,0.95, 1],
+    ax.set_yticks(np.arange(0.8, 1.01, 0.05))
+    ax.set_yticklabels([0.8, 0.85,0.9,0.95, 1],
                        fontdict={'horizontalalignment': 'right', 'size': 20,'family': 'Arial'})
-    ax.set_ylim((0.85, 1.01))
+    ax.set_ylim((0.8, 1.01))
     ax.set_ylabel('Metric value', fontsize=20)
     bar_width = 0.2
 

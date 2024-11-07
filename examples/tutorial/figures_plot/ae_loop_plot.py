@@ -459,7 +459,7 @@ def ae_loop_plot_script():
                   r'./figures_plot/figure/detectdrifting_loop')
 
     print("Figure 8(b) C2: loop vectorization. Prom’s performance for detecting drifting samples across case studies and underlying models.")
-    violin_3(method='thread_il')
+    violin_3(method='loop_il')
 
     print("Figure 9(b) C2: loop vectorization. Prom enhances performance through incremental learning in different underlying models.")
     Individual(r'./figures_plot/data/ae_indiv_loop.xlsx',
