@@ -480,5 +480,5 @@ python ae_plot.py --case gaussian
 bash ae_cd.sh
 ```
 ```
-%run ae_plot.py --case cd
+python ae_plot.py --case cd
 ```
