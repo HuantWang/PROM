@@ -1,28 +1,19 @@
 #  Enhancing Deployment-time Predictive Model Robustness for Code Analysis and Optimization: Artifact Instructions for Docker Image
 ## Preliminaries
 
-This interactive Jupyter notebook provides a small-scale demo for showcasing task definition, client RL search, client RL parameter tuning, and evaluation of case studies reported in the paper.
+This documents provides the evaluation of case studies reported in the paper.
 
 The main results of our CGO 2025 paper apply Prom to 5 case studies to detect their drifting samples. The evaluation presented in our paper ran on a much larger dataset and for longer. This notebook contains minimal working examples designed to be evaluated in a reasonable amount of time (approximately 20 minutes).
 
 The following step-by-step instructions are provided for using a Docker Image running on a local host.
 
 *Disclaim: Although we have worked hard to ensure that our codes are robust, our tool remains a \*research prototype\*. It may still have glitches when used in complex, real-life settings. If you discover any bugs, please raise an issue, describing how you ran the program and the problem you encountered. We will get back to you ASAP. Thank you.*
-## Important Notes
-
-**Some cells can take more than 30 minutes to complete; please wait for the results until step to the next cell.**
-
-High load can lead to a long wait for results. This may occur if multiple reviewers are simultaneously trying to generate results.
-
-The experiments are customisable as the code provided in the Jupyter Notebook can be edited on the spot. Simply type your changes into the code blocks and re-run using **Cell > Run Cells** from the menu.
 
 ## Links to The Paper
 
 For each step, we note the section number of the submitted version where the relevant technique is described or data is presented.
 
 The main results are presented in Figures 7-10 and Table 2 and 3 of the submitted paper.
-
-
 
 The following step-by-step instructions are provided for using a Docker Image running on a local host.
 
@@ -49,7 +40,7 @@ Install Docker by following the instructions [here](https://docs.docker.com/inst
 Fetch the docker image from docker hub.
 
 ```
-$ sudo docker pull concoctionnwu/concoction:v3
+$ sudo docker pull wanghuanting/prom:0.3
 ```
 
 To check the list of images, run:
@@ -58,16 +49,16 @@ To check the list of images, run:
 $ sudo docker images
 #output
 #REPOSITORY                                                               TAG                                 IMAGE ID       CREATED         SIZE
-#concoctionnwu/concoction                                                 v2                                  cc84e8929fe1   15 hours ago    82.4GB
+#wanghuanting/prom                                                        0.3                                cc84e8929fe1   2 minutes ago    102GB
 
 ```
 
 Run the docker image in a GPU-enabled environment
 
 ```
-$ docker run -itd --gpus all  -p 10054:22 -p 10053:8888 --name Concoction concoctionnwu/concoction:v2 /bin/bash
-$ docker start Concoction 
-$ docker exec -it Concoction /bin/bash
+$ sudo docker run -it --name prom -p 8099:8099  wanghuanting/prom:0.3 /bin/bash
+$ docker start prom 
+$ docker exec -it prom /bin/bash 
 ```
 
 
@@ -76,13 +67,13 @@ $ docker exec -it Concoction /bin/bash
 After importing the docker container **and getting into bash** in the container, run the following command to select the conda environment, before using any of the AE scripts:
 
 `````` shell
-$ conda activate base
+$ conda activate thread
 ``````
 
 Then, go to the root directory of our tool:
 
 ```
-(docker) $ cd /homee/
+(thread) $ cd /cgo/prom/PROM/examples/tutorial
 ```
 
 
