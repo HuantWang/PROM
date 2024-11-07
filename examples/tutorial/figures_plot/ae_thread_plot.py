@@ -284,7 +284,7 @@ def violin_3(method='thread'):
                       in zip(legend_labels, legend_colors)]
 
     # 在图中添加图例
-    plt.legend(handles=legend_handles, bbox_to_anchor=(0.5, 1.3),loc='upper center',prop=font,ncol=4,columnspacing=0.5, handletextpad=0.1,
+    plt.legend(handles=legend_handles, bbox_to_anchor=(0.43, 1.3),loc='upper center',prop=font,ncol=4,columnspacing=0.5, handletextpad=0.1,
                   handlelength=1.15)  # 你可以调整位置参数
     # ax.legend(loc='center left', bbox_to_anchor=(-0.15, 1.2), ncol=4, prop=font, columnspacing=0.5, handletextpad=0.1,
     #               handlelength=1.15)
@@ -459,12 +459,12 @@ def Individual(path, name):
 def ae_thread_plot_script(case=''):
     violin_3(method='thread')
     print("Figure 7(a) C1: thread coarsening. The resulting performance when using an ML model for decision making.")
-    drifting_thread(r'./figures_plot/data/drifting_thread.xlsx',
+    drifting_thread(r'./figures_plot/data/ae_drifting_thread.xlsx',
                     r'./figures_plot/figure/detectdrifting_thread')
     print("Figure 8(a) C1: thread coarsening. Prom’s performance for detecting drifting samples across case studies and underlying models.")
     violin_3(method='thread_il')
     print("Figure 9(a) C1: thread coarsening. Prom enhances performance through incremental learning in different underlying models.")
-    Individual(r'./figures_plot/data/indiv_thread.xlsx',
+    Individual(r'./figures_plot/data/ae_indiv_thread.xlsx',
                r'./figures_plot/figure/individual_thread')
     print("Figure 11(a) C1: Performance of individual nonconformity functions.")
 

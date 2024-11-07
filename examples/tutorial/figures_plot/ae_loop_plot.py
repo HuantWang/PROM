@@ -280,7 +280,7 @@ def violin_3(method='thread'):
                       in zip(legend_labels, legend_colors)]
 
     # 在图中添加图例
-    plt.legend(handles=legend_handles, bbox_to_anchor=(0.5, 1.3),loc='upper center',prop=font,ncol=4,columnspacing=0.5, handletextpad=0.1,
+    plt.legend(handles=legend_handles, bbox_to_anchor=(0.43, 1.3),loc='upper center',prop=font,ncol=4,columnspacing=0.5, handletextpad=0.1,
                   handlelength=1.15)  # 你可以调整位置参数
     # ax.legend(loc='center left', bbox_to_anchor=(-0.15, 1.2), ncol=4, prop=font, columnspacing=0.5, handletextpad=0.1,
     #               handlelength=1.15)
@@ -349,7 +349,7 @@ def drifting_loop(path, name):
     box = ax.get_position()
     # columnspacing=2
     ax.set_position([box.x0, box.y0, box.width, box.height * 0.8])
-    ax.legend(loc='center left', bbox_to_anchor=(-0.13, 1.2), ncol=6, prop=font, columnspacing=0.5, handletextpad=0.1,
+    ax.legend(loc='center left', bbox_to_anchor=(-0.19, 1.2), ncol=6, prop=font, columnspacing=0.5, handletextpad=0.1,
               handlelength=1.15)
     plt.grid(axis="y", alpha=0.8, linestyle=':')
 
@@ -360,8 +360,8 @@ def drifting_loop(path, name):
 def Individual(path, name):
     df = pd.read_excel(path)
     x = df['value'].values
-    threshold = 0.6
-    minimum_value = 0.605
+    threshold = 0.4
+    minimum_value = 0.401
 
     y1 = np.where(df['LABEL'].values < threshold, minimum_value, df['LABEL'].values)
     y2 = np.where(df['Top-K'].values < threshold, minimum_value, df['Top-K'].values)
@@ -386,10 +386,10 @@ def Individual(path, name):
 
     ax.set_xticks(np.arange(0, 4, 1) + 0.28)
     ax.set_xticklabels(x, fontdict={'horizontalalignment': 'center', 'size': 22,'family': 'Arial'})
-    ax.set_yticks(np.arange(0.6, 1.001, 0.1))
-    ax.set_yticklabels([0.6, 0.7, 0.8,0.9,1],
+    ax.set_yticks(np.arange(0.4, 1.001, 0.2))
+    ax.set_yticklabels([0.4, 0.6, 0.8,1],
                        fontdict={'horizontalalignment': 'right', 'size': 22,'family': 'Arial'})
-    ax.set_ylim((0.6, 1.01))
+    ax.set_ylim((0.4, 1.01))
     ax.set_ylabel('Metric value', fontsize=22,fontdict={'family': 'Arial'})
 
     bar_width = 0.12
@@ -455,15 +455,15 @@ def Individual(path, name):
 def ae_loop_plot_script():
     violin_3(method='loop')
     print("Figure 7(b) C2: loop vectorization. The resulting performance when using an ML model for decision making.")
-    drifting_loop(r'./figures_plot/data/drifting_loop.xlsx',
+    drifting_loop(r'./figures_plot/data/ae_drifting_loop.xlsx',
                   r'./figures_plot/figure/detectdrifting_loop')
 
     print("Figure 8(b) C2: loop vectorization. Prom’s performance for detecting drifting samples across case studies and underlying models.")
     violin_3(method='thread_il')
 
     print("Figure 9(b) C2: loop vectorization. Prom enhances performance through incremental learning in different underlying models.")
-    Individual(r'./figures_plot/data/indiv_thread.xlsx',
-               r'./figures_plot/figure/individual_thread')
+    Individual(r'./figures_plot/data/ae_indiv_loop.xlsx',
+               r'./figures_plot/figure/individual_loop')
     print("Figure 11(b) C2: loop vectorization. Performance of individual nonconformity functions.")
 
 # violin_3(method='thread')

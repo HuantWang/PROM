@@ -84,7 +84,7 @@ def drifting_vul(path, name):
     box = ax.get_position()
     # columnspacing=2
     ax.set_position([box.x0, box.y0, box.width, box.height * 0.8])
-    ax.legend(loc='center left', bbox_to_anchor=(-0.02, 1.17), ncol=3, prop=font, columnspacing=0.5, handletextpad=0.1,
+    ax.legend(loc='center left', bbox_to_anchor=(-0.05, 1.17), ncol=3, prop=font, columnspacing=0.5, handletextpad=0.1,
               handlelength=1.15)
     plt.grid(axis="y", alpha=0.8, linestyle=':')
 
@@ -341,7 +341,7 @@ def drifting_vul_il_3(path, name):
     ax1.set_position([box.x0+0.05, box.y0+0.02, box.width, box.height * 0.8])
     box = ax2.get_position()
     ax2.set_position([box.x0 + 0.05, box.y0+0.02, box.width, box.height * 0.8])
-    ax1.legend(loc='center left', bbox_to_anchor=(-0.15, 1.22), ncol=4, prop=font, columnspacing=0.5, handletextpad=0.1,
+    ax1.legend(loc='center left', bbox_to_anchor=(-0.25 , 1.22), ncol=4, prop=font, columnspacing=0.5, handletextpad=0.1,
                handlelength=1.15)
 
     plt.grid(axis="y", alpha=0.8, linestyle=':')
@@ -349,23 +349,23 @@ def drifting_vul_il_3(path, name):
     plt.show()
 
 def ae_vul_plot_script(case=''):
-    drifting_vul_modified_3(r'./figures_plot/data/IL_vul.xlsx',
+    drifting_vul_modified_3(r'./figures_plot/data/ae_IL_vul.xlsx',
                             r'./figures_plot/figure/drifting_vul')
     print("Figure 7(d) C4: vulnerability detection. The resulting performance when using an ML model for decision making.")
 
 
-    drifting_vul(r'./figures_plot/data/drifting_vul.xlsx',
+    drifting_vul(r'./figures_plot/data/ae_drifting_vul.xlsx',
                  r'./figures_plot/figure/detectdrifting_vul')
 
     print("Figure 8(d) C4: vulnerability detection. Prom’s performance for detecting drifting samples across case studies and underlying models.")
 
-    drifting_vul_il_3(r'./figures_plot/data/IL_vul.xlsx',
+    drifting_vul_il_3(r'./figures_plot/data/ae_IL_vul.xlsx',
                       r'./figures_plot/figure/IL_vul')
 
     print("Figure 9(d) C4: vulnerability detection. Prom enhances performance through incremental learning in different underlying models.")
 
 
-    Individual(r'./figures_plot/data/indiv_vul.xlsx',
+    Individual(r'./figures_plot/data/ae_indiv_vul.xlsx',
                r'./figures_plot/figure/individual_vul')
 
     print("Figure 11(d) C4: vulnerability detection. Performance of individual nonconformity functions.")

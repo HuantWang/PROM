@@ -1,19 +1,13 @@
-#  Enhancing Deployment-time Predictive Model Robustness for Code Analysis and Optimization: Artifacts Evaluation Instructions
-
+#  Enhancing Deployment-time Predictive Model Robustness for Code Analysis and Optimization: Artifact Instructions for Docker Image
 ## Preliminaries
 
 This interactive Jupyter notebook provides a small-scale demo for showcasing task definition, client RL search, client RL parameter tuning, and evaluation of case studies reported in the paper.
 
 The main results of our CGO 2025 paper apply Prom to 5 case studies to detect their drifting samples. The evaluation presented in our paper ran on a much larger dataset and for longer. This notebook contains minimal working examples designed to be evaluated in a reasonable amount of time (approximately 20 minutes).
 
-## Instructions for Experimental Workflow:
+The following step-by-step instructions are provided for using a Docker Image running on a local host.
 
-Before you start, please first make a copy of the notebook by going to the landing page. Then select the checkbox next to the notebook titled *main.ipynb*, then click "**Duplicate**".
-
-Click the name of the newly created Jupyter Notebook, e.g. **AE-Copy1.ipynb**. Next, select "**Kernel**" > "**Restart & Clear Output**". Then, repeatedly press the play button (the tooltip is "run cell, select below") to step through each cell of the notebook.
-
-Alternatively, select each cell in turn and use "**Cell**"> "**Run Cell**" from the menu to run specific cells. Note that some cells depend on previous cells being executed. If any errors occur, ensure all previous cells have been executed.
-
+*Disclaim: Although we have worked hard to ensure that our codes are robust, our tool remains a \*research prototype\*. It may still have glitches when used in complex, real-life settings. If you discover any bugs, please raise an issue, describing how you ran the program and the problem you encountered. We will get back to you ASAP. Thank you.*
 ## Important Notes
 
 **Some cells can take more than 30 minutes to complete; please wait for the results until step to the next cell.**
@@ -29,6 +23,67 @@ For each step, we note the section number of the submitted version where the rel
 The main results are presented in Figures 7-10 and Table 2 and 3 of the submitted paper.
 
 
+
+The following step-by-step instructions are provided for using a Docker Image running on a local host.
+
+*Disclaim: Although we have worked hard to ensure that our codes are robust, our tool remains a \*research prototype\*. It may still have glitches when used in complex, real-life settings. If you discover any bugs, please raise an issue, describing how you ran the program and the problem you encountered. We will get back to you ASAP. Thank you.*
+
+# Step-by-Step Instructions 
+
+
+## ★ Docker Image
+
+We prepare our artifact within a Docker image to run "out of the box". 
+Our docker image was tested on a host machine running Ubuntu 18.04.
+
+## ★ Artifact Evaluation  
+
+Follow the instructions below to use our AE evaluation scripts.
+
+### 1. Setup
+
+Install Docker by following the instructions [here](https://docs.docker.com/install/linux/docker-ce/ubuntu/). The following instructions assume the host OS runs Linux.
+
+#### 1.1  Fetch the Docker Image
+
+Fetch the docker image from docker hub.
+
+```
+$ sudo docker pull concoctionnwu/concoction:v3
+```
+
+To check the list of images, run:
+
+```
+$ sudo docker images
+#output
+#REPOSITORY                                                               TAG                                 IMAGE ID       CREATED         SIZE
+#concoctionnwu/concoction                                                 v2                                  cc84e8929fe1   15 hours ago    82.4GB
+
+```
+
+Run the docker image in a GPU-enabled environment
+
+```
+$ docker run -itd --gpus all  -p 10054:22 -p 10053:8888 --name Concoction concoctionnwu/concoction:v2 /bin/bash
+$ docker start Concoction 
+$ docker exec -it Concoction /bin/bash
+```
+
+
+#### 1.2 Setup the Environment
+
+After importing the docker container **and getting into bash** in the container, run the following command to select the conda environment, before using any of the AE scripts:
+
+`````` shell
+$ conda activate base
+``````
+
+Then, go to the root directory of our tool:
+
+```
+(docker) $ cd /homee/
+```
 
 
 # Demo 1: Tutorial for Prom

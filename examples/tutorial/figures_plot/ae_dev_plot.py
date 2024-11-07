@@ -46,10 +46,11 @@ def violin_3(method='thread'):
         color = ['#cfb8f5', '#b08cee', '', '', '#ba9bf0', '#a67dec', '#b08cee', '#925fe8']
         magni_train = r'./figures_plot/box/thread/logs/train/figs/magni/data0.9313518035529748_6349_data.pkl'
         deeptune_train = r'./figures_plot/box/thread/logs/train/figs/de/data0.9313518035529748_8105_data.pkl'
-        poem_train =  r'./figures_plot/box/thread/logs/train/figs/i2v/data0.9701271722516377_4270_data.pkl'
+        i2v_train =  r'./figures_plot/box/thread/logs/train/figs/i2v/data0.9701271722516377_4270_data.pkl'
         magni_test = r'./figures_plot/box/thread/logs/train/figs/i2v/data0.7913767483307274_3734_data.pkl'
         deeptune_test = r'./figures_plot/box/thread/logs/deploy/figs/de/data0.7842660724791225_5072_data.pkl'
-        poem_test = r'./figures_plot/box/thread/logs/train/figs/i2v/data0.7913767483307274_3734_data.pkl'
+        i2v_test = r'./figures_plot/box/thread/logs/train/figs/i2v/data0.7913767483307274_3734_data.pkl'
+
 
         with open(magni_train, 'rb') as file:
             data_distri = pickle.load(file)['Data'].values
@@ -64,10 +65,10 @@ def violin_3(method='thread'):
         with open(deeptune_test, 'rb') as file:
             data_distri_4 = pickle.load(file)['Data'].values
             data_distri_4 = np.concatenate((data_distri_4, np.array([0.15])))
-        with open(poem_train, 'rb') as file:
+        with open(i2v_train, 'rb') as file:
             data_distri_5 = pickle.load(file)['Data'].values
             data_distri_5 = np.concatenate((data_distri_5, np.array([0.92])))
-        with open(poem_test, 'rb') as file:
+        with open(i2v_test, 'rb') as file:
             data_distri_6 = pickle.load(file)['Data'].values
             data_distri_6 = np.concatenate((data_distri_6, np.array([0.2])))
 
@@ -76,7 +77,7 @@ def violin_3(method='thread'):
         color = ['#a2d39b', '#57ac4b', '', '', '#6bb960', '#4b9441', '#6bb960', '#397131']
         magni_test = r'./figures_plot/box/thread/logs/train/figs/i2v/data0.7913767483307274_3734_data.pkl'
         deeptune_test = r'./figures_plot/box/thread/logs/deploy/figs/de/data0.7842660724791225_5072_data.pkl'
-        poem_test = r'./figures_plot/box/thread/logs/train/figs/i2v/data0.7913767483307274_3734_data.pkl'
+        i2v_test = r'./figures_plot/box/thread/logs/train/figs/i2v/data0.7913767483307274_3734_data.pkl'
         magni_rtrain = r'./figures_plot/box/thread/logs/deploy/figs/magni/data0.7532395620647434_2494_il_data.pkl'
         deeptune_rtrain = r'./figures_plot/box/thread/logs/deploy/figs/de/data0.7842660724791225_5072_data_il.pkl'
         poem_rtrain = r'./figures_plot/box/thread/logs/deploy/figs/i2v/data0.9689131130421325_1994_data.pkl'
@@ -94,7 +95,7 @@ def violin_3(method='thread'):
         with open(deeptune_rtrain, 'rb') as file:
             data_distri_4 = pickle.load(file)['Data'].values
             # data_distri_4 = np.concatenate((data_distri_4, np.array([0.99])))
-        with open(poem_test, 'rb') as file:
+        with open(i2v_test, 'rb') as file:
             data_distri_5 = pickle.load(file)['Data'].values
             data_distri_5 = np.concatenate((data_distri_5, np.array([0.15])))
         with open(poem_rtrain, 'rb') as file:
@@ -107,10 +108,10 @@ def violin_3(method='thread'):
 
         k_train = r'./figures_plot/box/loop/figs/sv/data0.7407685094939795_6039_data.pkl'
         deeptune_train = r'./figures_plot/box/loop/figs/de/data0.7989800681029076_6571_data.pkl'
-        poem_train =  r'./figures_plot/box/loop/figs/ma/data0.6964665449429589_1641_data.pkl'
+        i2v_train =  r'./figures_plot/box/loop/figs/ma/data0.6964665449429589_1641_data.pkl'
         k_test = r'./figures_plot/box/loop/figs/sv/data0.6530830897945052_5220_data.pkl'
         deeptune_test = r'./figures_plot/box/loop/figs/de/data0.6577737847015122_7486_data.pkl'
-        poem_test = r'./figures_plot/box/loop/figs/ma/data0.6943913837237529_3343_data.pkl'
+        i2v_test = r'./figures_plot/box/loop/figs/ma/data0.6943913837237529_3343_data.pkl'
 
 
         # Load data from files
@@ -124,10 +125,10 @@ def violin_3(method='thread'):
             data_distri_3 = data_distri_3[data_distri_3 > 0.3]
         with open(deeptune_test, 'rb') as file:
             data_distri_4 = pickle.load(file)['Data'].values
-        with open(poem_train, 'rb') as file:
+        with open(i2v_train, 'rb') as file:
             data_distri_5 = pickle.load(file)['Data'].values
             data_distri_5 = data_distri_5[data_distri_5 > 0.4]
-        with open(poem_test, 'rb') as file:
+        with open(i2v_test, 'rb') as file:
             data_distri_6 = pickle.load(file)['Data'].values
 
 
@@ -139,7 +140,7 @@ def violin_3(method='thread'):
         poem_rtrain = r'./figures_plot/box/loop/figs/ma/data0.6943913837237529_3343_data.pkl'
         k_test = r'./figures_plot/box/loop/figs/sv/data0.6530830897945052_5220_data.pkl'
         deeptune_test = r'./figures_plot/box/loop/figs/de/data0.6577737847015122_7486_data.pkl'
-        poem_test = r'./figures_plot/box/loop/figs/ma/data0.6943913837237529_3343_data.pkl'
+        i2v_test = r'./figures_plot/box/loop/figs/ma/data0.6943913837237529_3343_data.pkl'
 
         # Load data from files
         with open(k_test, 'rb') as file:
@@ -152,7 +153,7 @@ def violin_3(method='thread'):
         with open(deeptune_rtrain, 'rb') as file:
             data_distri_4 = pickle.load(file)['Data'].values
             data_distri_4 = data_distri_4[data_distri_4 > 0.25]
-        with open(poem_test, 'rb') as file:
+        with open(i2v_test, 'rb') as file:
             data_distri_5 = pickle.load(file)['Data'].values
         with open(poem_rtrain, 'rb') as file:
             data_distri_6 = pickle.load(file)['Data'].values
@@ -165,10 +166,10 @@ def violin_3(method='thread'):
 
         b_train = r'./figures_plot/box/i2v/box_plot_train0.9000208185635654_6794_data.pkl'
         deeptune_train = r'./figures_plot/box/deep/box_plot_deploy0.8328986364257807_8264_data.pkl'
-        poem_train =  r'./figures_plot/box/programl/box_plot_deploy0.8169234319726472_1150_data.pkl'
+        i2v_train =  r'./figures_plot/box/programl/box_plot_deploy0.8169234319726472_1150_data.pkl'
         b_test = r'./figures_plot/box/i2v/box_plot_deploy0.7131319119050349_8882_data.pkl'
         deeptune_test = r'./figures_plot/box/deep/box_plot_deploy0.5819776990305028_93_data.pkl'
-        poem_test = r'./figures_plot/box/programl/box_plot_deploy0.5805412782620027_838_data.pkl'
+        i2v_test = r'./figures_plot/box/programl/box_plot_deploy0.5805412782620027_838_data.pkl'
 
 
         # Load data from files
@@ -180,9 +181,9 @@ def violin_3(method='thread'):
             data_distri_3 = pickle.load(file)['Data'].values
         with open(deeptune_test, 'rb') as file:
             data_distri_4 = pickle.load(file)['Data'].values
-        with open(poem_train, 'rb') as file:
+        with open(i2v_train, 'rb') as file:
             data_distri_5 = pickle.load(file)['Data'].values
-        with open(poem_test, 'rb') as file:
+        with open(i2v_test, 'rb') as file:
             data_distri_6 = pickle.load(file)['Data'].values
 
 
@@ -195,7 +196,7 @@ def violin_3(method='thread'):
         poem_rtrain = r'./figures_plot/pkl/dev/il_poem_0.8376295092838051_9914.pkl'
         b_test = r'./figures_plot/box/i2v/box_plot_deploy0.7131319119050349_8882_data.pkl'
         deeptune_test = r'./figures_plot/box/deep/box_plot_deploy0.5819776990305028_93_data.pkl'
-        poem_test = r'./figures_plot/box/programl/box_plot_IL0.7725996926213913_838_data.pkl'
+        i2v_test = r'./figures_plot/box/programl/box_plot_IL0.7725996926213913_838_data.pkl'
 
         # Load data from files
         with open(b_test, 'rb') as file:
@@ -208,7 +209,7 @@ def violin_3(method='thread'):
             # data_distri_3 = data_distri_3[data_distri_3 > 0.3]
         with open(deeptune_rtrain, 'rb') as file:
             data_distri_4 = pickle.load(file)['Data'].values
-        with open(poem_test, 'rb') as file:
+        with open(i2v_test, 'rb') as file:
             data_distri_5 = pickle.load(file)['Data'].values
             # data_distri_5 = data_distri_5[data_distri_5 > 0.4]
         with open(poem_rtrain, 'rb') as file:
@@ -284,7 +285,7 @@ def violin_3(method='thread'):
                       in zip(legend_labels, legend_colors)]
 
     # 在图中添加图例
-    plt.legend(handles=legend_handles, bbox_to_anchor=(0.5, 1.3),loc='upper center',prop=font,ncol=4,columnspacing=0.5, handletextpad=0.1,
+    plt.legend(handles=legend_handles, bbox_to_anchor=(0.43, 1.3),loc='upper center',prop=font,ncol=4,columnspacing=0.5, handletextpad=0.1,
                   handlelength=1.15)  # 你可以调整位置参数
     # ax.legend(loc='center left', bbox_to_anchor=(-0.15, 1.2), ncol=4, prop=font, columnspacing=0.5, handletextpad=0.1,
     #               handlelength=1.15)
@@ -368,8 +369,8 @@ def drifting_dev(path, name):
 def Individual(path, name):
     df = pd.read_excel(path)
     x = df['value'].values
-    threshold = 0.6
-    minimum_value = 0.605
+    threshold = 0.4
+    minimum_value = 0.401
 
     y1 = np.where(df['LABEL'].values < threshold, minimum_value, df['LABEL'].values)
     y2 = np.where(df['Top-K'].values < threshold, minimum_value, df['Top-K'].values)
@@ -394,10 +395,10 @@ def Individual(path, name):
 
     ax.set_xticks(np.arange(0, 4, 1) + 0.28)
     ax.set_xticklabels(x, fontdict={'horizontalalignment': 'center', 'size': 22,'family': 'Arial'})
-    ax.set_yticks(np.arange(0.6, 1.001, 0.1))
-    ax.set_yticklabels([0.6, 0.7, 0.8,0.9,1],
+    ax.set_yticks(np.arange(0.4, 1.001, 0.2))
+    ax.set_yticklabels([0.4,0.6, 0.8,1],
                        fontdict={'horizontalalignment': 'right', 'size': 22,'family': 'Arial'})
-    ax.set_ylim((0.6, 1.01))
+    ax.set_ylim((0.4, 1.01))
     ax.set_ylabel('Metric value', fontsize=22,fontdict={'family': 'Arial'})
 
     bar_width = 0.12
@@ -465,7 +466,7 @@ def ae_dev_plot_script(case=''):
     print("Figure 7(d) C3: heterogeneous mapping. The resulting performance when using an ML model for decision making.")
 
 
-    drifting_dev(r'./figures_plot/data/drifting_dev.xlsx',
+    drifting_dev(r'./figures_plot/data/ae_drifting_dev.xlsx',
                  r'./figures_plot/figure/detectdrifting_dev')
     print("Figure 8(d) C3: heterogeneous mapping. Prom’s performance for detecting drifting samples across case studies and underlying models.")
 
@@ -473,7 +474,7 @@ def ae_dev_plot_script(case=''):
     print("Figure 9(d) C3: heterogeneous mapping. Prom enhances performance through incremental learning in different underlying models.")
 
 
-    Individual(r'./figures_plot/data/indiv_device.xlsx',
+    Individual(r'./figures_plot/data/ae_indiv_device.xlsx',
                r'./figures_plot/figure/individual_device')
     print("Figure 11(d) C3: heterogeneous mapping. Performance of individual nonconformity functions.")
 

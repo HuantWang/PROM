@@ -60,8 +60,8 @@ from tabulate import tabulate
 
 def draw_table():
     data = [
-        ["Native deployment", 0.845, 0.224, 0.668, 0.642],
-        ["PROM assisted deployment", "/", 0.794, 0.871, 0.843]
+        ["Native deployment", 0.845, 0.224, 0.668, 0.703],
+        ["PROM assisted deployment", "/", 0.794, 0.810, 0.808]
     ]
     headers = ["Network", "BERT-base", "BERT-tiny", "BERT-medium", "BERT-large"]
 
@@ -70,7 +70,7 @@ def draw_table():
 
 
 def ae_tlp_plot_script(case=''):
-    drifting_tensor(r'./figures_plot/data/drifting_tensor.xlsx',
+    drifting_tensor(r'./figures_plot/data/ae_drifting_tensor.xlsx',
                     r'./figures_plot/figure/detectdrifting_tensor')
 
     print("Figure 8(e) C5: DNN code generation. Prom’s performance for detecting drifting samples across case studies and underlying models.")

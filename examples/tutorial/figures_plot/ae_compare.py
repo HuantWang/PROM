@@ -97,4 +97,5 @@ def Individual(path, name):
 
 # vul
 def ae_compare_plot_script(case=''):
-    Individual(r'./figures_plot/data/significance_compare.xlsx',r'./figures_plot/figure/sig')
+    Individual(r'./figures_plot/data/ae_significance_compare.xlsx',r'./figures_plot/figure/sig')
+    print("Figure 10:  Geometric mean and variances across models of the F1 score in classification tasks.")
