@@ -355,10 +355,6 @@ This demo corresponds to Figure 7(a), 8(a), 9(a), 11(a) of the submitted manuscr
 python ae_thread.py
 ```
 
-```
-python ae_loop.py
-```
-
 ## Full-scale evaluation data
 
 We now plot the diagrams using full-scale evaluation data. 
@@ -476,10 +472,13 @@ This section presents an analysis of certain parameters, corresponding to Sectio
 
 ```
 # The results correspond to Figure 13(a).
-
+python ae_plot.py --case gaussian
 ```
 
 ```
 # The results correspond to Figure 13(b).
 bash ae_cd.sh
+```
+```
+%run ae_plot.py --case cd
 ```
