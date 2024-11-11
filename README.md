@@ -37,7 +37,7 @@ The system was tested on the following operating systems:
 Install the latest Prom release using:
 
 ```
-pip install -U prom
+pip install git+https://github.com/HuantWang/PROM.git
 ```
 
 
