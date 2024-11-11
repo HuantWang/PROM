@@ -1,13 +1,21 @@
 #  Enhancing Deployment-time Predictive Model Robustness for Code Analysis and Optimization: Artifact Instructions for Docker Image
 ## Preliminaries
 
-This documents provides the evaluation of case studies reported in the paper.
+This document provides the evaluation of case studies reported in the paper.
 
-The main results of our CGO 2025 paper apply Prom to 5 case studies to detect their drifting samples. The evaluation presented in our paper ran on a much larger dataset and for longer. This notebook contains minimal working examples designed to be evaluated in a reasonable amount of time (approximately 20 minutes).
+The main results of our CGO 2025 paper apply Prom to 5 case studies to detect their drifting 
+samples.  
+
 
 The following step-by-step instructions are provided for using a Docker Image running on a local host.
 
-*Disclaim: Although we have worked hard to ensure that our codes are robust, our tool remains a \*research prototype\*. It may still have glitches when used in complex, real-life settings. If you discover any bugs, please raise an issue, describing how you ran the program and the problem you encountered. We will get back to you ASAP. Thank you.*
+
+*Disclaimer: Note that during our testing, we found that the underlying 
+device (CPU and GPU model) can affect the performance of the evaluation. 
+If your CPU or GPU differs from the setup described in our paper, 
+the experimental results may be impacted. Alternatively, you can use our 
+[online notebook](http://34.66.10.35:8099/tree/examples/tutorial) 
+for evaluation, which is configured to match the device setup in our paper.*
 
 ## Links to The Paper
 
@@ -15,9 +23,15 @@ For each step, we note the section number of the submitted version where the rel
 
 The main results are presented in Figures 7-10 and Table 2 and 3 of the submitted paper.
 
-The following step-by-step instructions are provided for using a Docker Image running on a local host.
+The following step-by-step instructions are provided for using a Docker Image 
+running on a local host.
 
-*Disclaim: Although we have worked hard to ensure that our codes are robust, our tool remains a \*research prototype\*. It may still have glitches when used in complex, real-life settings. If you discover any bugs, please raise an issue, describing how you ran the program and the problem you encountered. We will get back to you ASAP. Thank you.*
+*Disclaim: Although we have worked hard to ensure that our 
+codes are robust, our tool remains a \*research prototype\*. 
+It may still have glitches when used in complex, real-life settings. 
+If you discover any bugs, please raise an issue, describing how you 
+ran the program and the problem you encountered. 
+We will get back to you ASAP. Thank you.*
 
 # Step-by-Step Instructions 
 
@@ -33,14 +47,16 @@ Follow the instructions below to use our AE evaluation scripts.
 
 ### 1. Setup
 
-Install Docker by following the instructions [here](https://docs.docker.com/install/linux/docker-ce/ubuntu/). The following instructions assume the host OS runs Linux.
+Install Docker by following the instructions 
+[here](https://docs.docker.com/install/linux/docker-ce/ubuntu/). 
+The following instructions assume the host OS runs Linux.
 
 #### 1.1  Fetch the Docker Image
 
 Fetch the docker image from docker hub.
 
 ```
-$ sudo docker pull wanghuanting/prom:0.4
+$ sudo docker pull wanghuanting/prom:0.7
 ```
 
 To check the list of images, run:
@@ -72,13 +88,16 @@ $ conda activate thread
 Then, go to the root directory of our tool:
 
 ```
-(thread) $ cd /cgo/prom/PROM/examples/tutorial
+# Move the project to the target directory
+(thread) $ mv /cgo/PROM/prom/* /cgo/prom/
+(thread) $ cd prom/PROM/examples/tutorial/
 ```
 
 
 # Demo 1: Tutorial for Prom
 
-This demo corresponds to the simplified drifting detection example given in Figure 2. Note that we have refactored the code; hence there are small changes in the API. This is a small-scale demo for case study 1 of thread coarsening. The full-scale evaluation used in the paper takes over 24 hours to run.
+This demo corresponds to the simplified drifting detection example shown in Figure 2. Note that the code has been refactored, resulting in minor changes to the API. This small-scale demo represents case study 1 on thread coarsening. 
+
 
 ```
 # Demo 1: Tutorial for Prom
@@ -86,52 +105,61 @@ python ae_tutorial.py
 ```
 ## Step 1. Train the underlying model
 
-This problem develops a model to determine the optimal OpenCL GPU thread coarsening factor for performance optimization. Following the original paper, an ML model predicts a coarsening factor (ranging  from 1 to 32) for a test OpenCL kernel, where 1 indicates no coarsening. Following the setup of  the DeepTune, we train and test the models using the labeled dataset  from them, comprising 17 OpenCL kernels from three benchmark  suites across four GPU platforms.
+This problem involves developing a model to determine the optimal OpenCL GPU thread coarsening factor for performance optimization. Following the original paper, an ML model predicts a coarsening factor (ranging from 1 to 32) for a test OpenCL kernel, where 1 indicates no coarsening. Following the setup of DeepTune, we train and test the models on their labeled dataset, which includes 17 OpenCL kernels from three benchmark suites across four GPU platforms (this minimal working example runs on the Titan platform).
 
-we train the baseline model using  leave-one-out cross-validation, which involves training the baseline model on 16 OpenCL kernels and testing on another one.
+We train the baseline model using leave-one-out cross-validation, where the model is trained on 16 OpenCL kernels and tested on the remaining one.
 #### Training dataset and calibration dataset partitioning
 
 ```
 !bash ae_tu.sh
-import os
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
+# import sys
+# print(sys.version)
+# print(sys.executable)
+# !conda info --env
 
+import os
 import sys
+
+os.environ["TOKENIZERS_PARALLELISM"] = "false"
 sys.path.append('/cgo/prom/PROM')
 sys.path.append('../case_study/Thread/')
 sys.path.append('/cgo/prom/PROM/src')
 sys.path.append('/cgo/prom/PROM/thirdpackage')
-from Magni_utils import ThreadCoarseningMa,Magni,make_predictionMa,make_prediction_ilMa
-from Thread_magni import load_magni_args_notebook,load_magni_args
+
+from Magni_utils import ThreadCoarseningMa, Magni, make_predictionMa, make_prediction_ilMa
+from Thread_magni import load_magni_args_notebook, load_magni_args
 from src.prom.prom_util import Prom_utils
 
 print("Starting to partition the training and calibration datasets...")
 
 # Load necessary arguments for the program, related to model configuration or runtime settings
-# args = load_magni_args_notebook()
 args = load_magni_args()
 seed_value = int(args.seed)
-# Initialize a thread coarsening model object for the Magni model
+
+# Initialize a thread coarsening model using the approach in Magni et al
 prom_thread = ThreadCoarseningMa(model=Magni())
 
-# Define the path to the dataset and the target platform (here, "Tahiti" refer to a GPU architecture or hardware)
+# Define the path to the dataset and the target platform (here, "Tahiti" refers to a GPU architecture or hardware)
 dataset_path = "../../benchmark/Thread"
 platform = "Tahiti"
 
-# Perform data partitioning for training, validation, and testing.
-# The method 'data_partitioning' returns the split data, including features (X) and labels (y)
-# Additionally, it returns calibration data and indices for each partition (train, validation, and test).
-# Args could contain hyperparameters or settings used during data partitioning (such as shuffle, split ratios, etc.)
-X_cc, y_cc,train_x, valid_x, test_x, train_y, valid_y, test_y, \
-        calibration_data,cal_y,train_index, valid_index, test_index,y,X_seq,y_1hot=\
-            prom_thread.data_partitioning(dataset_path,platform=platform,mode='train', calibration_ratio=0.1,args=args)
+# Perform data partitioning for training, validation, and testing
+# returns the split data, including features (X) and labels (y)
+# returns calibration data and indices for each partition (train, validation, and test).
+# args can contain data partitioning hyperparameters (such as shuffle, split ratios, etc.)
 
-# 'X_cc', 'y_cc' : The coarsened features and labels (thread coarsening context)
-# 'train_x', 'valid_x', 'test_x' : Training, validation, and testing features (input data)
-# 'train_y', 'valid_y', 'test_y' : Training, validation, and testing labels (output data)
-# 'calibration_data', 'cal_y' : Calibration data and labels, for model tuning or confidence calibration
-# 'train_index', 'valid_index', 'test_index' : Indexes for the split datasets (training, validation, test)
-# 'y', 'X_seq', 'y_1hot' : Other data representations (e.g., one-hot encoding, sequence features/labels)
+split_data = prom_thread.data_partitioning(
+    dataset_path, platform=platform, mode='train', calibration_ratio=0.1, args=args
+)
+(
+    X_cc, y_cc,               # The coarsened features and labels (thread coarsening context)
+    train_x, valid_x, test_x, # Training, validation, and testing features (input data)
+    train_y, valid_y, test_y, # Training, validation, and testing labels (output data)
+    calib_data, calib_y,      # Calibration data and labels, for model tuning or confidence calibration
+    train_index, valid_index, test_index, # Indexes for the split datasets (training, validation, test)
+    y, X_seq, y_1hot          # Other data representations (e.g., one-hot encoding, sequence features/labels)
+) = split_data
+
 print("Data splitting process completed!")
 ```
 
@@ -140,44 +168,32 @@ print("Data splitting process completed!")
 ```
 print("Starting the training process for the underlying model...")
 
-# Initialize the model with the provided arguments
-# The 'args' contain configurations or hyperparameters needed to set up the model (e.g., learning rate, batch size, etc.)
+# Initialize the model
+# 'args' can contain model hyperparameters (e.g., learning rate, batch size, etc.)
 prom_thread.model.init(args)
 
-# Train the model using the training data (features and labels)
-# 'cascading_features' refers to the input features for training (possibly related to thread coarsening features)
-# 'cascading_y' is the corresponding target labels for the training data
-# 'verbose=True' enables the printing of training progress or detailed output during the training process
+# Train the model using training data (features and labels)
 prom_thread.model.train(
-    cascading_features=train_x,
-    verbose=True,
-    cascading_y=train_y)
+    cascading_features=train_x, # train data features (possibly related to thread coarsening features)
+    verbose=True,               # detailed training process output including progress
+    cascading_y=train_y         # train data labels
+)
 
-# Initialize empty lists to store results
-# 'origin_speedup_all' will hold the original speedup values
-# 'speed_up_all' will store the predicted speedup values from the model
-# 'improved_spp_all' will track any improvements in speedup across predictions
-origin_speedup_all = []
-speed_up_all = []
-improved_spp_all = []
+origin_speedup_all = [] # original speedup values
+speed_up_all = []       # predicted speedup values
+improved_spp_all = []   # speedup improvement values (original speedup - retrained speedup)
 
-# Call 'make_predictionMa' to make predictions using the trained model
-# Arguments:
-#   - 'speed_up_all': A list to collect the speedup predictions from the model
-#   - 'platform': The target platform (e.g., "Tahiti") for which the prediction is made
-#   - 'model': The trained model (prom_thread.model)
-#   - 'test_x': Features for the test data
-#   - 'test_index': Indices of the test data
-#   - 'X_cc': Additional features (possibly coarsened or cascading features)
-origin_speedup, all_pre, data_distri = make_predictionMa(speed_up_all=speed_up_all,
-                                                         platform=platform,
-                                                         model=prom_thread.model,
-                                                         test_x=test_x,
-                                                         test_index=test_index,
-                                                         X_cc=X_cc)
+# Make predictions using the trained model
+origin_speedup, all_pre, data_distri = make_predictionMa(
+    speed_up_all=speed_up_all,    # speedup predictions from the model (list)
+    platform=platform,            # target platform (e.g., "Tahiti") used for prediction
+    model=prom_thread.model,      # trained model
+    test_x=test_x,                # test data features
+    test_index=test_index,        # test data indices
+    X_cc=X_cc                     # additional features (possibly coarsened or cascading features)
+)
 
-# Print the original speedup obtained from the prediction for the specified platform
-print(f"The speedup on the Titan is {origin_speedup:.2%}")
+print(f"Thread coarsening speedup on platform '{platform}' is {origin_speedup:.2%}")
 ```
 
 #### Training the anomaly detector
@@ -185,10 +201,10 @@ print(f"The speedup on the Titan is {origin_speedup:.2%}")
 ```
 print("Starting the construction of the anomaly detector...")
 
-# Set the trained classifier model from prom_thread
+# trained classifier model
 clf = prom_thread.model
 
-# Define the prom parameters (method_params) for different evaluation metrics:
+# prom parameters (method_params) for different evaluation metrics
 method_params = {
     "lac": ("score", True),
     "top_k": ("top_k", True),
@@ -196,75 +212,69 @@ method_params = {
     "raps": ("raps", True)
 }
 
-# Initialize a Prom object for performing conformal prediction and evaluation
-# 'task' is set to "thread" indicating the specific task being modeled
+# Prom object for performing conformal prediction and evaluation
+# 'task' : set to "thread" to model thread coarsening task
 Prom_thread = Prom_utils(clf, method_params, task="thread")
 
-# Perform conformal prediction:
-#   - 'cal_x' and 'cal_y' are the calibration data and labels,
-#   - 'test_x' and 'test_y' are the test data and labels,
-#   - 'significance_level' is set to "auto" for automatic adjustment.
+# Perform conformal prediction
 y_preds, y_pss, p_value = Prom_thread.conformal_prediction(
-    cal_x=calibration_data, 
-    cal_y=cal_y, 
-    test_x=test_x,
-    test_y=test_y,
-    significance_level="auto"
+    cal_x=calib_data, cal_y=calib_y, # calibration data and labels
+    test_x=test_x, test_y=test_y,    # test data and labels
+    significance_level="auto"        # set to "auto" for automatic adjustment
 )
 print("The anomaly detector has been successfully constructed.")
 ```
 
 
 
-# Train the prom anolamy detector
+# Train the Prom anolamy detector
 
 ## Step 2. Prom on deployment
 
 First, to introduce data drift, we train the ML models on OpenCL benchmarks from two suites and then test the trained model on another left-out benchmark suite.
 
-
 #### Native deployment
 
+
+
 ```
-# Load the pre-trained model for predictions
+# Load pre-trained model for predictions
 prom_thread.model.restore(r'../../examples/case_study/Thread/ae_savedmodels/tutorial/Tahiti-underlying.model')
 
-# Make predictions on the given data
+# Make predictions on test data
 origin_speedup, all_pre, data_distri = make_predictionMa(
-    speed_up_all=speed_up_all,     # Array or list of speed-up values for the model
-    platform=platform,             # Target platform for prediction (e.g., CPU, GPU)
-    model=prom_thread.model,       # Loaded model used for making predictions
-    test_x=test_x,                 # Test features or data input for predictions
-    test_index=test_index,         # Indices for test data to match predicted values
-    X_cc=X_cc                      # Contextual data or additional features for prediction
+    speed_up_all=speed_up_all,    # Array or list of speed-up values for the model
+    platform=platform,            # Target platform for prediction (e.g., CPU, GPU)
+    model=prom_thread.model,      # Loaded model used for making predictions
+    test_x=test_x,                # Test features or data input for predictions
+    test_index=test_index,        # Indices for test data to match predicted values
+    X_cc=X_cc                     # Contextual data or additional features for prediction
 )
 
 # Print a success message with the deployment speedup result
-print(f"Loading successful, the deployment speedup on the {platform} is {origin_speedup:.2%}")
+print(f"Deployment speedup on platform '{platform}' is {origin_speedup:.2%}")
 
-# Calculate the average original speedup from all speed-up values
+# Calculate average from all speed-up values
 origin = sum(speed_up_all) / len(speed_up_all)
 ```
 
 #### Detecting drifting samples
 
 ```
-# Perform evaluation of the conformal prediction model, retrieving accuracy and other metrics:
-#   - 'index_all_right' stores all indices where predictions are correct,
-#   - 'index_list_right' stores lists of indices for each correctly predicted instance,
-#   - 'Acc_all' holds the overall accuracy of predictions,
-#   - 'F1_all' stores the F1-score for the predictions,
-#   - 'Pre_all' holds the precision metric for predictions,
-#   - 'Rec_all' contains the recall metric for the predictions.
-index_all_right, index_list_right, Acc_all, F1_all, Pre_all, Rec_all, _, _ = \
-    Prom_thread.evaluate_conformal_prediction(
-        y_preds=y_preds,             # Predicted labels or outcomes
-        y_pss=y_pss,                 # Prediction scores or probabilities associated with predictions
-        p_value=p_value,             # p-value threshold for conformal prediction
-        all_pre=all_pre,             # Array of all prediction values
-        y=y[test_index],             # True labels or outcomes for test data
-        significance_level=0.05      # Significance level for conformal prediction intervals
-    )
+# retrieves evaluation metrics for conformal prediction model
+(
+    index_ncm_correct, # each row contains indices flagged correctly by that ncm function
+    index_all_correct, # each element contains indices flagged correctly by all ncm functions
+    Acc_all, F1_all, Pre_all, Rec_all, # accuracy, f1 score, precision and recall
+    *_
+) = Prom_thread.evaluate_conformal_prediction(
+    y_preds=y_preds,             # Predicted labels
+    y_pss=y_pss,                 # Prediction scores or probabilities
+    p_value=p_value,             # p-value threshold for conformal prediction
+    all_pre=all_pre,             # all prediction values
+    y=y[test_index],             # True labels or outcomes for test data
+    significance_level=0.05      # Significance level for conformal prediction intervals
+)
 ```
 
 
@@ -276,51 +286,44 @@ Prom can enhance the performance of deployed ML systems through incremental lear
 #### Retraining the model with incremental learning:
 
 ```
-# Perform incremental learning by selecting the most valuable instances to add to the training set:
-#   - 'seed_value' is used for randomization,
-#   - 'test_index' and 'train_index' are updated accordingly.
+# most valuable test instances are moved to the training set
 print("Finding the most valuable instances for incremental learning...")
 train_index, test_index = Prom_thread.incremental_learning(
-    seed_value, 
-    test_index, 
+    seed_value,
+    test_index,
     train_index
 )
-# Fine-tune the model using the updated training set:
-#   - 'X_seq[train_index]' is the updated training data,
-#   - 'y_1hot[train_index]' are the corresponding labels in one-hot encoding format.
-print(f"Retraining the model on {platform}...")
+# Fine-tune the model with updated training set
+print(f"Retraining the model on platform '{platform}'...")
 prom_thread.model.fine_tune(
-    cascading_features=X_seq[train_index],
-    cascading_y=y_1hot[train_index],
+    cascading_features=X_seq[train_index], # updated training features
+    cascading_y=y_1hot[train_index], # updated one-hot encoded training labels
     verbose=True
 )
 
-# Test the fine-tuned model and make predictions using the updated model:
-#   - 'speed_up_all' stores the predicted speedup values,
-#   - 'improved_spp_all' stores improvements in speedup,
-#   - 'origin_speedup' refers to the initial speedup before fine-tuning.
-retrained_speedup, inproved_speedup, data_distri = make_prediction_ilMa(
-    speed_up_all=speed_up_all, 
+# Make predictions using the updated model
+retrained_speedup, improved_speedup, y_preds = make_prediction_ilMa(
+    speed_up_all=speed_up_all,        # predicted speedup values
     platform=platform,
     model=prom_thread.model,
     test_x=X_seq[test_index],
-    test_index=test_index, 
+    test_index=test_index,
     X_cc=X_cc,
-    origin_speedup=origin_speedup,
-    improved_spp_all=improved_spp_all
+    origin_speedup=origin_speedup,    # speedup before fine-tuning
+    improved_spp_all=improved_spp_all # speedup improvements
 )
 
 origin_speedup_all.append(origin_speedup)
 speed_up_all.append(retrained_speedup)
-improved_spp_all.append(inproved_speedup)
+improved_spp_all.append(improved_speedup)
 
 mean_acc = sum(Acc_all) / len(Acc_all)
 mean_f1 = sum(F1_all) / len(F1_all)
 mean_pre = sum(Pre_all) / len(Pre_all)
 mean_rec = sum(Rec_all) / len(Rec_all)
 
-# Calculate the improved mean speed-up (improved_spp_all is a list of improved speed-ups)
-meanimproved_speed_up = sum(improved_spp_all) / len(improved_spp_all)
+# Calculate the average speedup improvement
+mean_improved_speed_up = sum(improved_spp_all) / len(improved_spp_all)
 
 # Output the model's average accuracy, precision, recall, and F1 score, formatted as percentages
 print(
@@ -332,15 +335,14 @@ print(
 )
 
 
-# Output the final improved speed-up as a percentage
-print(f"Final improved speed-up percentage: {meanimproved_speed_up * 100:.2f}%")
+# Output the final improved speedup as a percentage
+print(f"Final improved speedup percentage: {mean_improved_speed_up * 100:.2f}%")
 ```
-
-
 
 # Demo 2: Experimental Evaluation
 
-Here, we provide a small-sized evaluation to showcase the working mechanism of the Prom on five case studies. A full-scale evaluation, which takes more than a day to run, is provided through the Docker image (with detailed instructions on our project Github).
+Here, we provide the evaluation to showcase the working 
+mechanism of the Prom on five case studies.
 
 ### Case Study 1: Thread Coarsening (Section 6.1)
 
@@ -376,7 +378,6 @@ This demo corresponds to Figure 7(b), 8(b), 9(b) and 11(b) of the submitted manu
 python ae_loop.py
 ```
 
-## Full-scale evaluation data
 
 We now plot the diagrams using full-scale evaluation data. 
 The results correspond to Figure 7(b), 8(b), 9(b) and 11(b) of the submitted manuscript.
@@ -397,7 +398,6 @@ This demo corresponds to Figure 7(c), 8(c), 9(c) and 11(c) of the submitted manu
 python ae_dev_docker.py
 ```
 
-## Full-scale evaluation data
 
 We now plot the diagrams using full-scale evaluation data. 
 The results correspond to Figure 7(c), 8(c), 9(c) and 11(c) of the submitted manuscript.
@@ -418,7 +418,6 @@ This demo corresponds to Figure 7(d), 8(d), 9(d) and 11(d) of the submitted manu
 python ae_vul.py --output_dir=./saved_models     --model_type=roberta     --tokenizer_name=microsoft/codebert-base     --model_name_or_path=microsoft/codebert-base   --do_train  --do_eval     --do_test     --train_data_file=../../benchmark/Bug/train.jsonl     --eval_data_file=../../benchmark/Bug/valid.jsonl     --test_data_file=../../benchmark/Bug/test.jsonl --evaluate_during_training
 ```
 
-## Full-scale evaluation data
 
 We now plot the diagrams using full-scale evaluation data. 
 The results correspond to Figure 7(d), 8(d), 9(d) and 11(d) of the submitted manuscript.
@@ -439,7 +438,6 @@ This demo corresponds to Table 2 of the submitted manuscript.
 bash ae_tlp.sh
 ```
 
-## Full-scale evaluation data
 
 We now plot the diagrams using full-scale evaluation data. 
 The results correspond to Table 3 and Figure 8(e) of the submitted manuscript.
@@ -456,7 +454,6 @@ This experiment compares Prom with conformal prediction-based methods like MAPIE
 bash ae_compare.sh
 ```
 
-## Full-scale evaluation data
 
 We now plot the diagrams using full-scale evaluation data. 
 The results correspond to Figure 10 of the submitted manuscript.
@@ -467,7 +464,7 @@ python ae_plot.py --case compare
 
 ##  Further Analysis (Optional)
 
-This section presents an analysis of certain parameters, corresponding to Section 7.6.%run ae_plot.py --case tlp
+This section presents an analysis of certain parameters, corresponding to Section 7.6.
 
 ```
 # The results correspond to Figure 13(a).
@@ -478,6 +475,12 @@ python ae_plot.py --case gaussian
 # The results correspond to Figure 13(b).
 bash ae_cd.sh
 ```
+
 ```
 python ae_plot.py --case cd
+```
+
+Now, you can check the figures in the following directory:
+```
+cd /cgo/prom/PROM/examples/tutorial/figures_plot/figure
 ```
