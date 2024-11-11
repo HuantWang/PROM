@@ -136,6 +136,13 @@ We now plot the diagrams using full-scale evaluation data.
 The results correspond to Figure 7(b), 8(b), 9(b) and 11(b) of the submitted manuscript.
 
 ```
+"""
+Figures will be saved to: /cgo/prom/PROM/examples/tutorial/figures_plot/figure/
+thread.pdf                  -> Figure 7(a)
+detectdrifting_thread.pdf   -> Figure 8(a)
+thread_il.pdf               -> Figure 9(a)
+individual_thread.pdf       -> Figure 11(a)
+"""
 python ae_plot.py --case thread
 ```
 
@@ -157,6 +164,13 @@ We now plot the diagrams using full-scale evaluation data.
 The results correspond to Figure 7(b), 8(b), 9(b) and 11(b) of the submitted manuscript.
 
 ```
+"""
+Figures will be saved to: /cgo/prom/PROM/examples/tutorial/figures_plot/figure/
+loop.pdf                  -> Figure 7(b)
+detectdrifting_loop.pdf   -> Figure 8(b)
+loop_il.pdf               -> Figure 9(b)
+individual_loop.pdf       -> Figure 11(b)
+"""
 python ae_plot.py --case loop
 ```
 
@@ -177,6 +191,13 @@ We now plot the diagrams using full-scale evaluation data.
 The results correspond to Figure 7(c), 8(c), 9(c) and 11(c) of the submitted manuscript.
 
 ```
+"""
+Figures will be saved to: /cgo/prom/PROM/examples/tutorial/figures_plot/figure/
+dev.pdf                  -> Figure 7(c)
+detectdrifting_dev.pdf   -> Figure 8(c)
+dev_il.pdf               -> Figure 9(c)
+individual_device.pdf    -> Figure 11(c)
+"""
 python ae_plot.py --case dev
 ```
 
@@ -197,6 +218,13 @@ We now plot the diagrams using full-scale evaluation data.
 The results correspond to Figure 7(d), 8(d), 9(d) and 11(d) of the submitted manuscript.
 
 ```
+"""
+Figures will be saved to: /cgo/prom/PROM/examples/tutorial/figures_plot/figure/
+drifting_vul.pdf         -> Figure 7(d)
+detectdrifting_vul.pdf   -> Figure 8(d)
+IL_vul.pdf               -> Figure 9(d)
+individual_vul.pdf       -> Figure 11(d)
+"""
 python ae_plot.py --case vul
 ```
 
@@ -217,6 +245,11 @@ We now plot the diagrams using full-scale evaluation data.
 The results correspond to Table 3 and Figure 8(e) of the submitted manuscript.
 
 ```
+"""
+Figures will be saved to: /cgo/prom/PROM/examples/tutorial/figures_plot/figure/
+detectdrifting_tensor.pdf         -> Figure 8(e)
+Print(table)                      -> Table 3.
+"""
 python ae_plot.py --case tlp
 ```
 
@@ -233,6 +266,10 @@ We now plot the diagrams using full-scale evaluation data.
 The results correspond to Figure 10 of the submitted manuscript.
 
 ```
+"""
+Figures will be saved to: /cgo/prom/PROM/examples/tutorial/figures_plot/figure/
+sig.pdf         -> Figure 10
+"""
 python ae_plot.py --case compare
 ```
 
@@ -241,16 +278,22 @@ python ae_plot.py --case compare
 This section presents an analysis of certain parameters, corresponding to Section 7.6.
 
 ```
-# The results correspond to Figure 13(a).
+"""
+Figures will be saved to: /cgo/prom/PROM/examples/tutorial/figures_plot/figure/
+gaussian.pdf         -> Figure 13 (a)
+"""
 python ae_plot.py --case gaussian
 ```
 
 ```
-# The results correspond to Figure 13(b).
 bash ae_cd.sh
 ```
 
 ```
+"""
+Figures will be saved to: /cgo/prom/PROM/examples/tutorial/figures_plot/figure/
+coverage.pdf         -> Figure 13 (b)
+"""
 python ae_plot.py --case cd
 ```
 
@@ -261,5 +304,5 @@ bash ae_clean.sh
 
 Now, you can check the figures in the following directory:
 ```
-cd /cgo/prom/PROM/examples/tutorial/figures_plot/figure
+cd /cgo/prom/PROM/examples/tutorial/figures_plot/figure/
 ```
