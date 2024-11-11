@@ -53,7 +53,7 @@ def ae_line_gaussian():
     plt.tight_layout()
 
     # 保存图表
-    plt.savefig(r'.\fugures_plot\figure\gaussian.pdf')
+    plt.savefig(r'./fugures_plot/figure/gaussian.pdf')
     plt.show()
     print("13 (a): Prom performance as Gaussian scale parameter changes.")
 
