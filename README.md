@@ -12,7 +12,7 @@
 <p align="center">
   <i>
     Check
-    <a href="http://34.66.10.35:8098/">the website</a>
+    <a href="http://34.66.10.35:8098/getting_started.html">the website</a>
     for more information.
   </i>
 </p>
