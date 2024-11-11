@@ -47,7 +47,7 @@ See [INSTALL.md](INSTALL.md) for further details.
 
 See [usage](./AE.md) for a step-by-step artifact evaluation for Prom.
 
-More detailed documents for using Prom can be checked on our [website](http://34.66.10.35:8098/).
+More detailed documents for using Prom can be checked on our [website](http://34.66.10.35:8098/getting_started.html).
 
 ## Data
 
