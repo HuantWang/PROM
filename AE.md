@@ -75,9 +75,6 @@ Run the Docker container
 $ sudo docker run -it --name prom -p 8099:8099  wanghuanting/prom:0.1 /bin/bash
 ```
 
-[//]: # ($ docker start prom )
-
-[//]: # ($ docker exec -it prom /bin/bash )
 
 #### 1.2 Setup the Environment
 

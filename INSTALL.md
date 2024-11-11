@@ -3,57 +3,57 @@
 Install the latest Prom release using:
 
 ```
-pip install -U prom
+pip install git+https://github.com/HuantWang/PROM.git
 ```
 
-PROM was tested with Python 3.8 and Ubuntu 18.04.
+PROM was tested with Python 3.7 to 3.9 and Ubuntu 18.04.
 
 ## DOCKER
+Follow the instructions below to use our AE evaluation scripts.
 
-Install docker engine by following the instructions [here](https://docs.docker.com/install/linux/docker-ce/ubuntu/).
+### 1. Setup
 
-1. Fetch the docker image from docker hub.
+Install Docker by following the instructions 
+[here](https://docs.docker.com/install/linux/docker-ce/ubuntu/). 
+The following instructions assume the host OS runs Linux.
+
+#### 1.1  Fetch the Docker Image
+
+Fetch the docker image from docker hub.
 
 ```
-$ sudo docker pull ssimage/prom_0.1
+$ sudo docker pull wanghuanting/prom:0.1
 ```
 
 To check the list of images, run:
 
 ```
 $ sudo docker images
-REPOSITORY                                   TAG                 IMAGE ID            CREATED             SIZE
-ssimage/prom_0.1		     				latest              ac6b624d06de        2 hours ago         41.8GB
-```
-
-1. Run the docker image.
+#output
+#REPOSITORY                                                               TAG                                 IMAGE ID       CREATED         SIZE
+#wanghuanting/prom                                                        0.1                                cc84e8929fe1   2 minutes ago    147GB
 
 ```
-$ docker run -dit -P --name=prom ssimage/prom_0.1 /bin/bash
-$ docker start prom 
-$ docker exec -it prom /bin/bash
-```
 
-## Building from source
-
-We recommend using [conda](https://docs.conda.io/projects/conda/en/latest/user-guide/install/) to manage the remaining build dependencies. First create a conda environment with the required dependencies:
+Run the Docker container
 
 ```
-conda create -y -n prom python=3.8
-conda activate prom
+$ sudo docker run -it --name prom -p 8099:8099  wanghuanting/prom:0.1 /bin/bash
 ```
 
-If you plan to contribute to Prom, install the development environment requirements using:
+
+#### 1.2 Setup the Environment
+
+After importing the docker container **and getting into bash** in the container, run the following command to select the conda environment, before using any of the AE scripts:
+
+`````` shell
+$ conda activate thread
+``````
+
+Then, go to the directory of our tool:
 
 ```
-make dev-init
-```
-
-## Have a Test
-
-```
-# A demo for testing Prom 
-$ conda activate prom
-$ cd ./prom/
-$ python test_cases.py --path_to_data ../data/test --mode test 
+# Move the project to the target directory
+(thread) $ mv /cgo/PROM/prom/* /cgo/prom/
+(thread) $ cd prom/PROM/examples/tutorial/
 ```

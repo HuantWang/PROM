@@ -51,7 +51,7 @@ More detailed documents for using Prom can be checked on our [website](http://34
 
 ## Data
 
-Data are available at [here](./data).
+Data are available at [here](./benchmark).
 
 ## Contributing
 
