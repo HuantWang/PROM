@@ -7,8 +7,8 @@ os.environ['CURL_CA_BUNDLE'] = ''
 warnings.filterwarnings("ignore")
 import random
 sys.path.append('./case_study/Loop')
-sys.path.append('/home/huanting/PROM/src')
-sys.path.append('/home/huanting/PROM/thirdpackage')
+sys.path.append('/cgo/prom/PROM/src')
+sys.path.append('/cgo/prom/PROM/thirdpackage')
 
 from Magni_utils import Magni,LoopT,make_prediction,make_prediction_il
 
@@ -22,6 +22,16 @@ from sklearn.svm import SVC
 from src.prom.prom_util import Prom_utils
 
 def load_deeptune_args():
+    """
+    Load hyperparameters for model training and deployment.
+
+    Uses NNI to get parameters from the tuner or sets default values if none are provided.
+
+    Returns
+    -------
+    argparse.Namespace
+        Parsed command-line arguments including seed, mode, and other hyperparameters.
+    """
     # get parameters from tuner
     params = nni.get_next_parameter()
     if params == {}:
@@ -44,6 +54,17 @@ def load_deeptune_args():
     return args
 
 def loop_train_svm(args):
+    """
+    Train an SVM model on loop coarsening data.
+
+    This function initializes the SVM model, partitions the data into training, validation, and test sets,
+    and trains the model on the training set. It also computes and saves performance metrics.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Contains training parameters including 'seed' for reproducibility and model hyperparameters.
+    """
     # load args
     prom_loop = LoopT(model=Magni())
     Magni_model = Magni()
@@ -108,7 +129,7 @@ def loop_train_svm(args):
     # prom_loop.model.save(model_path)
 
     # load the model
-    # prom_loop.model.restore(r'/home/huanting/PROM/examples/case_study/Loop/models/loop/123.model')
+    # prom_loop.model.restore(r'/cgo/prom/PROM/examples/case_study/Loop/models/loop/123.model')
     # make prediction
 
     print(f"Loading successful, the speedup is {origin_speedup}")
@@ -134,6 +155,17 @@ def loop_train_svm(args):
     nni.report_final_result(origin_speedup)
 
 def loop_deploy_svm(args):
+    """
+    Deploy an SVM model for inference and evaluate its performance.
+
+    This function loads the SVM model, partitions data for testing, makes predictions,
+    and evaluates performance using conformal prediction. It also performs incremental learning to enhance accuracy.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Contains deployment parameters including 'seed' for reproducibility and model hyperparameters.
+    """
     # load args
     prom_loop = LoopT(model=Magni())
     Magni_model = Magni()
@@ -207,7 +239,7 @@ def loop_deploy_svm(args):
     # prom_loop.model.save(model_path)
 
     # load the model
-    # prom_loop.model.restore(r'/home/huanting/PROM/examples/case_study/Loop/models/loop/123.model')
+    # prom_loop.model.restore(r'/cgo/prom/PROM/examples/case_study/Loop/models/loop/123.model')
     # make prediction
 
     print(f"Loading successful, the speedup is {origin_speedup}")
@@ -318,4 +350,4 @@ if __name__=='__main__':
         loop_deploy_svm(args=args)
     # loop_train_svm(args)
     loop_deploy_svm(args)
-    # nnictl create --config /home/huanting/PROM/examples/case_study/Loop/config.yaml --port 8088
+    # nnictl create --config /cgo/prom/PROM/examples/case_study/Loop/config.yaml --port 8088

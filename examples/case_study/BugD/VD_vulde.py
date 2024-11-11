@@ -66,7 +66,26 @@ MODEL_CLASSES = {
 
 
 class InputFeatures(object):
-    """A single training/test features for a example."""
+    """
+    Train the model incrementally with additional dataset samples.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Argument parser containing model configuration.
+    train_dataset : TextDataset
+        Dataset for training.
+    model : object
+        Model to be trained.
+    tokenizer : object
+        Tokenizer instance for data processing.
+
+    Returns
+    -------
+    float
+        Best accuracy achieved during training.
+    """
+
 
     def __init__(self,
                  input_tokens,
@@ -85,6 +104,25 @@ import random
 
 
 def cvconvert_examples_to_features(code_new, label, tokenizer, args):
+    """
+    Convert input text and label into features using a tokenizer.
+
+    Parameters
+    ----------
+    code_new : str
+        The input code to be tokenized.
+    label : list
+        The label corresponding to the input code.
+    tokenizer : object
+        Tokenizer instance to tokenize the input code.
+    args : argparse.Namespace
+        Arguments including block size and other configurations.
+
+    Returns
+    -------
+    InputFeatures
+        Features containing tokenized data, token IDs, and labels.
+    """
     # source
     code = ' '.join(code_new.split())
     code_tokens = tokenizer.tokenize(code)[:args.block_size - 2]
@@ -99,6 +137,22 @@ import os
 
 
 class TextDataset(Dataset):
+    """
+    Dataset for loading and processing textual data for training or evaluation.
+
+    Parameters
+    ----------
+    tokenizer : object
+        Tokenizer instance for processing text data.
+    args : argparse.Namespace
+        Arguments including configurations for processing the dataset.
+    file_path : str
+        Path to the dataset file.
+    one_hot_vectors : list
+        List of one-hot encoded vectors for labels.
+    suffixes : list
+        List of suffixes for label categorization.
+    """
     def __init__(self, tokenizer, args, file_path=None, one_hot_vectors=[], suffixes=[]):
         #
         # 提取所有不同的后缀
@@ -258,6 +312,19 @@ class TextDataset(Dataset):
 
 
 def remove_duplicates_and_preserve_order(arr):
+    """
+    Remove duplicate elements from a list while preserving the order.
+
+    Parameters
+    ----------
+    arr : list
+        List from which duplicates need to be removed.
+
+    Returns
+    -------
+    list
+        List with duplicates removed, preserving the original order.
+    """
     unique_elements = []
     for item in arr:
         if item not in unique_elements:
@@ -266,6 +333,21 @@ def remove_duplicates_and_preserve_order(arr):
 
 
 def onehot(file_path="", seed=123):
+    """
+    Generate one-hot encoded vectors for categorical labels.
+
+    Parameters
+    ----------
+    file_path : str
+        Path to the dataset file containing label information.
+    seed : int
+        Random seed for reproducibility.
+
+    Returns
+    -------
+    tuple
+        A tuple containing one-hot encoded vectors and list of suffixes.
+    """
     type_all = []
     with open(file_path) as ff:
         for line in ff:
@@ -284,6 +366,14 @@ def onehot(file_path="", seed=123):
 
 
 def set_seed(seed=42):
+    """
+    Set the random seed for reproducibility across NumPy, PyTorch, and Python.
+
+    Parameters
+    ----------
+    seed : int
+        The random seed for reproducibility.
+    """
     seed = int(seed)
     # print(seed)
     os.environ['PYHTONHASHSEED'] = str(seed)
@@ -294,7 +384,25 @@ def set_seed(seed=42):
 
 
 def incre(args, train_dataset, model, tokenizer):
-    """ Train the model """
+    """
+    Train the model incrementally with additional dataset samples.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Argument parser containing model configuration.
+    train_dataset : TextDataset
+        Dataset for training.
+    model : object
+        Model to be trained.
+    tokenizer : object
+        Tokenizer instance for data processing.
+
+    Returns
+    -------
+    float
+        Best accuracy achieved during training.
+    """
     args.train_batch_size = args.per_gpu_train_batch_size * max(1, args.n_gpu)
     train_sampler = RandomSampler(train_dataset) if args.local_rank == -1 else DistributedSampler(train_dataset)
 
@@ -420,7 +528,25 @@ def incre(args, train_dataset, model, tokenizer):
     return best_acc
 
 def train(args, train_dataset, model, tokenizer):
-    """ Train the model """
+    """
+    Train the model on the training dataset.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Argument parser containing model configuration.
+    train_dataset : TextDataset
+        Dataset for training.
+    model : object
+        Model to be trained.
+    tokenizer : object
+        Tokenizer instance for data processing.
+
+    Returns
+    -------
+    float
+        Best F1 score achieved during training.
+    """
     args.train_batch_size = args.per_gpu_train_batch_size * max(1, args.n_gpu)
     train_sampler = RandomSampler(train_dataset) if args.local_rank == -1 else DistributedSampler(train_dataset)
 
@@ -562,7 +688,25 @@ def train(args, train_dataset, model, tokenizer):
     return best_f1
 
 def deploy(args, train_dataset, model, tokenizer):
-    """ Train the model """
+    """
+    Deploy the model for training with an incremental learning approach.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Argument parser containing model configuration.
+    train_dataset : TextDataset
+        Dataset for training.
+    model : object
+        Model to be trained.
+    tokenizer : object
+        Tokenizer instance for data processing.
+
+    Returns
+    -------
+    float
+        Best accuracy achieved during deployment.
+    """
     args.train_batch_size = args.per_gpu_train_batch_size * max(1, args.n_gpu)
     train_sampler = RandomSampler(train_dataset) if args.local_rank == -1 else DistributedSampler(train_dataset)
 
@@ -791,6 +935,25 @@ def deploy(args, train_dataset, model, tokenizer):
 
 
 def evaluate(args, model, tokenizer, eval_when_training=False):
+    """
+    Evaluate the model performance on the validation dataset.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Argument parser containing evaluation configuration.
+    model : object
+        Model to be evaluated.
+    tokenizer : object
+        Tokenizer instance for data processing.
+    eval_when_training : bool
+        Flag indicating if evaluation should happen during training.
+
+    Returns
+    -------
+    dict
+        Dictionary containing evaluation metrics.
+    """
     # Loop to handle MNLI double evaluation (matched, mis-matched)
     eval_output_dir = args.output_dir
     eval_dataset = TextDataset(tokenizer, args, args.eval_data_file, args.one_hot_vectors, args.suffixes)
@@ -909,6 +1072,23 @@ def evaluate(args, model, tokenizer, eval_when_training=False):
 
 
 def conformal_prediction(args, model, tokenizer):
+    """
+    Perform conformal prediction for uncertainty quantification.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Argument parser containing configuration.
+    model : object
+        Model for prediction.
+    tokenizer : object
+        Tokenizer instance for data processing.
+
+    Returns
+    -------
+    tuple
+        Contains result dictionary and list of selected indices.
+    """
     # Loop to handle MNLI double evaluation (matched, mis-matched)
     print("Start the conformal prediction...")
     global find_pre, find_recall
@@ -1201,6 +1381,28 @@ def conformal_prediction(args, model, tokenizer):
 
 
 def evaluate_test(args, model, tokenizer, eval_when_training=False):
+    """
+    Evaluate the model performance on a test dataset.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Argument parser containing evaluation configuration, including output directory,
+        batch sizes, device, and other model parameters.
+    model : object
+        The model to be evaluated, such as a neural network model.
+    tokenizer : object
+        Tokenizer instance used for data processing.
+    eval_when_training : bool, optional
+        If True, evaluation will happen during training. Defaults to False.
+
+    Returns
+    -------
+    dict
+        A dictionary containing evaluation metrics:
+        - "test_loss" : float : Perplexity computed from evaluation loss.
+        - "test_acc" : float : Accuracy of the model on the test dataset.
+    """
     # Loop to handle MNLI double evaluation (matched, mis-matched)
     eval_output_dir = args.output_dir
     eval_dataset = TextDataset(tokenizer, args, "../../../benchmark/Bug/new_train.jsonl", args.one_hot_vectors, args.suffixes)
@@ -1318,6 +1520,26 @@ def evaluate_test(args, model, tokenizer, eval_when_training=False):
 
 
 def epoch_test(args, model, tokenizer):
+    """
+    Evaluates the model performance on a test dataset for each epoch.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Argument parser containing evaluation configuration, such as file paths, batch sizes, and device setup.
+    model : object
+        The model to be evaluated.
+    tokenizer : object
+        Tokenizer instance used to process the dataset.
+
+    Returns
+    -------
+    dict
+        A dictionary containing evaluation metrics:
+        - "test_acc" : float : Accuracy of the model on the test dataset.
+        - "test_rec" : float : Recall of the model on the test dataset.
+        - "test_f1" : float : F1 score of the model on the test dataset.
+    """
     # Loop to handle MNLI double evaluation (matched, mis-matched)
     eval_dataset = TextDataset(tokenizer, args, args.test_data_file, args.one_hot_vectors, args.suffixes)
 
@@ -1406,6 +1628,19 @@ def epoch_test(args, model, tokenizer):
 
 
 def model_initial():
+    """
+    Initializes model parameters, configurations, and tokenizer.
+
+    Uses hyperparameters from nni for tuning if available, otherwise defaults to specified parameters.
+
+    Returns
+    -------
+    tuple
+        - model : object : The initialized model.
+        - config : object : Model configuration.
+        - tokenizer : object : Tokenizer instance.
+        - args : argparse.Namespace : Argument parser with model configuration.
+    """
     params = nni.get_next_parameter()
     if params == {}:
         params = {
@@ -1583,6 +1818,24 @@ def model_initial():
     return model, config, tokenizer, args
 
 def codebert_train(model_pre, config, tokenizer, args):
+    """
+    Trains the model on a specified training dataset using provided configurations and tokenizer.
+
+    Parameters
+    ----------
+    model_pre : object
+        Pre-trained model instance to be used as the base model.
+    config : object
+        Configuration of the model, including hyperparameters.
+    tokenizer : object
+        Tokenizer instance to process the dataset.
+    args : argparse.Namespace
+        Argument parser with configurations for training, such as file paths, batch sizes, and device setup.
+
+    Returns
+    -------
+    None
+    """
     model = BiLSTMModel(model_pre, config, tokenizer, args)
     prom_loop = Bug_detection(model=model)
 
@@ -1609,6 +1862,24 @@ def codebert_train(model_pre, config, tokenizer, args):
     nni.report_final_result(best_acc)
 
 def codebert_deploy(model_pre, config, tokenizer, args):
+    """
+    Deploys the model with incremental learning on a specified training dataset.
+
+    Parameters
+    ----------
+    model_pre : object
+        Pre-trained model instance to be used as the base model.
+    config : object
+        Configuration of the model, including hyperparameters.
+    tokenizer : object
+        Tokenizer instance to process the dataset.
+    args : argparse.Namespace
+        Argument parser with configurations for deployment, such as file paths, batch sizes, and device setup.
+
+    Returns
+    -------
+    None
+    """
     model = BiLSTMModel(model_pre, config, tokenizer, args)
     prom_loop = Bug_detection(model=model)
 

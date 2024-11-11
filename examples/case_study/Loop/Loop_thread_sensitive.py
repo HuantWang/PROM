@@ -7,8 +7,8 @@ import pickle
 warnings.filterwarnings("ignore")
 import random
 sys.path.append('./case_study/Loop')
-sys.path.append('/home/huanting/PROM/src')
-sys.path.append('/home/huanting/PROM/thirdpackage')
+sys.path.append('/cgo/prom/PROM/src')
+sys.path.append('/cgo/prom/PROM/thirdpackage')
 from Deeptune_utils import DeepTune, LoopT, deeptune_make_prediction, deeptune_make_prediction_il
 
 import numpy as np
@@ -22,6 +22,18 @@ from prom_util_sensitive import Prom_utils
 
 
 def load_deeptune_args():
+    """
+    Load arguments for DeepTune model training and deployment.
+
+    Retrieves hyperparameters from the tuner or sets default values if none are provided.
+    These arguments include settings like the random seed, epoch count, and batch size.
+
+    Returns
+    -------
+    argparse.Namespace
+        Parsed command-line arguments with parameters such as seed, mode, epoch, and batch size.
+    """
+
     # get parameters from tuner
     params = nni.get_next_parameter()
     if params == {}:
@@ -50,6 +62,23 @@ def load_deeptune_args():
 
 
 def loop_deploy_de(args):
+    """
+    Deploy and evaluate the DeepTune model for loop performance optimization.
+
+    Loads the dataset, initializes the DeepTune model, trains it, and evaluates its performance using conformal prediction.
+    Also includes incremental learning to further improve model performance.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Parsed command-line arguments containing parameters like seed, epoch, and batch size.
+
+    Returns
+    -------
+    tuple
+        A tuple containing accuracy, F1 score, precision, recall, alpha, and the seed value for the current model run.
+    """
+
     # load args
 
     prom_loop = LoopT(model=DeepTune())
@@ -87,7 +116,7 @@ def loop_deploy_de(args):
     os.makedirs(os.path.dirname(plot_figuredata_path), exist_ok=True)
 
     # load the model
-    # prom_loop.model.restore(r'/home/huanting/PROM/examples/case_study/Loop/models/loop/123.model')
+    # prom_loop.model.restore(r'/cgo/prom/PROM/examples/case_study/Loop/models/loop/123.model')
     # make prediction
     origin_speedup, all_pre, data_distri = deeptune_make_prediction \
         (model=deeptune_model, X_seq=X_seq, y_1hot=y_1hot,
@@ -138,6 +167,18 @@ def loop_deploy_de(args):
 
 
 def loop_train_de(args):
+    """
+    Train the DeepTune model for loop performance optimization.
+
+    Loads the dataset, partitions it, and trains the DeepTune model on the training set.
+    Saves the performance metrics and generates plots for model evaluation.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Parsed command-line arguments containing training parameters like seed, epoch, and batch size.
+    """
+
     # load args
 
     prom_loop = LoopT(model=DeepTune())
@@ -175,7 +216,7 @@ def loop_train_de(args):
     os.makedirs(os.path.dirname(plot_figuredata_path), exist_ok=True)
 
     # load the model
-    # prom_loop.model.restore(r'/home/huanting/PROM/examples/case_study/Loop/models/loop/123.model')
+    # prom_loop.model.restore(r'/cgo/prom/PROM/examples/case_study/Loop/models/loop/123.model')
     # make prediction
     origin_speedup, all_pre, data_distri = deeptune_make_prediction \
         (model=deeptune_model, X_seq=X_seq, y_1hot=y_1hot,
@@ -204,6 +245,13 @@ def loop_train_de(args):
     nni.report_final_result(origin_speedup)
 
 def sensitive():
+    """
+    Conduct sensitivity analysis on the DeepTune model by running multiple model deployments with different seeds.
+
+    Repeats the model deployment process for a specified number of iterations, storing accuracy, F1 score,
+    precision, recall, and alpha values for each run. Results are saved in a pickle file for further analysis.
+    """
+
     from tqdm import tqdm
     Acc_all = []
     F1_all = []
@@ -228,6 +276,13 @@ def sensitive():
             {'Acc_all': Acc_all, 'F1_all': F1_all, 'Pre_all': Pre_all, 'Rec_all': Rec_all, 'alpha_all': alpha_all, 'seed_all':seed_all}, f)
 
 def load_pkc():
+    """
+    Load and analyze the results of sensitivity analysis from a pickle file.
+
+    Computes geometric means for accuracy, F1 score, precision, and recall values across different alpha levels.
+    Displays a plot of sorted precision, recall, and F1 scores as a function of alpha for performance analysis.
+    """
+
     import matplotlib.pyplot as plt
     from scipy.stats import gmean
     with open('results.pkl', 'rb') as f:
@@ -274,5 +329,5 @@ if __name__ == '__main__':
 
 
 
-    # nnictl create --config /home/huanting/PROM/examples/case_study/Loop/config.yaml --port 8088
+    # nnictl create --config /cgo/prom/PROM/examples/case_study/Loop/config.yaml --port 8088
 

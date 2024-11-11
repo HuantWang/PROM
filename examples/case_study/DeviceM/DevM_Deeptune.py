@@ -31,6 +31,14 @@ import torch
 warnings.filterwarnings('ignore')
 
 def load_args():
+    """
+    Loads command-line arguments and initializes the dataset.
+
+    Returns
+    -------
+    tuple
+        Arguments and dataset instance.
+    """
     # get parameters from tuner
     params = nni.get_next_parameter()
 
@@ -54,6 +62,31 @@ def load_args():
 
 # Load dataset
 def train(suite_train,suite_test,dataset,combinations,args=None):
+    """
+    Trains models using the specified data and configurations.
+
+    Parameters
+    ----------
+    suite_train : dict
+        Training dataset.
+
+    suite_test : dict
+        Testing dataset.
+
+    dataset : object
+        The dataset instance.
+
+    combinations : list
+        List of representation and model combinations.
+
+    args : argparse.Namespace, optional
+        Arguments for the training process.
+
+    Returns
+    -------
+    tuple
+        Model path and mean performance percentage.
+    """
     for builder, visitor, model in combinations:
         print("Processing %s-%s-%s" % (builder.__name__, visitor.__name__, model.__name__))
 
@@ -94,6 +127,29 @@ def train(suite_train,suite_test,dataset,combinations,args=None):
     return model_path,percent_mean
 
 def load_pickle( suite_train, suite_test, dataset,combinations,random_seed,model_path):
+    """
+    Loads the model from a pickle file, validates it, and performs testing.
+
+    Parameters
+    ----------
+    suite_train : dict
+        Training dataset.
+
+    suite_test : dict
+        Testing dataset.
+
+    dataset : object
+        The dataset instance.
+
+    combinations : list
+        List of representation and model combinations.
+
+    random_seed : int
+        Random seed for reproducibility.
+
+    model_path : str
+        Path to the pre-trained model.
+    """
     for builder, visitor, model in combinations:
         print("Processing %s-%s-%s" % (builder.__name__, visitor.__name__, model.__name__))
 
@@ -157,6 +213,17 @@ def load_pickle( suite_train, suite_test, dataset,combinations,random_seed,model
 
 
 def train_phase(args, dataset_ori):
+    """
+    Sets up and trains the model on the specified dataset.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Arguments for the training process.
+
+    dataset_ori : object
+        Original dataset instance.
+    """
     print("Prepare the parameters")
     # Explore combinations
     combinations = [
@@ -242,6 +309,17 @@ def train_phase(args, dataset_ori):
 
 
 def deploy(args, dataset_ori):
+    """
+    Deploys the model, including feature extraction and evaluation.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Arguments for the deployment process.
+
+    dataset_ori : object
+        Original dataset instance.
+    """
     print("Prepare the parameters")
 
     # Explore combinations
@@ -408,7 +486,7 @@ if __name__ == '__main__':
     elif args.mode == 'deploy':
         deploy(args, dataset_ori)
     # train_phase(args, dataset_ori)
-    deploy(args, dataset_ori)
+    # deploy(args, dataset_ori)
     # nnictl create --config /home/huanting/PROM/examples/case_study/DeviceM/config.yml --port 8088
     # train_phase(args, dataset_ori)
     # deploy(args, dataset_ori)

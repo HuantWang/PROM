@@ -26,6 +26,14 @@ from prom.metrics import regression_coverage_score
 
 
 def pred_a_dataset(datas, task_pred_dict, model):
+    """
+    Generates predictions for a given dataset using the specified model.
+
+    Args:
+        datas: Data to predict.
+        task_pred_dict: Dictionary to store task predictions.
+        model: Trained model for making predictions.
+    """
     datas_new = []
     for data_idx, data in enumerate([datas]):
         file, file_idx, workloadkey_idx, workloadkey, workload_args, flop_ct, line_vecs = data
@@ -57,6 +65,16 @@ def pred_a_dataset(datas, task_pred_dict, model):
 
 
 def eval_model(model_file='', test_datasets=''):
+    """
+    Evaluates the performance of a model on a test dataset.
+
+    Args:
+        model_file (str): Path to the saved model file.
+        test_datasets: Test dataset for evaluation.
+
+    Returns:
+        float: Average performance score.
+    """
     top_ks = [1, 5, 10, 20]
     with open(model_file, 'rb') as f:
         model = pickle.load(f)
@@ -199,12 +217,27 @@ def get_cosine_schedule_with_warmup(
 
 
 class Tlp_prom(util.ModelDefinition):
+    """
+    Model definition for Tlp_prom, managing data partitioning and feature extraction.
+    """
     def __init__(self, model=None, dataset=None, calibration_data=None, args=None):
+        """
+        Initializes the model, dataset, and calibration data.
+        """
         # self.model =
         self.calibration_data = None
         self.dataset = None
 
     def data_partitioning(self, train_dataset, test_dataset, calibration_ratio=0.2, args=None):
+        """
+        Partitions data into training and test datasets.
+
+        Args:
+            train_dataset: Training dataset path.
+            test_dataset: Test dataset path.
+            calibration_ratio: Ratio for calibration data.
+            args: Additional arguments.
+        """
         # prepare dataset
         if os.path.exists(args.save_folder) is False:
             print('create folder', args.save_folder)
@@ -230,6 +263,16 @@ class Tlp_prom(util.ModelDefinition):
         return train_data, test_dataset
 
     def predict(self, X, significant_level=0.1):
+        """
+        Predicts outcomes with a given confidence level.
+
+        Args:
+            X: Input data.
+            significant_level: Confidence level for prediction.
+
+        Returns:
+            Tuple containing predictions and probabilities.
+        """
         if self.model is None:
             raise ValueError("Model is not initialized.")
 
@@ -242,6 +285,9 @@ class Tlp_prom(util.ModelDefinition):
 
 
 class AttentionModule(nn.Module):
+    """
+    Neural network module implementing an attention mechanism.
+    """
     def __init__(self):
         super().__init__()
         self.fea_size = args.fea_size
@@ -750,6 +796,15 @@ class BertSegmentDataLoader:
 
 
 def load_datas(datasets_global):
+    """
+    Loads and partitions global dataset into training and validation sets.
+
+    Args:
+        datasets_global: Complete dataset.
+
+    Returns:
+        Tuple of training and validation data loaders.
+    """
     datasets = np.array(datasets_global, dtype=object)
     if args.data_cnt > 0:
         train_len = int(args.data_cnt * 1000 * 0.9)
@@ -782,6 +837,18 @@ def load_datas(datasets_global):
 
 
 def validate(model, valid_loader, loss_func, device):
+    """
+    Validates the model on the validation dataset.
+
+    Args:
+        model: Trained model.
+        valid_loader: Validation data loader.
+        loss_func: Loss function for validation.
+        device: Device for model and data.
+
+    Returns:
+        Sum of validation losses.
+    """
     model.eval()
     valid_losses = []
 
@@ -796,6 +863,18 @@ def validate(model, valid_loader, loss_func, device):
 
 
 def train(train_loader, val_dataloader, device, test_tlp):
+    """
+    Trains the model and performs validation periodically.
+
+    Args:
+        train_loader: Training data loader.
+        val_dataloader: Validation data loader.
+        device: Device for model and data.
+        test_tlp: Test data for evaluation.
+
+    Returns:
+        Tuple of model save file name and best performance score.
+    """
     performance = 0
     best_performance = 0
     if args.attention_class == 'default':
@@ -930,7 +1009,20 @@ def train(train_loader, val_dataloader, device, test_tlp):
 
 
 def il(test_loader, device, pre_trained_model, aug_data, args):
-    # 加载预训练模型
+    """
+    Implements incremental learning using pre-trained model on augmented data.
+
+    Args:
+        test_loader: Test data loader.
+        device: Device for model and data.
+        pre_trained_model: Path to pre-trained model.
+        aug_data: Augmented data for incremental learning.
+        args: Additional arguments.
+
+    Returns:
+        Path to the updated model after fine-tuning.
+    """
+
     if pre_trained_model:
         with open(pre_trained_model, 'rb') as f:
             net = pickle.load(f)
@@ -951,17 +1043,17 @@ def il(test_loader, device, pre_trained_model, aug_data, args):
     il_dataset_loader = SegmentDataLoader(il_dataset, 128, False)
     test_dataset_loader = SegmentDataLoader(test_dataset, 128, False)
 
-    # 设置损失函数
+
     if args.rank_mse == 'rank':
         loss_func = LambdaRankLoss(device)  # 假设 LambdaRankLoss 是已经定义好的类
     else:
         loss_func = nn.MSELoss()
 
-    # 配置优化器和学习率调度器
+
     optimizer = optim.Adam(net.parameters(), lr=args.lr * 0.1, weight_decay=args.weight_decay)
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.n_epoch // 3, gamma=0.8)
 
-    # Fine-tuning 的训练循环
+
     print('Start fine-tuning...')
     for epoch in range(args.n_epoch):
         net.train()
@@ -979,12 +1071,12 @@ def il(test_loader, device, pre_trained_model, aug_data, args):
 
         lr_scheduler.step()
 
-        # 打印进度和验证
+
         if epoch % 5 == 0 or epoch == args.n_epoch - 1:
             valid_loss = validate(net, test_dataset_loader, loss_func, device)
             print(f"Epoch: {epoch} Train Loss: {train_loss:.4f} Valid Loss: {valid_loss:.4f}")
 
-        # 保存模型
+
     model_save_file_name = f'{args.save_folder}/tlp_model_{args.seed}.pkl'
     with open(model_save_file_name, 'wb') as f:
         pickle.dump(net.cpu(), f)
@@ -1005,6 +1097,21 @@ def set_seed(seed):
 
 
 def conformal_prediction(datas, task_pred_dict, model, mapie, task_drift_dict, task_after_dict,cluster_num):
+    """
+    Performs conformal prediction for anomaly detection.
+
+    Args:
+        datas: Input data.
+        task_pred_dict: Dictionary to store task predictions.
+        model: Trained model.
+        mapie: Conformal prediction model.
+        task_drift_dict: Dictionary for detected drift data.
+        task_after_dict: Dictionary for post-drift data.
+        cluster_num: Number of clusters for prediction.
+
+    Returns:
+        Indices of detected drifted data, F1 scores, precision, and recall.
+    """
     datas_new = []
     for data_idx, data in enumerate([datas]):
         file, file_idx, workloadkey_idx, workloadkey, workload_args, flop_ct, line_vecs = data
@@ -1128,6 +1235,20 @@ def conformal_prediction(datas, task_pred_dict, model, mapie, task_drift_dict, t
 
 
 def cp(train_loader, val_dataloader, test_datasets, underlying_path, file_pattern,cluster_num=2):
+    """
+    Runs conformal prediction and anomaly detection on test data.
+
+    Args:
+        train_loader: Training data loader.
+        val_dataloader: Validation data loader.
+        test_datasets: Test datasets.
+        underlying_path: Path to pre-trained model.
+        file_pattern: Pattern for file matching.
+        cluster_num: Number of clusters for conformal prediction.
+
+    Returns:
+        Indices of detected anomalies, F1 scores, precision, and recall.
+    """
     model_save_file_name = underlying_path
     with open(model_save_file_name, 'rb') as f:
         net = pickle.load(f)
@@ -1343,11 +1464,10 @@ if __name__ == "__main__":
         'cluster_all': cluster_all
     }
 
-    # 将数据保存为 pkl 文件
     with open('cluster_data.pkl', 'wb') as f:
         pickle.dump(data, f)
 
-    print("数据已保存到 'cluster_data.pkl'")
+    # print("save to 'cluster_data.pkl'")
 
     # train_model(args)
     # nnictl create --config /home/huanting/PROM/examples/case_study/tlp/scripts/config.yaml --port 8088

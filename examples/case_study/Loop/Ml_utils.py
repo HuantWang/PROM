@@ -29,8 +29,8 @@ import matplotlib.pyplot as plt
 filterwarnings("ignore", category=ConvergenceWarning)
 import tensorflow as tf
 import os
-sys.path.append('/home/huanting/PROM/src')
-sys.path.append('/home/huanting/PROM/thirdpackage')
+sys.path.append('/cgo/prom/PROM/src')
+sys.path.append('/cgo/prom/PROM/thirdpackage')
 import src.prom.prom_util as util
 import clang.cindex
 from sklearn.neural_network import MLPClassifier
@@ -38,6 +38,26 @@ from sklearn.model_selection import GridSearchCV, KFold
 
 
 def data_partitioning(dataset=r'data_dict.pkl', calibration_ratio=0.2, args=None):
+    """
+    Partitions data into training, validation, and test sets.
+
+    Parameters
+    ----------
+    dataset : str, optional
+        Path to the dataset (default is 'data_dict.pkl').
+
+    calibration_ratio : float, optional
+        Proportion of the data used for calibration (default is 0.2).
+
+    args : argparse.Namespace, optional
+        Arguments containing a random seed for reproducibility.
+
+    Returns
+    -------
+    tuple
+        Tuple containing the sequence features, one-hot labels, times, and the indices of the train, validation, and test sets.
+    """
+
     X_seq, y_1hot, time = get_feature(path=dataset)
 
     numbers = np.arange(1, len(y_1hot))
@@ -54,11 +74,39 @@ def data_partitioning(dataset=r'data_dict.pkl', calibration_ratio=0.2, args=None
     return X_seq, y_1hot, time, train_index, valid_index, test_index
 
 def get_c_code_from_file(file_name):
+    """
+    Reads C code from a file.
+
+    Parameters
+    ----------
+    file_name : str
+        Path to the file containing C code.
+
+    Returns
+    -------
+    str
+        The C code content as a string.
+    """
+
     with open(file_name, "r") as file:
         c_code = file.read()
     return c_code
 
 def extract_file_names_from_paths(file_paths):
+    """
+    Extracts file names from a list of file paths.
+
+    Parameters
+    ----------
+    file_paths : list of str
+        List of file paths.
+
+    Returns
+    -------
+    list of str
+        List of extracted file names.
+    """
+
     file_names = []
     for file_path in file_paths:
         file_name = os.path.basename(file_path)
@@ -66,6 +114,20 @@ def extract_file_names_from_paths(file_paths):
     return file_names
 
 def remove_comments(text):
+    """
+    Removes comments from C/C++ code.
+
+    Parameters
+    ----------
+    text : str
+        C/C++ code as a string.
+
+    Returns
+    -------
+    str
+        Code with comments removed.
+    """
+
     pattern = r"(\".*?\"|\'.*?\')|(/\*.*?\*/|//[^\r\n]*$)"
     regex = re.compile(pattern, re.MULTILINE | re.DOTALL)
 
@@ -78,6 +140,26 @@ def remove_comments(text):
     return regex.sub(_replacer, text)
 
 def find_for_loops(node, file_content, depth=0):
+    """
+    Finds all `for` loops in a parsed C code file.
+
+    Parameters
+    ----------
+    node : clang.cindex.Cursor
+        AST node of the C code.
+
+    file_content : str
+        Full content of the C file.
+
+    depth : int, optional
+        Depth of recursion for traversing nodes (default is 0).
+
+    Returns
+    -------
+    list of str
+        List of code snippets containing `for` loops.
+    """
+
     loops = []
     if node.kind == clang.cindex.CursorKind.FOR_STMT:
         for child in node.get_children():
@@ -92,6 +174,20 @@ def find_for_loops(node, file_content, depth=0):
 
 
 def extract_loops_from_files(file_list):
+    """
+    Extracts loops from a list of C files.
+
+    Parameters
+    ----------
+    file_list : list of str
+        List of file paths containing C code.
+
+    Returns
+    -------
+    list of str
+        List of `for` loops as code snippets from each file.
+    """
+
     index = clang.cindex.Index.create()
     all_loops = []
     for file_path in file_list:
@@ -110,6 +206,32 @@ def extract_loops_from_files(file_list):
     return all_loops
 
 def ml_make_prediction(model=None, X_feature=None, y_1hot=None, time=None, test_index=None):
+    """
+    Makes predictions using a machine learning model and calculates speedup metrics.
+
+    Parameters
+    ----------
+    model : object
+        Trained machine learning model for making predictions.
+
+    X_feature : np.ndarray
+        Feature matrix for the test samples.
+
+    y_1hot : np.ndarray
+        One-hot encoded labels for test samples.
+
+    time : np.ndarray
+        Array of runtimes corresponding to each test sample.
+
+    test_index : np.ndarray
+        Indices of the test samples.
+
+    Returns
+    -------
+    tuple
+        Average speedup and predictions.
+    """
+
     # make prediction
 
     all_pre = model.predict(X_feature[test_index])
@@ -140,8 +262,36 @@ def ml_make_prediction(model=None, X_feature=None, y_1hot=None, time=None, test_
     # print("origin_speedup is", origin_speedup)
     return origin_speedup, all_pre
 
-def ml_make_prediction_il(model_il=None, X_feature=None, y_1hot=None, time=None,
-                       test_index=None,  origin_speedup=None):
+def ml_make_prediction_il(model_il=None, X_feature=None, y_1hot=None, time=None, test_index=None, origin_speedup=None):
+    """
+    Makes predictions with incremental learning and calculates improved speedup.
+
+    Parameters
+    ----------
+    model_il : object
+        Incrementally trained model for making predictions.
+
+    X_feature : np.ndarray
+        Feature matrix for the test samples.
+
+    y_1hot : np.ndarray
+        One-hot encoded labels for test samples.
+
+    time : np.ndarray
+        Array of runtimes corresponding to each test sample.
+
+    test_index : np.ndarray
+        Indices of the test samples.
+
+    origin_speedup : float
+        Baseline speedup from the initial model.
+
+    Returns
+    -------
+    tuple
+        Retrained speedup and improvement over baseline speedup.
+    """
+
     # make prediction
     all_pre = model_il.predict(X_feature[test_index])
     """speed up"""
@@ -176,6 +326,20 @@ def ml_make_prediction_il(model_il=None, X_feature=None, y_1hot=None, time=None,
     return retrained_speedup,inproved_speedup
 
 def load_data(path="/home/huanting/model/loop/deeptune/data/bruteforce_runtimes.pkl"):
+    """
+    Loads and preprocesses data, extracting features, labels, and runtimes from C code files.
+
+    Parameters
+    ----------
+    path : str, optional
+        Path to the runtime data (default is bruteforce_runtimes.pkl).
+
+    Returns
+    -------
+    None
+        Saves the processed data as `data_dict.pkl`.
+    """
+
     import pickle
 
     with open(path, "rb") as f:
@@ -233,6 +397,23 @@ def load_data(path="/home/huanting/model/loop/deeptune/data/bruteforce_runtimes.
 
 
 def evaluate(model, args):
+    """
+    Trains and evaluates the given model, calculating performance metrics and creating performance plots.
+
+    Parameters
+    ----------
+    model : object
+        Machine learning model to evaluate.
+
+    args : argparse.Namespace
+        Command-line arguments containing hyperparameters and model configuration.
+
+    Returns
+    -------
+    float
+        Improved speedup from incremental learning.
+    """
+
     progressbar = [0, ProgressBar(max_value=4)]
 
     X_seq = None  # defer sequence encoding (it's expensive)
@@ -574,6 +755,20 @@ def evaluate(model, args):
     return improved_sp
 
 def get_feature(path="data_dict.pkl"):
+    """
+    Loads and tokenizes the code features, labels, and times from the dataset.
+
+    Parameters
+    ----------
+    path : str, optional
+        Path to the preprocessed data file (default is `data_dict.pkl`).
+
+    Returns
+    -------
+    tuple
+        Tokenized features, labels, and times as arrays.
+    """
+
     with open(path, "rb") as f:
         data = pickle.load(f)
     # feature = list(data["feature"])

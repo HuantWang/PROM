@@ -1,4 +1,4 @@
-`Prom <https://anonymous.4open.science/r/PROM>`_ is a toolkit
+`Prom <https://github.com/HuantWang/PROM>`_ is a toolkit
 for enhancing the robustness and performance of predictive models during deployment, particularly in code analysis and optimization tasks.
 
 
@@ -28,7 +28,6 @@ for enhancing the robustness and performance of predictive models during deploym
    ./case_study/thread/Deeptune_utils
    ./case_study/thread/Magni_utils
    ./case_study/thread/Thread_Deep
-   ./case_study/thread/Thread_i2v
    ./case_study/thread/Thread_magni
 
 .. toctree::
@@ -48,38 +47,9 @@ for enhancing the robustness and performance of predictive models during deploym
    :maxdepth: 3
    :caption: Device Mapping API Reference
 
-   ./case_study/DeviceM/compy.datasets
    ./case_study/DeviceM/compy.models.graphs
-   ./case_study/DeviceM/compy.models.graphs.tf.cell
-   ./case_study/DeviceM/compy.models.graphs.tf.layer
-   ./case_study/DeviceM/compy.models.graphs.tf
-   ./case_study/DeviceM/compy.models
    ./case_study/DeviceM/compy.models.seqs
-   ./case_study/DeviceM/compy.representations.extractors
    ./case_study/DeviceM/compy.representations
-   ./case_study/DeviceM/copy
-   ./case_study/DeviceM/copy_pytorch_geom_model_sec
-   ./case_study/DeviceM/DevM_DeepTune
-   ./case_study/DeviceM/DevM_i2v
-   ./case_study/DeviceM/DevM_Programl
-   ./case_study/DeviceM/devmap_exploration
-   ./case_study/DeviceM/pytorch_geom_model_pchange
-   ./case_study/DeviceM/setup
-
-.. toctree::
-   :maxdepth: 3
-   :caption: Tensor Tuning API Reference
-
-
-   ./case_study/tlp/bert_large
-   ./case_study/tlp/bert_med
-   ./case_study/tlp/bert_tiny
-   ./case_study/tlp/modules
-   ./case_study/tlp/mtl_tlp_make_dataset
-   ./case_study/tlp/mtl_tlp_train
-   ./case_study/tlp/sensitive
-   ./case_study/tlp/tlp_fine_tune
-   ./case_study/tlp/train_tlp
 
 
 .. toctree::
@@ -90,6 +60,18 @@ for enhancing the robustness and performance of predictive models during deploym
    ./case_study/BugD/preprocess
    ./case_study/BugD/VD_codebert
    ./case_study/BugD/VD_vulde
+
+.. toctree::
+   :maxdepth: 3
+   :caption: Tensor Tuning API Reference
+
+
+   ./case_study/tlp/bert_large
+   ./case_study/tlp/bert_med
+   ./case_study/tlp/bert_tiny
+   ./case_study/tlp/sensitive
+   ./case_study/tlp/tlp_fine_tune
+   ./case_study/tlp/train_tlp
 
 
 

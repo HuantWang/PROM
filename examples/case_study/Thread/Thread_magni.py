@@ -3,7 +3,6 @@ import os
 import warnings
 warnings.filterwarnings("ignore")
 import random
-# 将根目录添加到path中
 sys.path.append('/home/huanting/PROM')
 sys.path.append('./case_study/Thread')
 sys.path.append('/home/huanting/PROM/src')
@@ -15,6 +14,14 @@ from Magni_utils import ThreadCoarseningMa,Magni,make_predictionMa,make_predicti
 from src.prom.prom_util import Prom_utils
 
 def load_magni_args():
+    """
+    Load arguments for command-line execution with support for NNI hyperparameter tuning.
+
+    Returns
+    -------
+    argparse.Namespace
+        A namespace with model hyperparameters and mode.
+    """
     # get parameters from tuner
     params = nni.get_next_parameter()
     if params == {}:
@@ -35,6 +42,14 @@ def load_magni_args():
     return args
 
 def load_magni_args_notebook():
+    """
+    Load arguments for notebook execution with preset hyperparameters.
+
+    Returns
+    -------
+    dict
+        A dictionary containing default values for model hyperparameters.
+    """
     args = {
         "seed": 2494,
         "epoch": 10,
@@ -44,6 +59,18 @@ def load_magni_args_notebook():
 
 
 def Thread_train_magni(args):
+    """
+    Train the Magni model on a given dataset.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Command-line arguments with model parameters.
+
+    Returns
+    -------
+    None
+    """
     # load args
     prom_thread=ThreadCoarseningMa(model=Magni())
     dataset_path= "../../../benchmark/Thread/pact-2014-runtimes.csv"
@@ -118,6 +145,18 @@ def Thread_train_magni(args):
     nni.report_final_result(origin)
 
 def Thread_deploy_magni(args):
+    """
+    Deploy the Magni model and perform incremental learning.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Command-line arguments with model parameters.
+
+    Returns
+    -------
+    None
+    """
     # load args
     prom_thread=ThreadCoarseningMa(model=Magni())
     dataset_path= "../../../benchmark/Thread/pact-2014-runtimes.csv"

@@ -43,6 +43,20 @@ assert os.path.exists("../../../benchmark/Thread/output/embeddings"), "Embedding
 #%%
 
 def readEmd_program(filename):
+    """
+    Read embedding representations from a given file.
+
+    Parameters
+    ----------
+    filename : str
+        Path to the file containing embeddings.
+
+    Returns
+    -------
+    tuple
+        A tuple with two lists: `rep`, which contains the embedding representations,
+        and `targetLabel`, which contains the labels associated with each embedding.
+    """
     lines = [line.strip("\n\t") for line in open(filename)]
     entity = []
     rep = []
@@ -112,6 +126,25 @@ def find_runtime(df, kernel, cf, platform):
 
 import random
 def data_partitioning(platform='', mode='train', calibration_ratio=0.2, args=None):
+        """
+        Partition the dataset into training, validation, and test sets.
+
+        Parameters
+        ----------
+        platform : str, optional
+            Target platform name (e.g., 'Tahiti').
+        mode : str, optional
+            Partition mode, either 'train' or 'test'.
+        calibration_ratio : float, optional
+            Ratio of the data used for calibration.
+        args : argparse.Namespace, optional
+            Command-line arguments with model parameters.
+
+        Returns
+        -------
+        tuple
+            Indices for training, validation, and test sets.
+        """
         pd.set_option('display.max_rows', 5)
         df = pd.read_csv("../../../benchmark/Thread/pact-2014-runtimes.csv")
         oracles = pd.read_csv("../../../benchmark/Thread/pact-2014-oracles.csv")
@@ -167,6 +200,24 @@ def data_partitioning(platform='', mode='train', calibration_ratio=0.2, args=Non
         return train_index, valid_index, test_index
 
 def train(max_depth, learning_rate, n_estimators,args):
+    """
+    Train an XGBoost classifier on the processed embeddings dataset.
+
+    Parameters
+    ----------
+    max_depth : int
+        Maximum depth of the trees.
+    learning_rate : float
+        Learning rate for boosting.
+    n_estimators : int
+        Number of trees in the model.
+    args : argparse.Namespace
+        Command-line arguments with model parameters.
+
+    Returns
+    -------
+    None
+    """
     inferencetime = []
     raw_embeddings_pd = pd.DataFrame(raw_embeddings, columns=range(1, 301))
     efileNum = pd.DataFrame(fileIndex)
@@ -349,6 +400,25 @@ def train(max_depth, learning_rate, n_estimators,args):
 
 
 def deploy(max_depth, learning_rate, n_estimators,args):
+    """
+    Deploy and evaluate the XGBoost classifier with conformal prediction
+    and incremental learning on the dataset.
+
+    Parameters
+    ----------
+    max_depth : int
+        Maximum depth of the trees.
+    learning_rate : float
+        Learning rate for boosting.
+    n_estimators : int
+        Number of trees in the model.
+    args : argparse.Namespace
+        Command-line arguments with model parameters.
+
+    Returns
+    -------
+    None
+    """
     inferencetime = []
     raw_embeddings_pd = pd.DataFrame(raw_embeddings, columns=range(1, 301))
     efileNum = pd.DataFrame(fileIndex)
@@ -649,7 +719,7 @@ if __name__ == '__main__':
     elif args.mode == 'deploy':
         deploy(max_depth=1, learning_rate=0.05, n_estimators=140, args=args)
     # train(max_depth=1, learning_rate=0.05, n_estimators=140, args=args)
-    deploy(max_depth=1, learning_rate=0.05, n_estimators=140, args=args)
+    # deploy(max_depth=1, learning_rate=0.05, n_estimators=140, args=args)
     #
     # nnictl create --config /home/huanting/PROM/examples/case_study/Thread/config.yaml --port 8088
 

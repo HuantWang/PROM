@@ -7,8 +7,9 @@ import warnings
 warnings.filterwarnings("ignore")
 import random
 sys.path.append('./case_study/Loop')
-sys.path.append('/home/huanting/PROM/src')
-sys.path.append('/home/huanting/PROM/thirdpackage')
+sys.path.append('/cgo/prom/PROM/src')
+sys.path.append('/cgo/prom/PROM/thirdpackage')
+from Deeptune_utils import LoopT
 from Deeptune_utils import DeepTune, LoopT, deeptune_make_prediction, deeptune_make_prediction_il
 
 import numpy as np
@@ -22,6 +23,18 @@ from src.prom.prom_util import Prom_utils
 
 
 def load_deeptune_args():
+    """
+    Load arguments for DeepTune model training and deployment.
+
+    Retrieves hyperparameters from the tuner or sets default values if none are provided.
+    These arguments include settings like the random seed, epoch count, and batch size.
+
+    Returns
+    -------
+    argparse.Namespace
+        Parsed command-line arguments with parameters such as seed, mode, epoch, and batch size.
+    """
+
     # get parameters from tuner
     params = nni.get_next_parameter()
     if params == {}:
@@ -52,6 +65,18 @@ def load_deeptune_args():
 
 
 def loop_deploy_de(args):
+    """
+    Deploy and evaluate the DeepTune model for loop performance optimization.
+
+    Loads the dataset, initializes the DeepTune model, trains it, and evaluates its performance using conformal prediction.
+    Also includes incremental learning to further improve model performance.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Parsed command-line arguments containing parameters like seed, epoch, and batch size.
+    """
+
     # load args
 
     prom_loop = LoopT(model=DeepTune())
@@ -89,7 +114,7 @@ def loop_deploy_de(args):
     os.makedirs(os.path.dirname(plot_figuredata_path), exist_ok=True)
 
     # load the model
-    # prom_loop.model.restore(r'/home/huanting/PROM/examples/case_study/Loop/models/loop/123.model')
+    # prom_loop.model.restore(r'/cgo/prom/PROM/examples/case_study/Loop/models/loop/123.model')
     # make prediction
     origin_speedup, all_pre, data_distri = deeptune_make_prediction \
         (model=deeptune_model, X_seq=X_seq, y_1hot=y_1hot,
@@ -181,6 +206,18 @@ def loop_deploy_de(args):
 
 
 def loop_train_de(args):
+    """
+    Train the DeepTune model for loop performance optimization.
+
+    Loads the dataset, partitions it, and trains the DeepTune model on the training set.
+    Also saves the performance metrics and generates plots for model evaluation.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Parsed command-line arguments containing training parameters like seed, epoch, and batch size.
+    """
+
     # load args
 
     prom_loop = LoopT(model=DeepTune())
@@ -218,7 +255,7 @@ def loop_train_de(args):
     os.makedirs(os.path.dirname(plot_figuredata_path), exist_ok=True)
 
     # load the model
-    # prom_loop.model.restore(r'/home/huanting/PROM/examples/case_study/Loop/models/loop/123.model')
+    # prom_loop.model.restore(r'/cgo/prom/PROM/examples/case_study/Loop/models/loop/123.model')
     # make prediction
     origin_speedup, all_pre, data_distri = deeptune_make_prediction \
         (model=deeptune_model, X_seq=X_seq, y_1hot=y_1hot,
@@ -255,5 +292,5 @@ if __name__ == '__main__':
         loop_deploy_de(args=args)
     # loop_train_de(args)
     loop_deploy_de(args)
-    # nnictl create --config /home/huanting/PROM/examples/case_study/Loop/config.yaml --port 8088
+    # nnictl create --config /cgo/prom/PROM/examples/case_study/Loop/config.yaml --port 8088
 

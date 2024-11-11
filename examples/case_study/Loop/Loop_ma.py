@@ -7,8 +7,8 @@ import warnings
 warnings.filterwarnings("ignore")
 import random
 sys.path.append('./case_study/Loop')
-sys.path.append('/home/huanting/PROM/src')
-sys.path.append('/home/huanting/PROM/thirdpackage')
+sys.path.append('/cgo/prom/PROM/src')
+sys.path.append('/cgo/prom/PROM/thirdpackage')
 
 from Magni_utils import Magni,LoopT,make_prediction,make_prediction_il
 
@@ -22,6 +22,17 @@ from sklearn.svm import SVC
 from src.prom.prom_util import Prom_utils
 
 def load_deeptune_args():
+    """
+        Load arguments for DeepTune model training and deployment.
+
+        Retrieves hyperparameters from the tuner or sets default values if none are provided.
+        These arguments include settings like the random seed, epoch count, and batch size.
+
+        Returns
+        -------
+        argparse.Namespace
+            Parsed command-line arguments with parameters such as seed, mode, epoch, and batch size.
+    """
     # get parameters from tuner
     params = nni.get_next_parameter()
     if params == {}:
@@ -48,8 +59,17 @@ def load_deeptune_args():
     return args
 
 def loop_main(tasks="deeptune"):
-    # load args
+    """
+    Main function to train and deploy DeepTune model for loop performance optimization.
 
+    Loads and partitions the dataset, trains the model, saves the trained model, and
+    evaluates performance using conformal prediction with incremental learning.
+
+    Parameters
+    ----------
+    tasks : str, optional
+        Specifies the task mode; defaults to 'deeptune'.
+    """
     prom_loop = LoopT(model=DeepTune())
     deeptune_model = DeepTune()
 
@@ -84,7 +104,7 @@ def loop_main(tasks="deeptune"):
     prom_loop.model.save(model_path)
 
     # load the model
-    # prom_loop.model.restore(r'/home/huanting/PROM/examples/case_study/Loop/models/loop/123.model')
+    # prom_loop.model.restore(r'/cgo/prom/PROM/examples/case_study/Loop/models/loop/123.model')
     # make prediction
     origin_speedup, all_pre = deeptune_make_prediction\
         (model=deeptune_model, X_seq=X_seq, y_1hot=y_1hot,
@@ -146,6 +166,17 @@ def loop_main(tasks="deeptune"):
     )
 
 def loop_train_magni(args):
+    """
+    Train the Magni model for loop performance optimization.
+
+    Loads and partitions the dataset, initializes the model, and trains it on the training set.
+    It also saves the model's performance metrics and generates performance plots.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Parsed command-line arguments containing training parameters like seed and batch size.
+    """
     # load args
     prom_loop = LoopT(model=Magni())
     Magni_model = Magni()
@@ -187,7 +218,7 @@ def loop_train_magni(args):
     # prom_loop.model.save(model_path)
 
     # load the model
-    # prom_loop.model.restore(r'/home/huanting/PROM/examples/case_study/Loop/models/loop/123.model')
+    # prom_loop.model.restore(r'/cgo/prom/PROM/examples/case_study/Loop/models/loop/123.model')
     # make prediction
     origin_speedup, all_pre, data_distri = make_prediction \
         (model=prom_loop.model, X_feature=X_seq, y_1hot=y_1hot,
@@ -215,6 +246,19 @@ def loop_train_magni(args):
     nni.report_final_result(origin_speedup)
 
 def loop_deploy_magni(args):
+    """
+    Deploy and evaluate the Magni model for loop performance optimization.
+
+    Initializes the model, loads the dataset, and partitions it for evaluation.
+    The function also performs conformal prediction, evaluates performance metrics,
+    and applies incremental learning to improve model performance.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Parsed command-line arguments containing deployment parameters like seed and batch size.
+    """
+
     # load args
     prom_loop = LoopT(model=Magni())
     Magni_model = Magni()
@@ -256,7 +300,7 @@ def loop_deploy_magni(args):
     # prom_loop.model.save(model_path)
 
     # load the model
-    # prom_loop.model.restore(r'/home/huanting/PROM/examples/case_study/Loop/models/loop/123.model')
+    # prom_loop.model.restore(r'/cgo/prom/PROM/examples/case_study/Loop/models/loop/123.model')
     # make prediction
     origin_speedup, all_pre, data_distri = make_prediction \
         (model=prom_loop.model, X_feature=X_seq, y_1hot=y_1hot,
@@ -356,4 +400,4 @@ if __name__=='__main__':
         loop_deploy_magni(args=args)
     # loop_train_magni(args)
     loop_deploy_magni(args)
-    # nnictl create --config /home/huanting/PROM/examples/case_study/Loop/config.yaml --port 8088
+    # nnictl create --config /cgo/prom/PROM/examples/case_study/Loop/config.yaml --port 8088

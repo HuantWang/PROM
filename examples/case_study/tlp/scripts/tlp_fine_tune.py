@@ -10,7 +10,28 @@ from torch import optim
 import argparse
 
 
-class AttentionModule(nn.Module):  
+class AttentionModule(nn.Module):
+    """
+    Defines a neural network module with an attention mechanism for encoding input features, processing with residual blocks, and decoding to output.
+
+    Attributes
+    ----------
+    fea_size : int
+        Dimension of input features.
+    step_size : int
+        Number of time steps in input data.
+    res_block_cnt : int
+        Number of residual blocks in the network.
+
+    encoder : nn.Sequential
+        Encoder section that transforms input features into high-dimensional representations.
+    attention : nn.MultiheadAttention
+        Multi-head attention mechanism to capture dependencies between features.
+    l_list : nn.Sequential
+        Sequence of residual blocks for further feature processing.
+    decoder : nn.Sequential
+        Decoder section that transforms the final representation to the desired output.
+    """
     def __init__(self):
         super().__init__()
         self.fea_size = args.fea_size
@@ -56,9 +77,21 @@ class AttentionModule(nn.Module):
             nn.ReLU(),
             nn.Linear(out_dim[2], out_dim[3]),
         )
-        
 
     def forward(self, batch_datas_steps):
+        """
+        Forward pass of the AttentionModule.
+
+        Parameters
+        ----------
+        batch_datas_steps : torch.Tensor
+            Batched input tensor with dimensions (batch_size, step_size, fea_size).
+
+        Returns
+        -------
+        torch.Tensor
+            Output tensor after encoding, applying attention, residual blocks, and decoding.
+        """
 
         batch_datas_steps = batch_datas_steps[:, :self.step_size, :self.fea_size]
         encoder_output = self.encoder(batch_datas_steps)
@@ -75,15 +108,61 @@ class AttentionModule(nn.Module):
 
 
 class LambdaRankLoss(nn.Module):
+    """
+    Defines the LambdaRank loss function, which is commonly used for learning to rank tasks.
+
+    Attributes
+    ----------
+    device : torch.device
+        The device on which calculations are performed.
+    """
     def __init__(self, device):
         super().__init__()
         self.device = device
 
     def lamdbaRank_scheme(self, G, D, *args):
+        """
+        Calculates weights for pairs of items based on their relevance scores and positions.
+
+        Parameters
+        ----------
+        G : torch.Tensor
+            Gain matrix for relevance scores.
+        D : torch.Tensor
+            Discount matrix for positional discounts.
+
+        Returns
+        -------
+        torch.Tensor
+            Weight matrix based on LambdaRank scheme.
+        """
         return torch.abs(torch.pow(D[:, :, None], -1.) - torch.pow(D[:, None, :], -1.)) * torch.abs(
             G[:, :, None] - G[:, None, :])
 
     def forward(self, preds, labels, k=None, eps=1e-10, mu=10., sigma=1.):
+        """
+        Computes the LambdaRank loss between predicted and actual relevance scores.
+
+        Parameters
+        ----------
+        preds : torch.Tensor
+            Predicted relevance scores.
+        labels : torch.Tensor
+            Actual relevance scores.
+        k : int, optional
+            Rank cutoff parameter.
+        eps : float
+            Small constant for numerical stability.
+        mu : float
+            Hyperparameter for LambdaRank scheme.
+        sigma : float
+            Hyperparameter for sigmoid scaling in probability calculation.
+
+        Returns
+        -------
+        torch.Tensor
+            The computed LambdaRank loss.
+        """
         device = self.device
         preds = preds[None, :]
         labels = labels[None, :]
@@ -126,6 +205,20 @@ class LambdaRankLoss(nn.Module):
 
 
 class SegmentDataLoader:
+    """
+    Custom data loader for segmented data with variable batch sizes and shuffling options.
+
+    Attributes
+    ----------
+    shuffle : bool
+        Whether to shuffle the data on each iteration.
+    batch_size : int
+        Number of samples in each batch.
+    datas_steps : torch.Tensor
+        Tensor of data sequences (steps) to be used in training/validation.
+    labels : torch.Tensor
+        Tensor of labels corresponding to the data steps.
+    """
     def __init__(
             self,
             dataset,
@@ -183,7 +276,19 @@ class SegmentDataLoader:
 
 
 def load_datas(datasets_global):
+    """
+    Splits the dataset into training and validation sets, and initializes data loaders for both.
 
+    Parameters
+    ----------
+    datasets_global : list
+        List of all data samples to be used in training and validation.
+
+    Returns
+    -------
+    tuple
+        Tuple containing training and validation data loaders.
+    """
     datasets = np.array(datasets_global, dtype=object)
     train_len = int(args.data_cnt * 1000 * 0.9)
 
@@ -202,6 +307,25 @@ def load_datas(datasets_global):
 
 
 def validate(model, valid_loader, loss_func, device):
+    """
+    Evaluates the model on the validation set and computes the total validation loss.
+
+    Parameters
+    ----------
+    model : nn.Module
+        The model to be validated.
+    valid_loader : SegmentDataLoader
+        Data loader for the validation set.
+    loss_func : nn.Module
+        Loss function to use for validation.
+    device : torch.device
+        The device on which the model and data are loaded.
+
+    Returns
+    -------
+    float
+        Total validation loss.
+    """
     model.eval()
     valid_losses = []
 
@@ -216,6 +340,18 @@ def validate(model, valid_loader, loss_func, device):
 
 
 def train(train_loader, val_dataloader, device):
+    """
+    Trains the model over multiple epochs and saves the model at the end of each epoch.
+
+    Parameters
+    ----------
+    train_loader : SegmentDataLoader
+        Data loader for the training set.
+    val_dataloader : SegmentDataLoader
+        Data loader for the validation set.
+    device : torch.device
+        The device on which the model and data are loaded.
+    """
     # n_epoch = 50
     if args.attention_class == 'default':
         args.hidden_dim = [64, 128, 256, 256]
@@ -302,6 +438,14 @@ def train(train_loader, val_dataloader, device):
 
 
 def set_seed(seed):
+    """
+    Sets random seed for reproducibility across numpy, Python, and PyTorch libraries.
+
+    Parameters
+    ----------
+    seed : int
+        The seed value to set.
+    """
     np.random.seed(seed)
     random.seed(seed)
     torch.manual_seed(seed)

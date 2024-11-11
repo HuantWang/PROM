@@ -35,9 +35,9 @@ import tensorflow as tf
 import os
 
 sys.path.append('./case_study/Loop')
-sys.path.append('/home/huanting/PROM/src')
-sys.path.append('/home/huanting/PROM/thirdpackage')
-sys.path.append('/home/huanting/PROM')
+sys.path.append('/cgo/prom/PROM/src')
+sys.path.append('/cgo/prom/PROM/thirdpackage')
+sys.path.append('/cgo/prom/PROM')
 import src.prom.prom_util as util
 import clang.cindex
 from sklearn.neural_network import MLPClassifier

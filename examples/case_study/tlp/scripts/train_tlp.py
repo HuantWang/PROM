@@ -24,7 +24,22 @@ from prom.regression import MapieQuantileRegressor, MapieRegressor
 from prom.metrics import regression_coverage_score
 
 def pred_a_dataset(datas, task_pred_dict, model):
+    """
+    Predicts a dataset using the specified model.
 
+    Parameters
+    ----------
+    datas : list
+        The dataset to be predicted.
+    task_pred_dict : dict
+        A dictionary to store predictions for each workload key.
+    model : torch.nn.Module
+        The model used for making predictions on the dataset.
+
+    Returns
+    -------
+    None
+    """
     datas_new = []
     for data_idx, data in enumerate([datas]):
         file, file_idx, workloadkey_idx, workloadkey, workload_args, flop_ct, line_vecs = data
@@ -56,6 +71,21 @@ def pred_a_dataset(datas, task_pred_dict, model):
 
 
 def eval_model(model_file='',test_datasets=''):
+    """
+    Evaluates the model on a given test dataset and computes top-k metrics.
+
+    Parameters
+    ----------
+    model_file : str
+        Path to the model file to be loaded for evaluation.
+    test_datasets : list
+        A list of test datasets for evaluation.
+
+    Returns
+    -------
+    float
+        The best latency performance based on top-5 metric.
+    """
     top_ks = [1, 5, 10, 20]
     with open(model_file, 'rb') as f:
         model = pickle.load(f)
@@ -197,11 +227,32 @@ def get_cosine_schedule_with_warmup(
 
 class Tlp_prom(util.ModelDefinition):
     def __init__(self,model=None,dataset=None,calibration_data=None,args=None):
+        """
+        Initializes the Tlp_prom model, setting up initial model parameters and datasets.
+
+        Args:
+            model (optional): The model instance, if any.
+            dataset (optional): Dataset for training or testing.
+            calibration_data (optional): Data for model calibration.
+            args (optional): Additional arguments for configuration.
+        """
         # self.model =
         self.calibration_data = None
         self.dataset = None
 
     def data_partitioning(self, train_dataset, test_dataset, calibration_ratio=0.2,args=None):
+        """
+        Splits data into training and test datasets and prepares folders for storage.
+
+        Args:
+            train_dataset (str): Path to the training dataset file.
+            test_dataset (str): Path to the test dataset file.
+            calibration_ratio (float): Ratio for calibration set split, default is 0.2.
+            args: Additional arguments including storage folder paths.
+
+        Returns:
+            tuple: (train_data, test_dataset) for training and evaluation.
+        """
         # prepare dataset
         if os.path.exists(args.save_folder) is False:
             print('create folder', args.save_folder)
@@ -229,6 +280,16 @@ class Tlp_prom(util.ModelDefinition):
 
 
     def predict(self, X, significant_level=0.1):
+        """
+        Predicts output and probabilities for input X.
+
+        Args:
+            X (array-like): Input data to predict on.
+            significant_level (float): Level of significance for confidence intervals, if applicable.
+
+        Returns:
+            tuple: (predictions, probabilities) from the model.
+        """
         if self.model is None:
             raise ValueError("Model is not initialized.")
 
@@ -241,6 +302,9 @@ class Tlp_prom(util.ModelDefinition):
 
 class AttentionModule(nn.Module):  
     def __init__(self):
+        """
+        Initializes the AttentionModule with encoder, attention, and decoder layers.
+        """
         super().__init__()
         self.fea_size = args.fea_size
         self.step_size = args.step_size
@@ -288,7 +352,15 @@ class AttentionModule(nn.Module):
         
 
     def forward(self, batch_datas_steps):
+        """
+        Defines the forward pass of the neural network.
 
+        Args:
+            batch_datas_steps (Tensor): Input data for processing in the network.
+
+        Returns:
+            Tensor: Output prediction after passing through the network layers.
+        """
         batch_datas_steps = batch_datas_steps[:, :self.step_size, :self.fea_size]
         encoder_output = self.encoder(batch_datas_steps)
 
@@ -528,14 +600,42 @@ class BertModule(nn.Module):
 
 class LambdaRankLoss(nn.Module):
     def __init__(self, device):
+        """
+        Initializes the LambdaRankLoss for ranking with device specification.
+
+        Args:
+            device: Device on which the calculations are performed (CPU/GPU).
+        """
         super().__init__()
         self.device = device
 
     def lamdbaRank_scheme(self, G, D, *args):
+        """
+        Defines the weighting scheme for the LambdaRank algorithm based on distance and gains.
+
+        Args:
+            G (Tensor): Gain values for ranking.
+            D (Tensor): Distance values between ranks.
+            *args: Additional optional parameters.
+        """
         return torch.abs(torch.pow(D[:, :, None], -1.) - torch.pow(D[:, None, :], -1.)) * torch.abs(
             G[:, :, None] - G[:, None, :])
 
     def forward(self, preds, labels, k=None, eps=1e-10, mu=10., sigma=1.):
+        """
+        Calculates the LambdaRank loss based on the predictions and labels.
+
+        Args:
+            preds (Tensor): Model predictions.
+            labels (Tensor): True labels.
+            k (int): Rank position cutoff.
+            eps (float): Small value to avoid division by zero.
+            mu (float): Scaling factor.
+            sigma (float): Factor for sigmoid scaling.
+
+        Returns:
+            Tensor: Computed loss.
+        """
         device = self.device
         preds = preds[None, :]
         labels = labels[None, :]
@@ -745,7 +845,16 @@ class BertSegmentDataLoader:
         return self.number
 
 def load_datas(datasets_global):
+    """
+    Loads and partitions a dataset into training and validation sets, and initializes
+    appropriate data loaders based on the specified model architecture.
 
+    Args:
+        datasets_global (list): Global dataset to partition and load.
+
+    Returns:
+        tuple: (train_dataloader, val_dataloader) where each is a DataLoader instance.
+    """
     datasets = np.array(datasets_global, dtype=object)
     if args.data_cnt > 0:
         train_len = int(args.data_cnt * 1000 * 0.9)
@@ -778,6 +887,18 @@ def load_datas(datasets_global):
 
 
 def validate(model, valid_loader, loss_func, device):
+    """
+    Evaluate model performance on a validation dataset.
+
+    Args:
+        model (torch.nn.Module): The model to evaluate.
+        valid_loader (DataLoader): DataLoader for the validation dataset.
+        loss_func (torch.nn.Module): Loss function for evaluation.
+        device (torch.device): Device (CPU or GPU) to run the validation on.
+
+    Returns:
+        float: Sum of validation losses.
+    """
     model.eval()
     valid_losses = []
 
@@ -792,6 +913,18 @@ def validate(model, valid_loader, loss_func, device):
 
 
 def train(train_loader, val_dataloader, device, test_tlp):
+    """
+    Train the model and evaluate on validation dataset at each epoch.
+
+    Args:
+        train_loader (DataLoader): DataLoader for the training dataset.
+        val_dataloader (DataLoader): DataLoader for the validation dataset.
+        device (torch.device): Device (CPU or GPU) for training.
+        test_tlp (Dataset): Test dataset for additional evaluations.
+
+    Returns:
+        tuple: Model save file name and best performance score.
+    """
     performance=0
     best_performance = 0
     if args.attention_class == 'default':
@@ -927,7 +1060,20 @@ def train(train_loader, val_dataloader, device, test_tlp):
 
 
 def il(test_loader, device, pre_trained_model,aug_data, args):
-    # 加载预训练模型
+    """
+    Perform incremental learning using a pre-trained model and fine-tune on new data.
+
+    Args:
+        test_loader (DataLoader): DataLoader for test dataset.
+        device (torch.device): Device (CPU or GPU) for training.
+        pre_trained_model (str): Path to the pre-trained model.
+        aug_data (list): List of augmented data for fine-tuning.
+        args (Namespace): Argument parser object with training configurations.
+
+    Returns:
+        str: Path to the saved fine-tuned model.
+    """
+
     if pre_trained_model:
         with open(pre_trained_model, 'rb') as f:
             net = pickle.load(f)
@@ -1002,7 +1148,20 @@ def set_seed(seed):
     torch.backends.cudnn.deterministic = True
 
 def conformal_prediction(datas, task_pred_dict, model,mapie,task_drift_dict,task_after_dict):
+    """
+    Perform conformal prediction for anomaly detection on drifting data.
 
+    Args:
+        datas (list): Input data samples.
+        task_pred_dict (dict): Dictionary to store predictions.
+        model (torch.nn.Module): Model for prediction.
+        mapie (MapieRegressor): Conformal prediction model.
+        task_drift_dict (dict): Dictionary to store detected drifted data.
+        task_after_dict (dict): Dictionary to store post-prediction data.
+
+    Returns:
+        list: List of indices for detected anomalies.
+    """
     datas_new = []
     for data_idx, data in enumerate([datas]):
         file, file_idx, workloadkey_idx, workloadkey, workload_args, flop_ct, line_vecs = data
@@ -1123,6 +1282,19 @@ def conformal_prediction(datas, task_pred_dict, model,mapie,task_drift_dict,task
 
 
 def cp(train_loader, val_dataloader, test_datasets, underlying_path,file_pattern):
+    """
+    Train and evaluate a conformal prediction model to detect data drift.
+
+    Args:
+        train_loader (DataLoader): DataLoader for training dataset.
+        val_dataloader (DataLoader): DataLoader for validation dataset.
+        test_datasets (list): List of test datasets.
+        underlying_path (str): Path to the saved model.
+        file_pattern (str): Pattern to match files for testing.
+
+    Returns:
+        list: List of detected drift indices.
+    """
     model_save_file_name = underlying_path
     with open(model_save_file_name, 'rb') as f:
         net = pickle.load(f)
@@ -1204,87 +1376,17 @@ def cp(train_loader, val_dataloader, test_datasets, underlying_path,file_pattern
                 net,mapie,task_drift_dict,task_after_dict)
             # indices_detec.append(indices_detec)
     return indices_detec
-            # p-value
-    #         preds, min_latency, labels = task_pred_dict[task.workload_key]
-    #         real_values = labels[np.argsort(-preds)]
-    #         real_latency = min_latency / np.maximum(real_values, 1e-5)
-    #         for i, top_k in enumerate(top_ks):
-    #             latencies[i] += np.min(real_latency[:top_k]) * weight
-    #         best_latency += min_latency * weight
-    #
-    #     best_latency_total += best_latency
-    #     top1_total += latencies[0]
-    #     top5_total += latencies[1]
-    #
-    # if top1_total == 0:
-    #     print(f"average top 1 score is {0}")
-    #     top_1_total.append(0)
-    # else:
-    #     print(f"average top 1 score is {best_latency_total / top1_total}")
-    #     top_1_total.append(best_latency_total / top1_total)
-    #
-    # if top5_total == 0:
-    #     print(f"average top 5 score is {0}")
-    #     top_5_total.append(0)
-    # else:
-    #     print(f"average top 5 score is {best_latency_total / top5_total}")
-    #     top_5_total.append(best_latency_total / top5_total)
 
-
-    """finish"""
-    # for i in TF:
-    #     TF=i
-    #     """not drift data"""
-    #     keep_data = data_test[TF].numpy()
-    #     keep_label = y_test[TF].numpy()
-    #     keep_pred = y_pred[TF].detach().numpy()
-    #
-    #     prediction=keep_pred
-    #     target=keep_label
-    #     rmse_keep = np.sqrt(np.mean((prediction - target) ** 2))
-    #     print()
-    #     from sklearn.metrics import r2_score
-    #
-    #     r2_keep = r2_score(target, prediction)
-    #
-    #
-    #     """drift data"""
-    #     filtered_indices = ~TF
-    #
-    #     # 使用筛选后的索引从 data_test、y_test 和 y_pred 中获取对应数据
-    #     drift_data = data_test[filtered_indices].numpy()
-    #     drift_label = y_test[filtered_indices].numpy()
-    #     drift_pred = y_pred[filtered_indices].detach().numpy()
-    #
-    #
-    #     prediction = drift_pred
-    #     target = drift_label
-    #     rmse = np.sqrt(np.mean((prediction - target) ** 2))
-    #     from sklearn.metrics import r2_score
-    #     r2 = r2_score(target, prediction)
-    #     print("keep_RMSE:", rmse_keep,"keep_R-squared:", r2_keep, "keep_length", len(keep_label))
-    #     print("drift_RMSE:", rmse, "drift_R-squared:", r2,"drift_length", len(drift_label))
-    # print("a")
-
-    # drift_data=torch.tensor(drift_data)
-    # drift_label=torch.tensor(drift_label)
-    """What about these data?"""
-    # preds_all=[]
-    # labels_all=[]
-    # preds = net(drift_data)
-    # if isinstance(preds, list) and len(preds) > 1:
-    #     preds = preds[0]
-    # preds_all.append(preds.detach().cpu())
-    # labels_all.append(drift_label.detach().cpu())
-    # preds_all = torch.cat(preds_all, dim=0)
-    # labels_all = torch.cat(labels_all, dim=0)
-
-    # preds, min_latency, labels = (preds_all.detach().cpu().numpy(), test_loader.min_latency.min().numpy(), labels_all.numpy())
-
-
-    # print(coverage)
 
 def init_args():
+    """
+    Initializes the argument parser and retrieves hyperparameters for model training and deployment.
+
+    Returns
+    -------
+    argparse.Namespace
+        Parsed arguments with default values if unspecified by the user.
+    """
     params = nni.get_next_parameter()
     if params == {}:
         params = {
@@ -1326,6 +1428,14 @@ def init_args():
     return args
 
 def train_model(args):
+    """
+    Trains the model on the provided dataset, saves the best model, and evaluates its performance.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Parsed arguments including dataset paths, model save folder, and training hyperparameters.
+    """
     # init args
     tlp_prom = Tlp_prom()
     # split data to train and test
@@ -1342,6 +1452,15 @@ def train_model(args):
     # nni.report_final_result(performance)
 
 def deploy_model(args):
+    """
+    Deploys the pre-trained model on a new dataset, performs conformal prediction for anomaly detection,
+    and applies incremental learning to improve the model.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Parsed arguments including paths to the pre-trained model, datasets, and incremental learning settings.
+    """
     # init args
     tlp_prom = Tlp_prom()
     # split data to train and test

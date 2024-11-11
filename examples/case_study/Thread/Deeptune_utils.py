@@ -34,10 +34,21 @@ tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
 
 #self.model
 class DeepTune():
+    """
+    DeepTune model for source code analysis and thread coarsening prediction.
+    """
     __name__ = "DeepTune"
     __basename__ = "deeptune"
 
     def init(self, args):
+        """
+        Initialize the DeepTune model architecture with LSTM layers and set the random seed.
+
+        Parameters
+        ----------
+        args : argparse.Namespace
+            Contains arguments for model initialization, including batch size, epoch count, and seed.
+        """
         self.seed = args.seed
         self.epoch = args.epoch
         self.batch = args.batch_size
@@ -57,9 +68,25 @@ class DeepTune():
         self.model.compile(optimizer="adam", loss="categorical_crossentropy", metrics=['accuracy'])
 
     def save(self, outpath: str):
+        """
+        Save the trained model to the specified path.
+
+        Parameters
+        ----------
+        outpath : str
+            The path to save the model.
+        """
         self.model.save(outpath)
 
     def fit(self, seed):
+        """
+        Prepare the model for training by setting class information.
+
+        Parameters
+        ----------
+        seed : int
+            Random seed for ensuring reproducible training results.
+        """
         self.classes_ = np.arange(6)
         return
 
@@ -68,9 +95,36 @@ class DeepTune():
 
     def train(self,
               sequences: np.array, y_1hot: np.array, verbose: bool = False) -> None:
+        """
+        Train the model with provided sequences and labels.
+
+        Parameters
+        ----------
+        sequences : np.array
+            An array of encoded source code sequences of shape (n, seq_length).
+
+        y_1hot : np.array
+            An array of one-hot encoded optimal coarsening factors of shape (n, 6).
+
+        verbose : bool, optional
+            Whether to display verbose training status messages. Default is False.
+        """
         self.model.fit(sequences, y_1hot, epochs=self.epoch, batch_size=self.batch, verbose=0, shuffle=True)
 
     def predict(self,  sequences: np.array) -> np.array:
+        """
+        Predict optimal thread coarsening factors for input programs.
+
+        Parameters
+        ----------
+        sequences : np.array
+            An array of encoded source code sequences of shape (n, seq_length).
+
+        Returns
+        -------
+        np.array
+            Predicted optimal thread coarsening factors with shape (n, 1).
+        """
         # directly predict optimal thread coarsening factor from source sequences:
         cfs = [1, 2, 4, 8, 16, 32]
         p = np.array(self.model.predict(sequences, verbose=0))
@@ -96,6 +150,19 @@ class DeepTune():
         return preds.detach().numpy()
 
     def predict_model(self, sequences: np.array):
+        """
+                Predict optimal thread coarsening factors directly from source sequences.
+
+                Parameters
+                ----------
+                sequences : np.array
+                    An array of encoded source code sequences of shape (n, seq_length).
+
+                Returns
+                -------
+                np.array
+                    Predicted indices of the optimal coarsening factors with shape (n,).
+                """
         # directly predict optimal thread coarsening factor from source sequences:
         p = np.array(self.model.predict(sequences, batch_size=self.batch, verbose=0))
         preds = torch.softmax(torch.tensor(p), dim=1)
@@ -105,12 +172,52 @@ class DeepTune():
         return indice
 
 class ThreadCoarseningDe(util.ModelDefinition):
+    """
+    ThreadCoarseningDe class for partitioning data and making predictions.
+    """
     def __init__(self,model=None,dataset=None,calibration_data=None,args=None):
+        """
+                Initialize the ThreadCoarseningDe instance.
+
+                Parameters
+                ----------
+                model : Model, optional
+                    Model instance to be used for prediction.
+
+                dataset : str, optional
+                    Path to the dataset directory.
+
+                calibration_data : np.array, optional
+                    Calibration data for conformal prediction.
+
+                args : argparse.Namespace, optional
+                    Additional arguments for model configuration.
+                """
         self.model = DeepTune()
         self.calibration_data = None
         self.dataset = None
 
     def data_partitioning(self, dataset, platform='', mode='train', calibration_ratio=0.2, args=None):
+        """
+        Partition the data into train, validation, and test sets.
+
+        Parameters
+        ----------
+        dataset : str
+            Path to the dataset directory.
+
+        platform : str
+            Platform name for filtering dataset.
+
+        mode : str
+            Mode of partitioning ('train' or 'test').
+
+        calibration_ratio : float
+            Ratio of data for calibration.
+
+        args : argparse.Namespace
+            Additional arguments for data partitioning.
+        """
         pd.set_option('display.max_rows', 5)
         try:
             df = pd.read_csv("../../../benchmark/Thread/pact-2014-runtimes.csv")
@@ -183,6 +290,22 @@ class ThreadCoarseningDe(util.ModelDefinition):
 
 
     def predict(self, X, significant_level=0.1):
+        """
+        Predict and return the predicted labels and probabilities.
+
+        Parameters
+        ----------
+        X : np.array
+            Input data for prediction.
+
+        significant_level : float
+            Significance level for prediction confidence.
+
+        Returns
+        -------
+        tuple
+            Predicted labels and probabilities.
+        """
         if self.model is None:
             raise ValueError("Model is not initialized.")
 
@@ -191,7 +314,19 @@ class ThreadCoarseningDe(util.ModelDefinition):
         return pred, probability
 
     def feature_extraction(self, srcs):
+        """
+        Extract features from source code sequences.
 
+        Parameters
+        ----------
+        srcs : list of str
+            List of source code strings for feature extraction.
+
+        Returns
+        -------
+        np.array
+            Encoded feature array for model input.
+        """
         tokenizer = AutoTokenizer.from_pretrained("microsoft/codebert-base")
         code_tokens = [tokenizer.tokenize(src) for src in srcs]
         seqs = [tokenizer.convert_tokens_to_ids(src) for src in code_tokens]
@@ -204,7 +339,40 @@ class ThreadCoarseningDe(util.ModelDefinition):
 def make_prediction_ilDe(speed_up_all=[],platform='',
                     model=None,test_x=None,test_index=None,X_cc=None,origin_speedup=None
                        ,improved_spp_all=[]):
+    """
+    Make predictions and calculate improved speedup.
 
+    Parameters
+    ----------
+    speed_up_all : list
+        List of speedup values.
+
+    platform : str
+        Platform name for prediction context.
+
+    model : Model
+        Model instance for making predictions.
+
+    test_x : np.array
+        Test dataset features.
+
+    test_index : list
+        List of indices for test data samples.
+
+    X_cc : np.array
+        Cascading features for prediction.
+
+    origin_speedup : float
+        Original speedup before prediction adjustments.
+
+    improved_spp_all : list
+        List to store improved speedup values.
+
+    Returns
+    -------
+    tuple
+        Retrained speedup, improved speedup, and data distribution.
+    """
     retrained_speedup, all_pre,data_dist = make_predictionDe(speed_up_all=speed_up_all,
                                                  platform=platform, model=model,
          test_x=test_x, test_index=test_index, X_cc=X_cc)
@@ -219,6 +387,34 @@ def make_prediction_ilDe(speed_up_all=[],platform='',
 
 def make_predictionDe(speed_up_all=[],platform='',
                     model=None,test_x=None,test_index=None,X_cc=None):
+    """
+    Make predictions and calculate the speedup for each kernel.
+
+    Parameters
+    ----------
+    speed_up_all : list
+        List of speedup values.
+
+    platform : str
+        Platform name for prediction context.
+
+    model : Model
+        Model instance for making predictions.
+
+    test_x : np.array
+        Test dataset features.
+
+    test_index : list
+        List of indices for test data samples.
+
+    X_cc : np.array
+        Cascading features for prediction.
+
+    Returns
+    -------
+    tuple
+        Origin speedup, predictions, and data distribution.
+    """
     try:
         df = pd.read_csv("../../../benchmark/Thread/pact-2014-runtimes.csv")
         oracles = pd.read_csv("../../../benchmark/Thread/pact-2014-oracles.csv")
@@ -275,7 +471,23 @@ def make_predictionDe(speed_up_all=[],platform='',
 
 def get_magni_features(df, oracles, platform):
     """
-    Assemble cascading data.
+    Assemble cascading data for the specified platform.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        DataFrame containing runtime data.
+
+    oracles : pandas.DataFrame
+        DataFrame containing oracle thread coarsening factors.
+
+    platform : str
+        Platform name for filtering dataset.
+
+    Returns
+    -------
+    tuple
+        Tuple of arrays (X_cc, y_cc) representing cascading features and labels.
     """
     X_cc, y_cc, = [], []
     cfs = [1, 2, 4, 8, 16, 32]
@@ -308,8 +520,19 @@ def get_magni_features(df, oracles, platform):
     return np.asarray(X_cc), np.asarray(y_cc)
 
 def encode_srcs(srcs):
-    """ encode and pad source code for learning """
+    """
+    Encode and pad source code for model input.
 
+    Parameters
+    ----------
+    srcs : list of str
+        List of source code strings.
+
+    Returns
+    -------
+    np.array
+        Encoded and padded source code array.
+    """
     # seqs = [atomizer.atomize(src) for src in srcs]
     # seqs = [tokenizer.tokenize(src) for src in srcs]
     code_tokens=[tokenizer.tokenize(src) for src in srcs]
@@ -321,6 +544,24 @@ def encode_srcs(srcs):
     return np.vstack([np.expand_dims(x, axis=0) for x in encoded])
 
 def platform2str(platform):
+    """
+    Convert platform code to a descriptive string.
+
+    Parameters
+    ----------
+    platform : str
+        Platform code (e.g., "Fermi", "Kepler").
+
+    Returns
+    -------
+    str
+        Descriptive platform string.
+
+    Raises
+    ------
+    LookupError
+        If platform code is unrecognized.
+    """
     if platform == "Fermi":
         return "NVIDIA GTX 480"
     elif platform == "Kepler":
@@ -333,6 +574,22 @@ def platform2str(platform):
         raise LookupError
 
 def evaluate(model,args):
+    """
+    Evaluate model performance using accuracy, precision, recall, and F1 metrics.
+
+    Parameters
+    ----------
+    model : Model
+        Model instance to be evaluated.
+
+    args : argparse.Namespace
+        Additional arguments for evaluation settings.
+
+    Returns
+    -------
+    float
+        Mean F1 score across devices.
+    """
     pd.set_option('display.max_rows', 5)
     try:
         df = pd.read_csv("../../../benchmark/Thread/pact-2014-runtimes.csv")
@@ -625,6 +882,22 @@ def evaluate(model,args):
     return mean_f1
 
 def get_onehot(df, platform):
+    """
+    Convert thread coarsening factors to one-hot encoding.
+
+    Parameters
+    ----------
+    df : pandas.DataFrame
+        DataFrame containing thread coarsening factors.
+
+    platform : str
+        Platform name for which to retrieve coarsening factors.
+
+    Returns
+    -------
+    np.array
+        One-hot encoded array of coarsening factors.
+    """
     cfs = [1, 2, 4, 8, 16, 32]
     hot = np.zeros((len(df), len(cfs)), dtype=np.int32)
     for i, cf in enumerate(df[f"cf_{platform}"]):
@@ -634,6 +907,25 @@ def get_onehot(df, platform):
 
 
 def load_predict(model,args,model_pretrained=''):
+    """
+    Load a pretrained model and perform predictions on test data.
+
+    Parameters
+    ----------
+    model : Model
+        Model instance for making predictions.
+
+    args : argparse.Namespace
+        Additional arguments for loading and prediction settings.
+
+    model_pretrained : str
+        Path to the pretrained model.
+
+    Returns
+    -------
+    float
+        Mean F1 score across devices.
+    """
     pd.set_option('display.max_rows', 5)
     try:
         df = pd.read_csv("../../../benchmark/Thread/pact-2014-runtimes.csv")
@@ -898,6 +1190,22 @@ def load_predict(model,args,model_pretrained=''):
     return mean_f1
 
 def train_underlying(model,args):
+    """
+       Train an underlying model and calculate the speedup improvement.
+
+       Parameters
+       ----------
+       model : Model
+           Model instance to be trained.
+
+       args : argparse.Namespace
+           Additional arguments for training settings.
+
+       Returns
+       -------
+       float
+           Average speedup across all devices.
+       """
     pd.set_option('display.max_rows', 5)
     try:
         df = pd.read_csv("../../../benchmark/Thread/pact-2014-runtimes.csv")
@@ -1021,6 +1329,25 @@ def train_underlying(model,args):
     return origin
 
 def restore_model(model,args,model_pretrained=''):
+    """
+        Restore a pretrained model and calculate the speedup improvement.
+
+        Parameters
+        ----------
+        model : Model
+            Model instance to be restored.
+
+        args : argparse.Namespace
+            Additional arguments for model restoration.
+
+        model_pretrained : str
+            Path to the pretrained model.
+
+        Returns
+        -------
+        float
+            Average speedup across all devices.
+        """
     pd.set_option('display.max_rows', 5)
     try:
         df = pd.read_csv("../../../benchmark/Thread/pact-2014-runtimes.csv")

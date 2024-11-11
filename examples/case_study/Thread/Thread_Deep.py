@@ -3,7 +3,6 @@ import os
 import warnings
 warnings.filterwarnings("ignore")
 import random
-# 将根目录添加到path中
 sys.path.append('/home/huanting/PROM')
 sys.path.append('./case_study/Thread')
 sys.path.append('/home/huanting/PROM/src')
@@ -15,6 +14,14 @@ from Magni_utils import ThreadCoarseningMa,Magni,make_predictionMa,make_predicti
 from src.prom.prom_util import Prom_utils
 
 def load_deeptune_args():
+    """
+    Load and parse command-line arguments for configuring the DeepTune model.
+
+    Returns
+    -------
+    argparse.Namespace
+        Parsed command-line arguments for model configuration, including seed, epoch, batch size, and mode.
+    """
     # get parameters from tuner
     params = nni.get_next_parameter()
     if params == {}:
@@ -40,6 +47,18 @@ def load_deeptune_args():
 
 
 def Thread_DeepTune_train(args):
+    """
+    Train the DeepTune model on the ThreadCoarseningDe dataset.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Parsed arguments containing model configuration.
+
+    Returns
+    -------
+    None
+    """
     # load args
     prom_thread=ThreadCoarseningDe(model=DeepTune())
     dataset_path= "../../../benchmark/Thread/pact-2014-runtimes.csv"
@@ -114,6 +133,18 @@ def Thread_DeepTune_train(args):
     nni.report_final_result(origin)
 
 def Thread_DeepTune_deploy(args):
+    """
+    Deploy and evaluate the DeepTune model with conformal prediction and incremental learning.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        Parsed arguments for model configuration.
+
+    Returns
+    -------
+    None
+    """
     # load args
     prom_thread = ThreadCoarseningDe(model=DeepTune())
     dataset_path = "../../../benchmark/Thread/pact-2014-runtimes.csv"
@@ -286,5 +317,5 @@ if __name__=='__main__':
     elif args.mode == 'deploy':
         Thread_DeepTune_deploy(args=args)
     # Thread_DeepTune_train(args)
-    Thread_DeepTune_deploy(args)
+    # Thread_DeepTune_deploy(args)
     # nnictl create --config /home/huanting/PROM/examples/case_study/Thread/config.yaml --port 8088
