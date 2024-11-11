@@ -56,7 +56,7 @@ The following instructions assume the host OS runs Linux.
 Fetch the docker image from docker hub.
 
 ```
-$ sudo docker pull wanghuanting/prom:0.7
+$ sudo docker pull wanghuanting/prom:0.1
 ```
 
 To check the list of images, run:
@@ -65,14 +65,14 @@ To check the list of images, run:
 $ sudo docker images
 #output
 #REPOSITORY                                                               TAG                                 IMAGE ID       CREATED         SIZE
-#wanghuanting/prom                                                        0.7                                cc84e8929fe1   2 minutes ago    101GB
+#wanghuanting/prom                                                        0.1                                cc84e8929fe1   2 minutes ago    147GB
 
 ```
 
 Run the Docker container
 
 ```
-$ sudo docker run -it --name prom -p 8099:8099  wanghuanting/prom:0.7 /bin/bash
+$ sudo docker run -it --name prom -p 8099:8099  wanghuanting/prom:0.1 /bin/bash
 ```
 
 [//]: # ($ docker start prom )
