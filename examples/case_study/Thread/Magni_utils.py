@@ -20,8 +20,8 @@ import torch
 from sklearn.model_selection import KFold, GridSearchCV
 import numpy as np
 from sklearn.model_selection import train_test_split
-from prom.prom_classification import MapieClassifier
-from prom.metrics import (classification_coverage_score,
+from mapie.prom_classification import MapieClassifier
+from mapie.metrics import (classification_coverage_score,
                            classification_mean_width_score)
 import tensorflow as tf
 

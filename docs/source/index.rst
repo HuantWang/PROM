@@ -63,9 +63,6 @@ for enhancing the robustness and performance of predictive models during deploym
    ./case_study/DeviceM/DevM_i2v
    ./case_study/DeviceM/DevM_Programl
    ./case_study/DeviceM/devmap_exploration
-   ./case_study/DeviceM/look
-   ./case_study/DeviceM/Mapie
-   ./case_study/DeviceM/modules
    ./case_study/DeviceM/pytorch_geom_model_pchange
    ./case_study/DeviceM/setup
 
@@ -73,35 +70,16 @@ for enhancing the robustness and performance of predictive models during deploym
    :maxdepth: 3
    :caption: Tensor Tuning API Reference
 
-   ./case_study/tlp/autotvm_x
+
    ./case_study/tlp/bert_large
    ./case_study/tlp/bert_med
    ./case_study/tlp/bert_tiny
-   ./case_study/tlp/common
-   ./case_study/tlp/dump_network_info
-   ./case_study/tlp/dump_programs
-   ./case_study/tlp/estimate_network_latency
-   ./case_study/tlp/eval_model_on_dataset
-   ./case_study/tlp/lightgbm_bayesian_hyperparameter_opt
-   ./case_study/tlp/make_dataset
-   ./case_study/tlp/measure_programs
    ./case_study/tlp/modules
    ./case_study/tlp/mtl_tlp_make_dataset
    ./case_study/tlp/mtl_tlp_train
-   ./case_study/tlp/network2measure_records
-   ./case_study/tlp/nni_hyperparameter_opt
-   ./case_study/tlp/print_all_tasks
-   ./case_study/tlp/print_programs
-   ./case_study/tlp/search
    ./case_study/tlp/sensitive
-   ./case_study/tlp/tlp_eval
    ./case_study/tlp/tlp_fine_tune
-   ./case_study/tlp/tlp_make_dataset
-   ./case_study/tlp/tlp_make_dataset_bert
-   ./case_study/tlp/tlp_preprocess_dataset_gpu
-   ./case_study/tlp/train_model
    ./case_study/tlp/train_tlp
-   ./case_study/tlp/tune_network
 
 
 .. toctree::

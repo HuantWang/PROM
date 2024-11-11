@@ -482,6 +482,11 @@ bash ae_cd.sh
 python ae_plot.py --case cd
 ```
 
+```
+# clean all temporary files
+bash ae_clean.sh
+```
+
 Now, you can check the figures in the following directory:
 ```
 cd /cgo/prom/PROM/examples/tutorial/figures_plot/figure
