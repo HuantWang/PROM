@@ -44,12 +44,12 @@ def set_violin_colors(vp, colors, edge_color, linewidth=0.7):
 def violin_3(method='thread'):
     if method=='thread':
         color = ['#cfb8f5', '#b08cee', '', '', '#ba9bf0', '#a67dec', '#b08cee', '#925fe8']
-        magni_train = r'./figures_plot/box/thread/logs/train/figs/magni/data0.9313518035529748_6349_data.pkl'
-        deeptune_train = r'./figures_plot/box/thread/logs/train/figs/de/data0.9313518035529748_8105_data.pkl'
-        poem_train =  r'./figures_plot/box/thread/logs/train/figs/i2v/data0.9701271722516377_4270_data.pkl'
-        magni_test = r'./figures_plot/box/thread/logs/train/figs/i2v/data0.7913767483307274_3734_data.pkl'
-        deeptune_test = r'./figures_plot/box/thread/logs/deploy/figs/de/data0.7842660724791225_5072_data.pkl'
-        poem_test = r'./figures_plot/box/thread/logs/train/figs/i2v/data0.7913767483307274_3734_data.pkl'
+        magni_train = r'./figures_plot/box/thread/magni_train.pkl'
+        deeptune_train = r'./figures_plot/box/thread/deeptune_train.pkl'
+        poem_train =  r'./figures_plot/box/thread/poem_train.pkl'
+        magni_test = r'./figures_plot/box/thread/magni_test.pkl'
+        deeptune_test = r'./figures_plot/box/thread/deeptune_test.pkl'
+        poem_test = r'./figures_plot/box/thread/poem_test.pkl'
 
         with open(magni_train, 'rb') as file:
             data_distri = pickle.load(file)['Data'].values
@@ -74,12 +74,14 @@ def violin_3(method='thread'):
 
     if method=='thread_il':
         color = ['#a2d39b', '#57ac4b', '', '', '#6bb960', '#4b9441', '#6bb960', '#397131']
-        magni_test = r'./figures_plot/box/thread/logs/train/figs/i2v/data0.7913767483307274_3734_data.pkl'
-        deeptune_test = r'./figures_plot/box/thread/logs/deploy/figs/de/data0.7842660724791225_5072_data.pkl'
-        poem_test = r'./figures_plot/box/thread/logs/train/figs/i2v/data0.7913767483307274_3734_data.pkl'
-        magni_rtrain = r'./figures_plot/box/thread/logs/deploy/figs/magni/data0.7532395620647434_2494_il_data.pkl'
-        deeptune_rtrain = r'./figures_plot/box/thread/logs/deploy/figs/de/data0.7842660724791225_5072_data_il.pkl'
-        poem_rtrain = r'./figures_plot/box/thread/logs/deploy/figs/i2v/data0.9689131130421325_1994_data.pkl'
+        magni_test = r'./figures_plot/box/thread/magni_test.pkl'
+        deeptune_test = r'./figures_plot/box/thread/deeptune_test.pkl'
+        poem_test = r'./figures_plot/box/thread/poem_test.pkl'
+        magni_rtrain = r'./figures_plot/box/thread/magni_rtrain.pkl'
+        deeptune_rtrain = r'./figures_plot/box/thread/deeptune_rtrain.pkl'
+        poem_rtrain = r'./figures_plot/box/thread/poem_rtrain.pkl'
+
+
 
         # Load data from files
         with open(magni_test, 'rb') as file:
@@ -105,12 +107,12 @@ def violin_3(method='thread'):
     if method=='loop':
         color = ['#e3d6f9', '#c5aaf2', '', '', '#ba9bf0', '#9c6eea', '#b08cee', '#9c6eea']
 
-        k_train = r'./figures_plot/box/loop/figs/sv/data0.7407685094939795_6039_data.pkl'
-        deeptune_train = r'./figures_plot/box/loop/figs/de/data0.7989800681029076_6571_data.pkl'
-        poem_train =  r'./figures_plot/box/loop/figs/ma/data0.6964665449429589_1641_data.pkl'
-        k_test = r'./figures_plot/box/loop/figs/sv/data0.6530830897945052_5220_data.pkl'
-        deeptune_test = r'./figures_plot/box/loop/figs/de/data0.6577737847015122_7486_data.pkl'
-        poem_test = r'./figures_plot/box/loop/figs/ma/data0.6943913837237529_3343_data.pkl'
+        k_train = r'./figures_plot/box/loop/k_train.pkl'
+        deeptune_train = r'./figures_plot/box/loop/deeptune_train.pkl'
+        poem_train =  r'./figures_plot/box/loop/poem_train.pkl'
+        k_test = r'./figures_plot/box/loop/k_test.pkl'
+        deeptune_test = r'./figures_plot/box/loop/deeptune_test.pkl'
+        poem_test = r'./figures_plot/box/loop/poem_test.pkl'
 
 
         # Load data from files
@@ -134,12 +136,14 @@ def violin_3(method='thread'):
     if method=='loop_il':
         color = ['#a2d39b', '#57ac4b', '', '', '#6bb960', '#4b9441', '#6bb960', '#397131']
 
-        k_rtrain = r'./figures_plot/box/loop/figs/sv/data0.7301965385191458_7375_data.pkl'
-        deeptune_rtrain = r'./figures_plot/box/loop/figs/de/data0.7640135523507727_6116_data.pkl'
-        poem_rtrain = r'./figures_plot/box/loop/figs/ma/data0.6943913837237529_3343_data.pkl'
-        k_test = r'./figures_plot/box/loop/figs/sv/data0.6530830897945052_5220_data.pkl'
-        deeptune_test = r'./figures_plot/box/loop/figs/de/data0.6577737847015122_7486_data.pkl'
-        poem_test = r'./figures_plot/box/loop/figs/ma/data0.6943913837237529_3343_data.pkl'
+        k_rtrain = r'./figures_plot/box/loop/k_rtrain.pkl'
+        deeptune_rtrain = r'./figures_plot/box/loop/deeptune_rtrain.pkl'
+        poem_rtrain = r'./figures_plot/box/loop/poem_rtrain.pkl'
+        k_test = r'./figures_plot/box/loop/k_test.pkl'
+        deeptune_test = r'./figures_plot/box/loop/deeptune_test.pkl'
+        poem_test = r'./figures_plot/box/loop/poem_test.pkl'
+
+
 
         # Load data from files
         with open(k_test, 'rb') as file:
@@ -163,12 +167,12 @@ def violin_3(method='thread'):
     if method=='dev':
         color = ['#e3d6f9', '#c5aaf2', '', '', '#ba9bf0', '#9c6eea', '#b08cee', '#9c6eea']
 
-        b_train = r'./figures_plot/box/i2v/box_plot_train0.9000208185635654_6794_data.pkl'
-        deeptune_train = r'./figures_plot/box/deep/box_plot_deploy0.8328986364257807_8264_data.pkl'
-        poem_train =  r'./figures_plot/box/programl/box_plot_deploy0.8169234319726472_1150_data.pkl'
-        b_test = r'./figures_plot/box/i2v/box_plot_deploy0.7131319119050349_8882_data.pkl'
-        deeptune_test = r'./figures_plot/box/deep/box_plot_deploy0.5819776990305028_93_data.pkl'
-        poem_test = r'./figures_plot/box/programl/box_plot_deploy0.5805412782620027_838_data.pkl'
+        b_train = r'./figures_plot/box/dev/b_train.pkl'
+        deeptune_train = r'./figures_plot/box/dev/deeptune_train.pkl'
+        poem_train =  r'./figures_plot/box/dev/poem_train.pkl'
+        b_test = r'./figures_plot/box/dev/b_test.pkl'
+        deeptune_test = r'./figures_plot/box/dev/deeptune_test.pkl'
+        poem_test = r'./figures_plot/box/dev/poem_test.pkl'
 
 
         # Load data from files
@@ -190,13 +194,13 @@ def violin_3(method='thread'):
         color = ['#a2d39b', '#57ac4b', '', '', '#6bb960', '#4b9441', '#6bb960', '#397131']
 
 
-        b_rtrain = r'./figures_plot/box/i2v/box_plot_IL0.8116132541229645_8882_data.pkl'
-        deeptune_rtrain = r'./figures_plot/box/deep/box_plot_IL0.7786801903916476_93_data.pkl'
-        poem_rtrain = r'./figures_plot/pkl/dev/il_poem_0.8376295092838051_9914.pkl'
-        b_test = r'./figures_plot/box/i2v/box_plot_deploy0.7131319119050349_8882_data.pkl'
-        deeptune_test = r'./figures_plot/box/deep/box_plot_deploy0.5819776990305028_93_data.pkl'
-        poem_test = r'./figures_plot/box/programl/box_plot_IL0.7725996926213913_838_data.pkl'
+        b_rtrain = r'./figures_plot/box/dev/b_rtrain.pkl'
+        deeptune_rtrain = r'./figures_plot/box/dev/deeptune_rtrain.pkl'
+        poem_rtrain = r'./figures_plot/box/dev/poem_rtrain.pkl'
 
+        b_test = r'./figures_plot/box/dev/b_test.pkl'
+        deeptune_test = r'./figures_plot/box/dev/deeptune_test.pkl'
+        poem_test = r'./figures_plot/box/dev/poem_test.pkl'
         # Load data from files
         with open(b_test, 'rb') as file:
             data_distri = pickle.load(file)['Data'].values

@@ -69,7 +69,7 @@ $ sudo docker images
 
 ```
 
-Run the docker image in a GPU-enabled environment
+Run the Docker container
 
 ```
 $ sudo docker run -it --name prom -p 8099:8099  wanghuanting/prom:0.7 /bin/bash
@@ -87,7 +87,7 @@ After importing the docker container **and getting into bash** in the container,
 $ conda activate thread
 ``````
 
-Then, go to the root directory of our tool:
+Then, go to the directory of our tool:
 
 ```
 # Move the project to the target directory
