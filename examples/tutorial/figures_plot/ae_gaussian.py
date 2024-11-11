@@ -55,4 +55,3 @@ def ae_line_gaussian():
     plt.savefig(r'./figures_plot/figure/gaussian.pdf')
     plt.show()
     print("13 (a): Prom performance as Gaussian scale parameter changes.")
-
