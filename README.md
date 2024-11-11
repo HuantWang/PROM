@@ -9,7 +9,13 @@
   <i>Enhance reliability during deployment</i>
 </p>
 
-
+<p align="center">
+  <i>
+    Check
+    <a href="http://34.66.10.35:8098/">the website</a>
+    for more information.
+  </i>
+</p>
 
 
 
@@ -37,11 +43,11 @@ pip install -U prom
 
 See [INSTALL.md](INSTALL.md) for further details.
 
-## Usage
+## Documents
 
-See [usage](./AE.md) for a step-by-step demo of Prom.
+See [usage](./AE.md) for a step-by-step artifact evaluation for Prom.
 
-More detailed documents for using Prom can be checked on our [website](./docs/build/html/index.html).
+More detailed documents for using Prom can be checked on our [website](http://34.66.10.35:8098/).
 
 ## Data
 

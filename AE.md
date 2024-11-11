@@ -65,14 +65,14 @@ To check the list of images, run:
 $ sudo docker images
 #output
 #REPOSITORY                                                               TAG                                 IMAGE ID       CREATED         SIZE
-#wanghuanting/prom                                                        0.4                                cc84e8929fe1   2 minutes ago    101GB
+#wanghuanting/prom                                                        0.7                                cc84e8929fe1   2 minutes ago    101GB
 
 ```
 
 Run the docker image in a GPU-enabled environment
 
 ```
-$ sudo docker run -it --name prom -p 8099:8099  wanghuanting/prom:0.4 /bin/bash
+$ sudo docker run -it --name prom -p 8099:8099  wanghuanting/prom:0.7 /bin/bash
 ```
 $ docker start prom 
 $ docker exec -it prom /bin/bash 
