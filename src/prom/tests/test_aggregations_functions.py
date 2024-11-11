@@ -1,6 +1,6 @@
 import numpy as np
 
-from mapie.aggregation_functions import phi1D, phi2D
+from prom.aggregation_functions import phi1D, phi2D
 
 
 def test_phi1D() -> None:

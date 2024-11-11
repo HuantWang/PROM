@@ -15,8 +15,8 @@ from sklearn.model_selection import train_test_split
 from sklearn.pipeline import Pipeline, make_pipeline
 from sklearn.preprocessing import OneHotEncoder
 
-from mapie.calibration import MapieCalibrator
-from mapie.metrics import expected_calibration_error, top_label_ece
+from prom.calibration import MapieCalibrator
+from prom.metrics import expected_calibration_error, top_label_ece
 
 random_state = 20
 

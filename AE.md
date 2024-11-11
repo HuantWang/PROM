@@ -40,7 +40,7 @@ Install Docker by following the instructions [here](https://docs.docker.com/inst
 Fetch the docker image from docker hub.
 
 ```
-$ sudo docker pull wanghuanting/prom:0.3
+$ sudo docker pull wanghuanting/prom:0.4
 ```
 
 To check the list of images, run:
@@ -49,18 +49,17 @@ To check the list of images, run:
 $ sudo docker images
 #output
 #REPOSITORY                                                               TAG                                 IMAGE ID       CREATED         SIZE
-#wanghuanting/prom                                                        0.3                                cc84e8929fe1   2 minutes ago    102GB
+#wanghuanting/prom                                                        0.4                                cc84e8929fe1   2 minutes ago    101GB
 
 ```
 
 Run the docker image in a GPU-enabled environment
 
 ```
-$ sudo docker run -it --name prom -p 8099:8099  wanghuanting/prom:0.3 /bin/bash
+$ sudo docker run -it --name prom -p 8099:8099  wanghuanting/prom:0.4 /bin/bash
+```
 $ docker start prom 
 $ docker exec -it prom /bin/bash 
-```
-
 
 #### 1.2 Setup the Environment
 

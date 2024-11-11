@@ -3,8 +3,8 @@ from typing import Union, cast
 import numpy as np
 from scipy.stats import binom
 
-from mapie._typing import NDArray
-from mapie.utils import check_alpha
+from prom._typing import NDArray
+from prom.utils import check_alpha
 
 
 def compute_hoeffdding_bentkus_p_value(

@@ -3,7 +3,13 @@
 import os
 import sys
 sys.path.insert(0, os.path.abspath('../../'))
+sys.path.insert(0, os.path.abspath('../../examples/case_study'))
 sys.path.insert(0, os.path.abspath('../../src'))
+sys.path.insert(0, os.path.abspath('../../examples/case_study/BugD'))
+sys.path.insert(0, os.path.abspath('../../examples/case_study/DeviceM'))
+sys.path.insert(0, os.path.abspath('../../examples/case_study/Loop'))
+sys.path.insert(0, os.path.abspath('../../examples/case_study/Thread'))
+sys.path.insert(0, os.path.abspath('../../examples/case_study/tlp/scripts'))
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 

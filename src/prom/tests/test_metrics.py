@@ -8,8 +8,8 @@ import pytest
 from numpy.random import RandomState
 from typing_extensions import TypedDict
 
-from mapie._typing import ArrayLike, NDArray
-from mapie.metrics import (add_jitter, classification_coverage_score,
+from prom._typing import ArrayLike, NDArray
+from prom.metrics import (add_jitter, classification_coverage_score,
                            classification_coverage_score_v2,
                            classification_mean_width_score, classification_ssc,
                            classification_ssc_score, coverage_width_based,

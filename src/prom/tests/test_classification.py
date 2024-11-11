@@ -21,10 +21,10 @@ from sklearn.utils.estimator_checks import check_estimator
 from sklearn.utils.validation import check_is_fitted
 from typing_extensions import TypedDict
 
-from mapie._typing import ArrayLike, NDArray
-from mapie.classification import MapieClassifier
-from mapie.metrics import classification_coverage_score
-from mapie.utils import check_alpha
+from prom._typing import ArrayLike, NDArray
+from prom.classification import MapieClassifier
+from prom.metrics import classification_coverage_score
+from prom.utils import check_alpha
 
 random_state = 42
 

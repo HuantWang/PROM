@@ -67,8 +67,21 @@ MODEL_CLASSES = {
 
 
 class InputFeatures(object):
-    """A single training/test features for a example."""
 
+    """
+       A single training/test feature for an example.
+
+       Attributes
+       ----------
+       input_tokens : list
+           Tokenized input sequence.
+       input_ids : list
+           List of token IDs for the input sequence.
+       idx : str
+           The index of the example.
+       label : int or list
+           The label(s) for the example.
+       """
     def __init__(self,
                  input_tokens,
                  input_ids,
@@ -76,13 +89,23 @@ class InputFeatures(object):
                  label,
 
                  ):
+        """
+                Parameters
+                ----------
+                input_tokens : list
+                    The tokens of the input sequence.
+                input_ids : list
+                    The token IDs of the input sequence.
+                idx : str
+                    The index of the example.
+                label : int or list
+                    The label(s) for the input data.
+        """
         self.input_tokens = input_tokens
         self.input_ids = input_ids
         self.idx = str(idx)
         self.label = label
 
-
-import random
 
 
 def cvconvert_examples_to_features(code_new, label, tokenizer, args):
@@ -1638,19 +1661,19 @@ def codebert_deploy(model_pre, config, tokenizer, args):
         print("The best incremental accuracy is: ", increment_acc)
     nni.report_final_result(increment_acc)
 
-if __name__ == "__main__":
-    # initial the model parameters
-    print("initial the model parameters...")
-    model_pre, config, tokenizer, args = model_initial()
-    if args.mode == 'train':
-        codebert_train(model_pre, config, tokenizer, args)
-    elif args.mode == 'deploy':
-        codebert_deploy(model_pre, config, tokenizer, args)
+# if __name__ == "__main__":
+#     # initial the model parameters
+#     print("initial the model parameters...")
+#     model_pre, config, tokenizer, args = model_initial()
+#     if args.mode == 'train':
+#         codebert_train(model_pre, config, tokenizer, args)
+#     elif args.mode == 'deploy':
+#         codebert_deploy(model_pre, config, tokenizer, args)
     # codebert_train(model_pre, config, tokenizer, args)
 
     # nnictl create --config /home/huanting/PROM/examples/case_study/BugD/config.yaml --port 8088
     """
     --output_dir=./saved_models     --model_type=roberta     --tokenizer_name=microsoft/codebert-base     --model_name_or_path=microsoft/codebert-base   --do_train  --do_eval     --do_test     --train_data_file=../../../benchmark/Bug/train.jsonl     --eval_data_file=../../../benchmark/Bug/valid.jsonl     --test_data_file=../../../benchmark/Bug/test.jsonl --evaluate_during_training
     """
-codebert_deploy(model_pre, config, tokenizer, args)
+# codebert_deploy(model_pre, config, tokenizer, args)
 # codebert_train(model_pre, config, tokenizer, args)

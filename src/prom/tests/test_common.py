@@ -11,8 +11,8 @@ from sklearn.pipeline import make_pipeline
 from sklearn.utils.estimator_checks import parametrize_with_checks
 from sklearn.utils.validation import check_is_fitted
 
-from mapie.classification import MapieClassifier
-from mapie.regression import MapieQuantileRegressor, MapieRegressor
+from prom.classification import MapieClassifier
+from prom.regression import MapieQuantileRegressor, MapieRegressor
 
 X_toy = np.arange(18).reshape(-1, 1)
 y_toy = np.array(
