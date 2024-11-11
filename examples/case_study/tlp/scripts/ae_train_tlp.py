@@ -17,15 +17,16 @@ sys.path.append('/cgo/prom/PROM/examples/case_study/tlp/python')
 sys.path.append('/cgo/prom/PROM/thirdpackage')
 sys.path.append('/cgo/prom/PROM')
 sys.path.append('/cgo/prom/PROM/src')
-import warnings
-warnings.filterwarnings("ignore", category=RuntimeWarning)
+
+
 
 import src.prom.prom_util as util
 from sklearn.neural_network import MLPRegressor
 from prom.regression import MapieQuantileRegressor, MapieRegressor
 from prom.metrics import regression_coverage_score
 import warnings
-warnings.filterwarnings("ignore")
+warnings.filterwarnings("ignore", category=RuntimeWarning)
+
 
 def pred_a_dataset(datas, task_pred_dict, model):
 

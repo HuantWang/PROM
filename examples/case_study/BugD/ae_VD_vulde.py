@@ -779,7 +779,7 @@ def deploy(args, train_dataset, model, tokenizer):
                                 retrained_acc = incre(args, train_dataset, model, tokenizer)
                                 increment_acc_single = retrained_acc - results_origin["test_acc"]
                                 print(f"The retrained accuracy is: {retrained_acc * 100:.2f}%, "
-                                      f"The increment accuracy is: {increment_acc_single * 100:.2f}% "
+                                      f"The improved accuracy is: {increment_acc_single * 100:.2f}% "
                                       )
                                 if increment_acc < increment_acc_single:
                                     increment_acc = increment_acc_single

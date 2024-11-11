@@ -319,10 +319,11 @@ def loop_deploy_svm(args):
     current_speedup=loop_train_svm(args=args)
     # current_speedup = sum(non_speedup_all) / len(non_speedup_all)
     inproved_speedup = current_speedup - origin_speedup
+
     print(
-        f"origin speed up: {origin_speedup}, "
-        f"Imroved speed up: {current_speedup}, "
-        f"Imroved mean speed up: {inproved_speedup}, "
+        f"Original speedup: {origin_speedup}, "
+        f"Retrained speedup: {current_speedup}, "
+        f"Improved mean speedup: {inproved_speedup}"
     )
     # nni.report_final_result(inproved_speedup)
 

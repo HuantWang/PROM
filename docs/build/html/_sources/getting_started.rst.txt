@@ -18,7 +18,7 @@ Prom helps address data drift during deployment,
 ensuring the reliability of machine learning models in the face of changes,
 and supports continuous improvements in the end-user environment.
 
-.. image:: /img/workflow_simple.pdf
+.. image:: /img/workflow_simple.png
 
 The key features and capabilities of Prom include:
 

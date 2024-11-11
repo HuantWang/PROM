@@ -23,7 +23,7 @@ from sklearn.neural_network import MLPRegressor
 from prom.regression import MapieQuantileRegressor, MapieRegressor
 from prom.metrics import regression_coverage_score
 import warnings
-warnings.filterwarnings("ignore")
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 def pred_a_dataset(datas, task_pred_dict, model):
 
@@ -823,11 +823,11 @@ def il(test_loader, device, pre_trained_model,aug_data, args):
     else:
         loss_func = nn.MSELoss()
 
-    # 配置优化器和学习率调度器
+
     optimizer = optim.Adam(net.parameters(), lr=args.lr * 0.1, weight_decay=args.weight_decay)
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=args.n_epoch // 3, gamma=0.8)
 
-    # Fine-tuning 的训练循环
+
     print('Start fine-tuning...')
     for epoch in range(args.n_epoch):
         net.train()
@@ -845,12 +845,7 @@ def il(test_loader, device, pre_trained_model,aug_data, args):
 
         lr_scheduler.step()
 
-        # 打印进度和验证
-        # if epoch % 5 == 0 or epoch == args.n_epoch - 1:
-        #     valid_loss = validate(net, test_dataset_loader, loss_func, device)
-        #     print(f"Epoch: {epoch} Train Loss: {train_loss:.4f} Valid Loss: {valid_loss:.4f}")
 
-        # 保存模型
     model_save_file_name = f'{args.save_folder}/tlp_model_{args.seed}.pkl'
     with open(model_save_file_name, 'wb') as f:
         pickle.dump(net.cpu(), f)
@@ -1257,7 +1252,7 @@ def deploy_model(args):
     print("Evaluate the data on new benchmark...")
     il_perm=eval_model(model_file=il_model, test_datasets=test_data)
     improve_perm= il_perm-deploy_perm
-    print("The improvement performance is: ", improve_perm)
+    print("The improved performance is: ", improve_perm)
     # nni.report_final_result(improve_perm)
 
 def ae_deploy_model(model_name):

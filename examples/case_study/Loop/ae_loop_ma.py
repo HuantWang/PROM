@@ -154,12 +154,12 @@ def loop_main(tasks="deeptune"):
         (model_il=deeptune_model, X_seq=X_seq, y_1hot=y_1hot, time=time,
                        test_index=test_index, origin_speedup=origin_speedup)
 
-    print(
-        f"origin speed up: {origin_speedup}, "
-        f"Imroved speed up: {retrained_speedup}, "
-        f"Imroved mean speed up: {inproved_speedup}, "
-    )
 
+    print(
+        f"Original speedup: {origin_speedup}, "
+        f"Retrained speedup: {retrained_speedup}, "
+        f"Improved mean speedup: {inproved_speedup}"
+    )
 def loop_train_magni(args):
     # load args
     prom_loop = LoopT(model=Magni())

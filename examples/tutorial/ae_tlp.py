@@ -1,4 +1,5 @@
-
+import warnings
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 import sys
 sys.path.append('/cgo/prom/PROM/examples/case_study/tlp/scripts/')
 sys.path.append('/cgo/prom/PROM/examples/case_study/tlp/python')

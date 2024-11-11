@@ -186,10 +186,11 @@ def loop_deploy_de(args):
     retrained_speedup=loop_train_de(args=args)
     improved_speedup = retrained_speedup - origin_speedup
 
+
     print(
-        f"origin speed up: {origin_speedup}, "
-        f"Imroved speed up: {retrained_speedup}, "
-        f"Imroved mean speed up: {improved_speedup}, "
+        f"Original speedup: {origin_speedup}, "
+        f"Retrained speedup: {retrained_speedup}, "
+        f"Improved mean speedup: {improved_speedup}"
     )
 
     # nni.report_final_result(inproved_speedup)

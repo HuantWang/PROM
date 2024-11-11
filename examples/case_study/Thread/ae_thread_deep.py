@@ -271,15 +271,15 @@ def Thread_DeepTune_deploy(args):
     mean_rec = sum(Rec_all) / len(Rec_all)
     mean_speed_up = sum(speed_up_all) / len(speed_up_all)
     meanimproved_speed_up = sum(improved_spp_all) / len(improved_spp_all)
-    print(
-        f"The average accuracy is: {mean_acc * 100:.2f}%, "
-        f"average precision is: {mean_pre * 100:.2f}%, "
-        f"average recall is: {mean_rec * 100:.2f}%, "
-        f"average F1 is: {mean_f1 * 100:.2f}%, "
+    # print(
+    #     f"The average accuracy is: {mean_acc * 100:.2f}%, "
+    #     f"average precision is: {mean_pre * 100:.2f}%, "
+    #     f"average recall is: {mean_rec * 100:.2f}%, "
+    #     f"average F1 is: {mean_f1 * 100:.2f}%, "
+    #
+    # )
 
-    )
-
-    print("The speedup of retrained model is:", meanimproved_speed_up)
+    # print("The speedup of retrained model is:", meanimproved_speed_up)
 
 
 def ae_thread_deep_script():
