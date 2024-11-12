@@ -44,5 +44,6 @@ workloads and hardware. Prom has demonstrated its ability to identify up to 97% 
 Installing Prom
 ---------------
 If you would like to quickly try out Prom or run some demos and tutorials,
-you can check out installation options from `Docker<https://github.com/HuantWang/PROM/blob/ae_cgo/AE.md>`_
-or `Jupyter notebooks<http://34.66.10.35:8099/tree/examples/tutorial>`_ on online servers.
+You can check out installation options from `Docker <https://github.com/HuantWang/PROM/blob/ae_cgo/AE.md>`_
+or `Jupyter notebooks <http://34.66.10.35:8099/tree/examples/tutorial>`_ on online servers.
+
