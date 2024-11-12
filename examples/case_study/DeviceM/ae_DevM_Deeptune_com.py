@@ -1,6 +1,8 @@
 import sys
 import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'  # 只显示错误信息
+import warnings
+warnings.filterwarnings("ignore")
 import warnings
 # from sklearn.metrics import accuracy_score
 warnings.filterwarnings("ignore")
@@ -55,7 +57,7 @@ def load_args(mode):
 # Load dataset
 def train(suite_train,suite_test,dataset,combinations,args=None):
     for builder, visitor, model in combinations:
-        print("Processing %s-%s-%s" % (builder.__name__, visitor.__name__, model.__name__))
+        # print("Processing %s-%s-%s" % (builder.__name__, visitor.__name__, model.__name__))
 
         # Build representation
         clang_driver = ClangDriver(
@@ -95,7 +97,7 @@ def train(suite_train,suite_test,dataset,combinations,args=None):
 
 def load_pickle( suite_train, suite_test, dataset,combinations,random_seed,model_path):
     for builder, visitor, model in combinations:
-        print("Processing %s-%s-%s" % (builder.__name__, visitor.__name__, model.__name__))
+        # print("Processing %s-%s-%s" % (builder.__name__, visitor.__name__, model.__name__))
 
         # Build representation
         clang_driver = ClangDriver(
@@ -330,7 +332,7 @@ def deploy(args, dataset_ori,eva_flag=""):
     # extract the features
     print("Extract the features...")
     for builder, visitor, model in combinations:
-        print("Processing %s-%s-%s" % (builder.__name__, visitor.__name__, model.__name__))
+        # print("Processing %s-%s-%s" % (builder.__name__, visitor.__name__, model.__name__))
         # Build representation
         clang_driver = ClangDriver(
             ClangDriver.ProgrammingLanguage.OpenCL,

@@ -6,7 +6,7 @@ from ae_VD_linevul import ae_vul_linevul
 from ae_VD_vulde import ae_vul_vulde
 
 print("\nCase 4:\n")
-print("\n--- The Evaluation on CodeBERT ---\n")
+print("\n--- The Evaluation on Codexglue ---\n")
 ae_vul_codebert()
 
 print("\n--- The Evaluation on Linevul ---\n")

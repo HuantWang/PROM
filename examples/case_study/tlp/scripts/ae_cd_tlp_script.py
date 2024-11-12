@@ -207,7 +207,7 @@ class Tlp_prom(util.ModelDefinition):
     def data_partitioning(self, train_dataset, test_dataset, calibration_ratio=0.2,args=None):
         # prepare dataset
         if os.path.exists(args.save_folder) is False:
-            print('create folder', args.save_folder)
+            # print('create folder', args.save_folder)
             os.makedirs(args.save_folder, exist_ok=True)
 
 

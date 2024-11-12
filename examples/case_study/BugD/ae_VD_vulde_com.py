@@ -698,7 +698,7 @@ def deploy(args, train_dataset, model, tokenizer):
                             output_dir = os.path.join(output_dir, '{}'.format('model.bin'))
                             torch.save(model_to_save.state_dict(), output_dir)
                             # logger.info("Saving model checkpoint to %s", output_dir)
-                            print("Saving model checkpoint to {}".format(output_dir))
+                            # print("Saving model checkpoint to {}".format(output_dir))
 
                         if results['eval_acc'] >= 0.1 and results['eval_acc'] <= 0.9:
                             print(

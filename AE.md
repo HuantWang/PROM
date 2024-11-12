@@ -250,6 +250,12 @@ Print(table)                      -> Table 3.
 python ae_plot.py --case tlp
 ```
 
+
+We now plot the summary table. 
+The results correspond to Table 2 of the submitted manuscript.
+```
+python ae_plot.py --case all
+```
 ### Compare to Other CP-based Methods (Section 7.5)
 
 This experiment compares Prom with conformal prediction-based methods like MAPIE and PUNCC, as well as RISE, developed for wireless sensing, and TESSERACT, designed for malware classification.

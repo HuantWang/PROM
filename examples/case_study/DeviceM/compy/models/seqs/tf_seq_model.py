@@ -8,7 +8,14 @@ from compy.models.model import Model
 from mapie.prom_classification import MapieClassifier
 from mapie.metrics import (classification_coverage_score,
                            classification_mean_width_score)
-
+import warnings
+warnings.filterwarnings("ignore")
+import os
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'  # 屏蔽 INFO 和 WARNING 信息
+import tensorflow as tf
+tf.get_logger().setLevel('ERROR')  # 仅显示错误信息
+import absl.logging
+absl.logging.set_verbosity(absl.logging.ERROR)
 
 
 class SummaryCallback(tf.keras.callbacks.Callback):

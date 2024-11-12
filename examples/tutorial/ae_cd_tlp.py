@@ -15,7 +15,7 @@ from ae_train_tlp import AttentionModule
 from ae_cd_tlp_script import ae_cd_model
 
 
-
+print("\nCase 5:\n")
 ae_cd_model("all")
 
 """

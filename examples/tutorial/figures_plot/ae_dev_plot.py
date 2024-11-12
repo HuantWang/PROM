@@ -466,20 +466,20 @@ def Individual(path, name):
 
 def ae_dev_plot_script(case=''):
     violin_3(method='dev')
-    print("Figure 7(d) C3: heterogeneous mapping. The resulting performance when using an ML model for decision making.")
+    print("Figure 7(c) C3: heterogeneous mapping. The resulting performance when using an ML model for decision making.")
 
 
     drifting_dev(r'./figures_plot/data/ae_drifting_dev.xlsx',
                  r'./figures_plot/figure/detectdrifting_dev')
-    print("Figure 8(d) C3: heterogeneous mapping. Prom’s performance for detecting drifting samples across case studies and underlying models.")
+    print("Figure 8(c) C3: heterogeneous mapping. Prom’s performance for detecting drifting samples across case studies and underlying models.")
 
     violin_3(method='dev_il')
-    print("Figure 9(d) C3: heterogeneous mapping. Prom enhances performance through incremental learning in different underlying models.")
+    print("Figure 9(c) C3: heterogeneous mapping. Prom enhances performance through incremental learning in different underlying models.")
 
 
     Individual(r'./figures_plot/data/ae_indiv_device.xlsx',
                r'./figures_plot/figure/individual_device')
-    print("Figure 11(d) C3: heterogeneous mapping. Performance of individual nonconformity functions.")
+    print("Figure 11(c) C3: heterogeneous mapping. Performance of individual nonconformity functions.")
 
 # ae_loop_dev_script()
 # violin_3(method='thread')

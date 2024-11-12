@@ -35,7 +35,7 @@ warnings.filterwarnings('ignore')
 # Load dataset
 def train(suite_train,suite_test,dataset,combinations,args):
     for builder, visitor, model in combinations:
-        print("Processing %s-%s-%s" % (builder.__name__, visitor.__name__, model.__name__))
+        # print("Processing %s-%s-%s" % (builder.__name__, visitor.__name__, model.__name__))
 
         # Build representation
         clang_driver = ClangDriver(
@@ -80,7 +80,7 @@ def load_pickle( suite_train, suite_test, dataset,combinations,random_seed,model
 
 
     for builder, visitor, model in combinations:
-        print("Processing %s-%s-%s" % (builder.__name__, visitor.__name__, model.__name__))
+        # print("Processing %s-%s-%s" % (builder.__name__, visitor.__name__, model.__name__))
 
         # Build representation
         clang_driver = ClangDriver(
@@ -342,7 +342,7 @@ def deploy(args, dataset_ori,eva_flag):
     # extract the features
     print("Extract the features...")
     for builder, visitor, model in combinations:
-        print("Processing %s-%s-%s" % (builder.__name__, visitor.__name__, model.__name__))
+        # print("Processing %s-%s-%s" % (builder.__name__, visitor.__name__, model.__name__))
         # Build representation
         clang_driver = ClangDriver(
             ClangDriver.ProgrammingLanguage.OpenCL,

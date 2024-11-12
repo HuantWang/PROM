@@ -1,3 +1,6 @@
+import warnings
+warnings.filterwarnings("ignore")
+
 
 import sys
 
@@ -6,7 +9,7 @@ from ae_DevM_i2v_com import ae_dev_i2v
 from ae_DevM_Deeptune_com import ae_dev_deep
 from ae_DevM_Programl_com import ae_dev_programl
 
-
+print("\nCase 3:\n")
 print("\nThe evaluation on Instruct2vec\n")
 ae_dev_i2v()
 
