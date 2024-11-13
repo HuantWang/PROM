@@ -15,7 +15,11 @@ device (CPU and GPU model) can affect the performance of the evaluation.
 If your CPU or GPU differs from the setup described in our paper, 
 the experimental results may be impacted. Alternatively, you can use our 
 [online notebook](http://34.66.10.35:8099/tree/examples/tutorial) 
-for evaluation, which is configured to match the device setup in our paper.*
+for evaluation (the password is .*9mYUc?2isT_&Zcy), 
+which is configured to match the device setup in our paper.
+Refer to 'Appendix: Artifacts Evaluation Instructions' in [our paper](./docs/CGO_25_AE.pdf) 
+for the instructions in Section A.2: Interactive Notebooks.
+*
 
 ## Links to The Paper
 
