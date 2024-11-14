@@ -21,11 +21,11 @@
 
 ## Introduction
 
-PROM is  an open-source software framework to enhance the robustness and performance of predictive models against such changes during deployment.
+PROM is an open-source software framework to enhance the robustness and performance of predictive models against such changes during deployment.
 
 ## Installation
 
-Prom builds upon:
+PROM builds upon:
 
 -	Python 3.7 to 3.9
 -	Mapie 0.8.2
@@ -34,7 +34,7 @@ The system was tested on the following operating systems:
 
 - Ubuntu 18.04
 
-Install the latest Prom release using:
+Install the latest PROM release using:
 
 ```
 pip install git+https://github.com/HuantWang/PROM.git
@@ -45,7 +45,7 @@ See [INSTALL.md](INSTALL.md) for further details.
 
 ## Documents
 
-See [usage](./AE.md) for a step-by-step artifact evaluation for Prom.
+See [usage](./AE.md) for a step-by-step artifact evaluation for PROM.
 
 More detailed documents for using Prom can be checked on our [website](http://34.66.10.35:8098/getting_started.html).
 
@@ -55,5 +55,5 @@ Data are available at [here](./benchmark).
 
 ## Contributing
 
-We welcome contributions to Prom. If you are interested in contributing please see
+We welcome contributions to PROM. If you are interested in contributing please see
 [this document](./CONTRIBUTING.md).
