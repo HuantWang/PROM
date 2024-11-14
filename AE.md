@@ -10,8 +10,8 @@ samples.
 The following step-by-step instructions are provided for using a Docker Image running on a local host.
 
 
-*Disclaimer: Note that during our testing, we found that the underlying 
-device (CPU and GPU model) can affect the performance of the evaluation. 
+*Disclaimer: Note that during our testing, we found that **the underlying 
+devices (CPU and GPU model) can influence the performance of the evaluation**. 
 If your CPU or GPU differs from the setup described in our paper, 
 the experimental results may be impacted. Alternatively, you can use our 
 [online notebook](http://34.66.10.35:8099/tree/examples/tutorial) 
@@ -38,7 +38,6 @@ ran the program and the problem you encountered.
 We will get back to you ASAP. Thank you.*
 
 # Step-by-Step Instructions 
-
 
 ## ★ Docker Image
 
@@ -91,17 +90,72 @@ $ conda activate thread
 Then, go to the directory of our tool:
 
 ```
-# Move the project to the target directory
+# Move the project from the source to the target working directory
 (thread) $ mv /cgo/PROM/prom/* /cgo/prom/
 (thread) $ cd prom/PROM/examples/tutorial/
 ```
 
+# Project Directory Structure
+``` 
+├── AE.md  # Artifact evaluation documentation.
+├── CONTRIBUTING.md  # Guidelines for contributing to the project.
+├── INSTALL.md  # Instructions for installing the project.
+├── README.md  # Overview and introduction to the project.
+├── benchmark  # Contains benchmarks and test cases for performance evaluation.
+│   ├── Bug  # Benchmarks related to case study 4.
+│   ├── DeviceM  # Benchmarks for case study 3.
+│   ├── Loop  # Benchmarks for case study 2.
+│   ├── TensorT  # Benchmarks related to case study 5.
+│   └── Thread  # Benchmarks for case study 1.
+├── docs  # Documentation files for the Prom website.
+│   ├── CGO_25_AE.pdf  # Prom paper (CGO 2025).
+│   └── source  # Source files for the documentation.
+├── environment.yml  
+├── examples  # Example use cases and tutorials for the project.
+│   │   ├── case_study
+│   │   ├── BugD # Example for case study 4
+│   │   ├── DeviceM # Example for case study 3
+│   │   ├── Loop # Example for case study 2
+│   │   ├── Thread # Example for case study 1
+│   │   └── tlp # Example for case study 5
+└── tutorial
+│       ├── AE.ipynb  # Jupyter notebook for artifact evaluation tutorial.
+│       ├── ae_cd.sh  # Shell script for evaluation coverage deviations.
+│       ├── ae_cd_loop.py  # Python script for case study 2 coverage deviation analysis.
+│       ├── ae_cd_thread.py  # Python script for case study 1 coverage deviation analysis.
+│       ├── ae_cd_tlp.py  # Python script for case study 5 coverage deviation analysis.
+│       ├── ae_cd_vul.py  # Python script for case study 4 coverage deviation analysis.
+│       ├── ae_clean.sh  # Shell script to clean up generated files.
+│       ├── ae_comp_loop.py  # Python script for performance comparison in case study 2.
+│       ├── ae_comp_thread.py  # Python script for performance comparison in case study 1.
+│       ├── ae_comp_vul.py  # Python script for performance comparison in case study 4.
+│       ├── ae_compare.sh  # Shell script to compare different experimental results.
+│       ├── ae_cov_dev.py  # Python script for case study 3 coverage analysis.
+│       ├── ae_dev_docker.py  # Python script for running case study 3 using Docker.
+│       ├── ae_loop.py  # Python script for evaluation in case study 2.
+│       ├── ae_plot.py  # Python script for generating plots.
+│       ├── ae_thread.py  # Python script for evaluation in case study 1.
+│       ├── ae_tlp.py  # Python script for evaluation in case study 5.
+│       ├── ae_tlp.sh  # Shell script for executing tasks in case study 5.
+│       ├── ae_tu.sh  # Shell script for demo 1.
+│       ├── ae_tutorial.py  # Python script for demo 1.
+│       ├── ae_vul.py  # Python script for evaluation in case study 4.
+│       └── figures_plot  # Directory containing figure plotting scripts.
+├── logo.png
+├── nohup.out 
+├── src  # Source code directory.
+│   ├── prom  
+├── thirdpackage  # Third-party packages.
+│   └── mapie 
+└── usage.md  # Artifact evaluation usage instructions and examples.
+``` 
+
 
 # Demo 1: Tutorial for Prom
 
-This demo corresponds to the simplified drifting detection example shown in Figure 2. 
+This demo corresponds to the simplified drifting detection workflow shown in Figure 2. 
 Note that the code has been refactored, resulting in minor changes to the API. 
-This small-scale demo represents case study 1 on thread coarsening. 
+This small-scale demo uses thread coarsening (Case Study 1) on the Titan platform to show the workflow of Prom.
 
 This project trains an ML model to predict the optimal OpenCL GPU thread coarsening 
 factor (1–32) for performance, using cross-validation on OpenCL kernels across multiple 
