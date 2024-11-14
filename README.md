@@ -57,3 +57,15 @@ Data are available at [here](./benchmark).
 
 We welcome contributions to Prom. If you are interested in contributing please see
 [this document](./CONTRIBUTING.md).
+
+## Citation
+
+If you use Prom in any of your work, please cite our paper:
+~~~
+@inproceedings{Prom,
+      title={Enhancing Deployment-time Predictive Model Robustness for Code Analysis and Optimization},
+      author={Huanting Wang, Patrick Lenihan, Zheng Wang},
+      booktitle={The International Symposium on Code Generation and Optimization (CGO)},
+      year={2025},
+}
+~~~
