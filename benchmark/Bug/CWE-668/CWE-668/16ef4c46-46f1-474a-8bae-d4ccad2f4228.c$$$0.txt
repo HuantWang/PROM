@@ -1,0 +1,1510 @@
+-----label-----
+1
+-----code-----
+void CWE15_External_Control_of_System_or_Configuration_Setting__w32_17_bad()
+{
+    int i;
+    char * data;
+    char dataBuffer[100] = "";
+    data = dataBuffer;
+    for(i = 0; i < 1; i++)
+    {
+        {
+            WSADATA wsaData;
+            BOOL wsaDataInit = FALSE;
+            SOCKET listenSocket = INVALID_SOCKET;
+            SOCKET acceptSocket = INVALID_SOCKET;
+            struct sockaddr_in service;
+            int recvResult;
+            do
+            {
+                if (WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR)
+                {
+                    break;
+                }
+                wsaDataInit = 1;
+                listenSocket = socket(PF_INET, SOCK_STREAM, 0);
+                if (listenSocket == INVALID_SOCKET)
+                {
+                    break;
+                }
+                memset(&service, 0, sizeof(service));
+                service.sin_family = AF_INET;
+                service.sin_addr.s_addr = INADDR_ANY;
+                service.sin_port = htons(LISTEN_PORT);
+                if (SOCKET_ERROR == bind(listenSocket, (struct sockaddr*)&service, sizeof(service)))
+                {
+                    break;
+                }
+                if (SOCKET_ERROR == listen(listenSocket, LISTEN_BACKLOG))
+                {
+                    break;
+                }
+                acceptSocket = accept(listenSocket, NULL, NULL);
+                if (acceptSocket == INVALID_SOCKET)
+                {
+                    break;
+                }
+                /* INCIDENTAL CWE 188 - reliance on data memory layout
+                 * recv and friends return "number of bytes" received
+                 * char's on our system, however, may not be "octets" (8-bit
+                 * bytes) but could be just about anything.  Also,
+                 * even if the external environment is ASCII or UTF8,
+                 * the ANSI/ISO C standard does not dictate that the
+                 * character set used by the actual language or character
+                 * constants matches.
+                 *
+                 * In practice none of these are usually issues...
+                 */
+                /* FLAW: read the new hostname from a network socket */
+                recvResult = recv(acceptSocket, data, 100 - 1, 0);
+                if (recvResult == SOCKET_ERROR || recvResult == 0)
+                {
+                    break;
+                }
+                data[recvResult] = '\0';
+            }
+            while (0);
+            if (acceptSocket != INVALID_SOCKET)
+            {
+                closesocket(acceptSocket);
+            }
+            if (listenSocket != INVALID_SOCKET)
+            {
+                closesocket(listenSocket);
+            }
+            if (wsaDataInit)
+            {
+                WSACleanup();
+            }
+        }
+    }
+    /* POTENTIAL FLAW: set the hostname to data obtained from a potentially external source */
+    if (!SetComputerNameA(data))
+    {
+        printLine("Failure setting computer name");
+        exit(1);
+    }
+}
+-----children-----
+1,2
+1,3
+1,4
+3,4
+5,6
+5,7
+5,8
+5,9
+5,10
+5,11
+6,7
+7,8
+7,9
+9,10
+11,12
+12,13
+12,14
+14,15
+14,16
+17,18
+18,19
+18,20
+20,21
+20,22
+20,23
+22,23
+24,25
+26,27
+27,28
+27,29
+28,29
+30,31
+32,33
+32,34
+32,35
+32,36
+33,34
+34,35
+34,36
+35,36
+38,39
+38,40
+39,40
+42,43
+43,44
+45,46
+46,47
+46,48
+46,49
+46,50
+46,51
+46,52
+46,53
+46,54
+46,55
+46,56
+47,48
+48,49
+48,50
+49,50
+51,52
+53,54
+54,55
+54,56
+55,56
+57,58
+57,59
+59,60
+60,61
+62,63
+63,64
+63,65
+64,65
+66,67
+66,68
+68,69
+69,70
+71,72
+72,73
+72,74
+73,74
+75,76
+75,77
+77,78
+78,79
+80,81
+81,82
+81,83
+82,83
+84,85
+86,87
+87,88
+87,89
+89,90
+91,92
+91,93
+92,93
+92,94
+92,95
+92,96
+92,97
+92,98
+92,99
+92,100
+92,101
+92,102
+92,103
+92,104
+92,105
+92,106
+92,107
+93,94
+93,95
+94,95
+94,96
+95,96
+95,97
+95,98
+96,97
+98,99
+98,100
+98,101
+99,100
+103,104
+104,105
+106,107
+108,109
+110,111
+111,112
+111,113
+112,113
+115,116
+116,117
+116,118
+117,118
+119,120
+119,121
+119,122
+119,123
+120,121
+122,123
+124,125
+127,128
+127,129
+128,129
+128,130
+129,130
+131,132
+133,134
+135,136
+136,137
+136,138
+136,139
+136,140
+137,138
+139,140
+140,141
+143,144
+144,145
+145,146
+147,148
+148,149
+148,150
+149,150
+149,151
+150,151
+153,154
+155,156
+156,157
+156,158
+157,158
+157,159
+158,159
+158,160
+159,160
+163,164
+165,166
+166,167
+166,168
+167,168
+167,169
+168,169
+171,172
+171,173
+172,173
+174,175
+176,177
+176,178
+177,178
+177,179
+178,179
+180,181
+180,182
+180,183
+180,184
+181,182
+183,184
+185,186
+185,187
+186,187
+186,188
+187,188
+189,190
+191,192
+192,193
+194,195
+195,196
+196,197
+198,199
+200,201
+200,202
+201,202
+201,203
+202,203
+204,205
+204,206
+204,207
+205,206
+207,208
+209,210
+211,212
+213,214
+214,215
+214,216
+215,216
+217,218
+217,219
+217,220
+217,221
+218,219
+220,221
+222,223
+224,225
+226,227
+226,228
+227,228
+227,229
+228,229
+230,231
+232,233
+234,235
+235,236
+235,237
+236,237
+238,239
+238,240
+238,241
+238,242
+238,243
+239,240
+241,242
+243,244
+245,246
+245,247
+249,250
+249,251
+250,251
+250,252
+251,252
+251,253
+252,253
+254,255
+256,257
+256,258
+257,258
+260,261
+262,263
+263,264
+263,265
+264,265
+264,266
+265,266
+267,268
+271,272
+271,273
+272,273
+272,274
+273,274
+275,276
+277,278
+278,279
+279,280
+279,281
+280,281
+282,283
+284,285
+284,286
+285,286
+285,287
+286,287
+288,289
+290,291
+291,292
+292,293
+292,294
+293,294
+295,296
+297,298
+297,299
+298,299
+300,301
+301,302
+302,303
+303,304
+305,306
+305,307
+306,307
+307,308
+307,309
+308,309
+310,311
+312,313
+312,314
+313,314
+314,315
+314,316
+315,316
+318,319
+319,320
+319,321
+320,321
+-----nextToken-----
+2,4,8,10,13,15,16,19,21,23,25,29,31,36,37,40,41,44,50,52,56,58,61,65,67,70,74,76,79,83,85,88,90,97,100,101,102,105,107,109,113,114,118,121,123,125,126,130,132,134,138,141,142,146,151,152,154,160,161,162,164,169,170,173,175,179,182,184,188,190,193,197,199,203,206,208,210,212,216,219,221,223,225,229,231,233,237,240,242,244,246,247,248,253,255,258,259,261,266,268,269,270,274,276,281,283,287,289,294,296,299,304,309,311,316,317,321,322
+-----computeFrom-----
+27,28
+27,29
+34,35
+34,36
+38,39
+38,40
+94,95
+94,96
+111,112
+111,113
+116,117
+116,118
+128,129
+128,130
+148,149
+148,150
+156,157
+156,158
+166,167
+166,168
+177,178
+177,179
+201,202
+201,203
+214,215
+214,216
+227,228
+227,229
+235,236
+235,237
+245,246
+245,247
+250,251
+250,252
+251,252
+251,253
+256,257
+256,258
+263,264
+263,265
+272,273
+272,274
+285,286
+285,287
+-----guardedBy-----
+274,283
+287,296
+-----guardedByNegation-----
+-----lastLexicalUse-----
+-----jump-----
+-----attribute-----
+FunctionDefinition;SimpleDeclSpecifier;FunctionDeclarator;Name;CompoundStatement;DeclarationStatement;SimpleDeclaration;SimpleDeclSpecifier;Declarator;Name;DeclarationStatement;SimpleDeclaration;SimpleDeclSpecifier;Declarator;Pointer;Name;DeclarationStatement;SimpleDeclaration;SimpleDeclSpecifier;ArrayDeclarator;Name;ArrayModifier;LiteralExpression;EqualsInitializer;LiteralExpression;ExpressionStatement;BinaryExpression;IdExpression;Name;IdExpression;Name;ForStatement;ExpressionStatement;BinaryExpression;IdExpression;Name;LiteralExpression;BinaryExpression;IdExpression;Name;LiteralExpression;UnaryExpression;IdExpression;Name;CompoundStatement;CompoundStatement;DeclarationStatement;SimpleDeclaration;NamedTypeSpecifier;Name;Declarator;Name;DeclarationStatement;SimpleDeclaration;NamedTypeSpecifier;Name;Declarator;Name;EqualsInitializer;IdExpression;Name;DeclarationStatement;SimpleDeclaration;NamedTypeSpecifier;Name;Declarator;Name;EqualsInitializer;IdExpression;Name;DeclarationStatement;SimpleDeclaration;NamedTypeSpecifier;Name;Declarator;Name;EqualsInitializer;IdExpression;Name;DeclarationStatement;SimpleDeclaration;ElaboratedTypeSpecifier;Name;Declarator;Name;DeclarationStatement;SimpleDeclaration;SimpleDeclSpecifier;Declarator;Name;DoStatement;CompoundStatement;IfStatement;BinaryExpression;FunctionCallExpression;IdExpression;Name;FunctionCallExpression;IdExpression;Name;LiteralExpression;LiteralExpression;UnaryExpression;IdExpression;Name;IdExpression;Name;CompoundStatement;BreakStatement;ExpressionStatement;BinaryExpression;IdExpression;Name;LiteralExpression;ExpressionStatement;BinaryExpression;IdExpression;Name;FunctionCallExpression;IdExpression;Name;IdExpression;Name;IdExpression;Name;LiteralExpression;IfStatement;BinaryExpression;IdExpression;Name;IdExpression;Name;CompoundStatement;BreakStatement;ExpressionStatement;FunctionCallExpression;IdExpression;Name;UnaryExpression;IdExpression;Name;LiteralExpression;UnaryExpression;UnaryExpression;IdExpression;Name;ExpressionStatement;BinaryExpression;FieldReference;IdExpression;Name;Name;IdExpression;Name;ExpressionStatement;BinaryExpression;FieldReference;FieldReference;IdExpression;Name;Name;Name;IdExpression;Name;ExpressionStatement;BinaryExpression;FieldReference;IdExpression;Name;Name;FunctionCallExpression;IdExpression;Name;IdExpression;Name;IfStatement;BinaryExpression;IdExpression;Name;FunctionCallExpression;IdExpression;Name;IdExpression;Name;CastExpression;TypeId;ElaboratedTypeSpecifier;Name;Declarator;Pointer;UnaryExpression;IdExpression;Name;UnaryExpression;UnaryExpression;IdExpression;Name;CompoundStatement;BreakStatement;IfStatement;BinaryExpression;IdExpression;Name;FunctionCallExpression;IdExpression;Name;IdExpression;Name;IdExpression;Name;CompoundStatement;BreakStatement;ExpressionStatement;BinaryExpression;IdExpression;Name;FunctionCallExpression;IdExpression;Name;IdExpression;Name;IdExpression;Name;IdExpression;Name;IfStatement;BinaryExpression;IdExpression;Name;IdExpression;Name;CompoundStatement;BreakStatement;ExpressionStatement;BinaryExpression;IdExpression;Name;FunctionCallExpression;IdExpression;Name;IdExpression;Name;IdExpression;Name;BinaryExpression;LiteralExpression;LiteralExpression;LiteralExpression;IfStatement;BinaryExpression;BinaryExpression;IdExpression;Name;IdExpression;Name;BinaryExpression;IdExpression;Name;LiteralExpression;CompoundStatement;BreakStatement;ExpressionStatement;BinaryExpression;ArraySubscriptExpression;IdExpression;Name;IdExpression;Name;LiteralExpression;LiteralExpression;IfStatement;BinaryExpression;IdExpression;Name;IdExpression;Name;CompoundStatement;ExpressionStatement;FunctionCallExpression;IdExpression;Name;IdExpression;Name;IfStatement;BinaryExpression;IdExpression;Name;IdExpression;Name;CompoundStatement;ExpressionStatement;FunctionCallExpression;IdExpression;Name;IdExpression;Name;IfStatement;IdExpression;Name;CompoundStatement;ExpressionStatement;FunctionCallExpression;IdExpression;Name;IfStatement;UnaryExpression;FunctionCallExpression;IdExpression;Name;IdExpression;Name;CompoundStatement;ExpressionStatement;FunctionCallExpression;IdExpression;Name;LiteralExpression;ExpressionStatement;FunctionCallExpression;IdExpression;Name;LiteralExpression;
+-----ast_node-----
+void CWE15_External_Control_of_System_or_Configuration_Setting__w32_17_bad(){    int i;    char * data;    char dataBuffer[100] = "";    data = dataBuffer;    for(i = 0; i < 1; i++)    {        {            WSADATA wsaData;            BOOL wsaDataInit = FALSE;            SOCKET listenSocket = INVALID_SOCKET;            SOCKET acceptSocket = INVALID_SOCKET;            struct sockaddr_in service;            int recvResult;            do            {                if (WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR)                {                    break;                }                wsaDataInit = 1;                listenSocket = socket(PF_INET, SOCK_STREAM, 0);                if (listenSocket == INVALID_SOCKET)                {                    break;                }                memset(&service, 0, sizeof(service));                service.sin_family = AF_INET;                service.sin_addr.s_addr = INADDR_ANY;                service.sin_port = htons(LISTEN_PORT);                if (SOCKET_ERROR == bind(listenSocket, (struct sockaddr*)&service, sizeof(service)))                {                    break;                }                if (SOCKET_ERROR == listen(listenSocket, LISTEN_BACKLOG))                {                    break;                }                acceptSocket = accept(listenSocket, NULL, NULL);                if (acceptSocket == INVALID_SOCKET)                {                    break;                }                /* INCIDENTAL CWE 188 - reliance on data memory layout                 * recv and friends return "number of bytes" received                 * char's on our system, however, may not be "octets" (8-bit                 * bytes) but could be just about anything.  Also,                 * even if the external environment is ASCII or UTF8,                 * the ANSI/ISO C standard does not dictate that the                 * character set used by the actual language or character                 * constants matches.                 *                 * In practice none of these are usually issues...                 */                /* FLAW: read the new hostname from a network socket */                recvResult = recv(acceptSocket, data, 100 - 1, 0);                if (recvResult == SOCKET_ERROR || recvResult == 0)                {                    break;                }                data[recvResult] = '\0';            }            while (0);            if (acceptSocket != INVALID_SOCKET)            {                closesocket(acceptSocket);            }            if (listenSocket != INVALID_SOCKET)            {                closesocket(listenSocket);            }            if (wsaDataInit)            {                WSACleanup();            }        }    }    /* POTENTIAL FLAW: set the hostname to data obtained from a potentially external source */    if (!SetComputerNameA(data))    {        printLine("Failure setting computer name");        exit(1);    }}
+void
+CWE15_External_Control_of_System_or_Configuration_Setting__w32_17_bad()
+CWE15_External_Control_of_System_or_Configuration_Setting__w32_17_bad
+{    int i;    char * data;    char dataBuffer[100] = "";    data = dataBuffer;    for(i = 0; i < 1; i++)    {        {            WSADATA wsaData;            BOOL wsaDataInit = FALSE;            SOCKET listenSocket = INVALID_SOCKET;            SOCKET acceptSocket = INVALID_SOCKET;            struct sockaddr_in service;            int recvResult;            do            {                if (WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR)                {                    break;                }                wsaDataInit = 1;                listenSocket = socket(PF_INET, SOCK_STREAM, 0);                if (listenSocket == INVALID_SOCKET)                {                    break;                }                memset(&service, 0, sizeof(service));                service.sin_family = AF_INET;                service.sin_addr.s_addr = INADDR_ANY;                service.sin_port = htons(LISTEN_PORT);                if (SOCKET_ERROR == bind(listenSocket, (struct sockaddr*)&service, sizeof(service)))                {                    break;                }                if (SOCKET_ERROR == listen(listenSocket, LISTEN_BACKLOG))                {                    break;                }                acceptSocket = accept(listenSocket, NULL, NULL);                if (acceptSocket == INVALID_SOCKET)                {                    break;                }                /* INCIDENTAL CWE 188 - reliance on data memory layout                 * recv and friends return "number of bytes" received                 * char's on our system, however, may not be "octets" (8-bit                 * bytes) but could be just about anything.  Also,                 * even if the external environment is ASCII or UTF8,                 * the ANSI/ISO C standard does not dictate that the                 * character set used by the actual language or character                 * constants matches.                 *                 * In practice none of these are usually issues...                 */                /* FLAW: read the new hostname from a network socket */                recvResult = recv(acceptSocket, data, 100 - 1, 0);                if (recvResult == SOCKET_ERROR || recvResult == 0)                {                    break;                }                data[recvResult] = '\0';            }            while (0);            if (acceptSocket != INVALID_SOCKET)            {                closesocket(acceptSocket);            }            if (listenSocket != INVALID_SOCKET)            {                closesocket(listenSocket);            }            if (wsaDataInit)            {                WSACleanup();            }        }    }    /* POTENTIAL FLAW: set the hostname to data obtained from a potentially external source */    if (!SetComputerNameA(data))    {        printLine("Failure setting computer name");        exit(1);    }}
+int i;
+int i;
+int
+i
+i
+char * data;
+char * data;
+char
+* data
+*
+data
+char dataBuffer[100] = "";
+char dataBuffer[100] = "";
+char
+dataBuffer[100] = ""
+dataBuffer
+[100]
+100
+= ""
+""
+data = dataBuffer;
+data = dataBuffer
+data
+data
+dataBuffer
+dataBuffer
+for(i = 0; i < 1; i++)    {        {            WSADATA wsaData;            BOOL wsaDataInit = FALSE;            SOCKET listenSocket = INVALID_SOCKET;            SOCKET acceptSocket = INVALID_SOCKET;            struct sockaddr_in service;            int recvResult;            do            {                if (WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR)                {                    break;                }                wsaDataInit = 1;                listenSocket = socket(PF_INET, SOCK_STREAM, 0);                if (listenSocket == INVALID_SOCKET)                {                    break;                }                memset(&service, 0, sizeof(service));                service.sin_family = AF_INET;                service.sin_addr.s_addr = INADDR_ANY;                service.sin_port = htons(LISTEN_PORT);                if (SOCKET_ERROR == bind(listenSocket, (struct sockaddr*)&service, sizeof(service)))                {                    break;                }                if (SOCKET_ERROR == listen(listenSocket, LISTEN_BACKLOG))                {                    break;                }                acceptSocket = accept(listenSocket, NULL, NULL);                if (acceptSocket == INVALID_SOCKET)                {                    break;                }                /* INCIDENTAL CWE 188 - reliance on data memory layout                 * recv and friends return "number of bytes" received                 * char's on our system, however, may not be "octets" (8-bit                 * bytes) but could be just about anything.  Also,                 * even if the external environment is ASCII or UTF8,                 * the ANSI/ISO C standard does not dictate that the                 * character set used by the actual language or character                 * constants matches.                 *                 * In practice none of these are usually issues...                 */                /* FLAW: read the new hostname from a network socket */                recvResult = recv(acceptSocket, data, 100 - 1, 0);                if (recvResult == SOCKET_ERROR || recvResult == 0)                {                    break;                }                data[recvResult] = '\0';            }            while (0);            if (acceptSocket != INVALID_SOCKET)            {                closesocket(acceptSocket);            }            if (listenSocket != INVALID_SOCKET)            {                closesocket(listenSocket);            }            if (wsaDataInit)            {                WSACleanup();            }        }    }
+i = 0;
+i = 0
+i
+i
+0
+i < 1
+i
+i
+1
+i++
+i
+i
+{        {            WSADATA wsaData;            BOOL wsaDataInit = FALSE;            SOCKET listenSocket = INVALID_SOCKET;            SOCKET acceptSocket = INVALID_SOCKET;            struct sockaddr_in service;            int recvResult;            do            {                if (WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR)                {                    break;                }                wsaDataInit = 1;                listenSocket = socket(PF_INET, SOCK_STREAM, 0);                if (listenSocket == INVALID_SOCKET)                {                    break;                }                memset(&service, 0, sizeof(service));                service.sin_family = AF_INET;                service.sin_addr.s_addr = INADDR_ANY;                service.sin_port = htons(LISTEN_PORT);                if (SOCKET_ERROR == bind(listenSocket, (struct sockaddr*)&service, sizeof(service)))                {                    break;                }                if (SOCKET_ERROR == listen(listenSocket, LISTEN_BACKLOG))                {                    break;                }                acceptSocket = accept(listenSocket, NULL, NULL);                if (acceptSocket == INVALID_SOCKET)                {                    break;                }                /* INCIDENTAL CWE 188 - reliance on data memory layout                 * recv and friends return "number of bytes" received                 * char's on our system, however, may not be "octets" (8-bit                 * bytes) but could be just about anything.  Also,                 * even if the external environment is ASCII or UTF8,                 * the ANSI/ISO C standard does not dictate that the                 * character set used by the actual language or character                 * constants matches.                 *                 * In practice none of these are usually issues...                 */                /* FLAW: read the new hostname from a network socket */                recvResult = recv(acceptSocket, data, 100 - 1, 0);                if (recvResult == SOCKET_ERROR || recvResult == 0)                {                    break;                }                data[recvResult] = '\0';            }            while (0);            if (acceptSocket != INVALID_SOCKET)            {                closesocket(acceptSocket);            }            if (listenSocket != INVALID_SOCKET)            {                closesocket(listenSocket);            }            if (wsaDataInit)            {                WSACleanup();            }        }    }
+{            WSADATA wsaData;            BOOL wsaDataInit = FALSE;            SOCKET listenSocket = INVALID_SOCKET;            SOCKET acceptSocket = INVALID_SOCKET;            struct sockaddr_in service;            int recvResult;            do            {                if (WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR)                {                    break;                }                wsaDataInit = 1;                listenSocket = socket(PF_INET, SOCK_STREAM, 0);                if (listenSocket == INVALID_SOCKET)                {                    break;                }                memset(&service, 0, sizeof(service));                service.sin_family = AF_INET;                service.sin_addr.s_addr = INADDR_ANY;                service.sin_port = htons(LISTEN_PORT);                if (SOCKET_ERROR == bind(listenSocket, (struct sockaddr*)&service, sizeof(service)))                {                    break;                }                if (SOCKET_ERROR == listen(listenSocket, LISTEN_BACKLOG))                {                    break;                }                acceptSocket = accept(listenSocket, NULL, NULL);                if (acceptSocket == INVALID_SOCKET)                {                    break;                }                /* INCIDENTAL CWE 188 - reliance on data memory layout                 * recv and friends return "number of bytes" received                 * char's on our system, however, may not be "octets" (8-bit                 * bytes) but could be just about anything.  Also,                 * even if the external environment is ASCII or UTF8,                 * the ANSI/ISO C standard does not dictate that the                 * character set used by the actual language or character                 * constants matches.                 *                 * In practice none of these are usually issues...                 */                /* FLAW: read the new hostname from a network socket */                recvResult = recv(acceptSocket, data, 100 - 1, 0);                if (recvResult == SOCKET_ERROR || recvResult == 0)                {                    break;                }                data[recvResult] = '\0';            }            while (0);            if (acceptSocket != INVALID_SOCKET)            {                closesocket(acceptSocket);            }            if (listenSocket != INVALID_SOCKET)            {                closesocket(listenSocket);            }            if (wsaDataInit)            {                WSACleanup();            }        }
+WSADATA wsaData;
+WSADATA wsaData;
+WSADATA
+WSADATA
+wsaData
+wsaData
+BOOL wsaDataInit = FALSE;
+BOOL wsaDataInit = FALSE;
+BOOL
+BOOL
+wsaDataInit = FALSE
+wsaDataInit
+= FALSE
+FALSE
+FALSE
+SOCKET listenSocket = INVALID_SOCKET;
+SOCKET listenSocket = INVALID_SOCKET;
+SOCKET
+SOCKET
+listenSocket = INVALID_SOCKET
+listenSocket
+= INVALID_SOCKET
+INVALID_SOCKET
+INVALID_SOCKET
+SOCKET acceptSocket = INVALID_SOCKET;
+SOCKET acceptSocket = INVALID_SOCKET;
+SOCKET
+SOCKET
+acceptSocket = INVALID_SOCKET
+acceptSocket
+= INVALID_SOCKET
+INVALID_SOCKET
+INVALID_SOCKET
+struct sockaddr_in service;
+struct sockaddr_in service;
+struct sockaddr_in
+sockaddr_in
+service
+service
+int recvResult;
+int recvResult;
+int
+recvResult
+recvResult
+do            {                if (WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR)                {                    break;                }                wsaDataInit = 1;                listenSocket = socket(PF_INET, SOCK_STREAM, 0);                if (listenSocket == INVALID_SOCKET)                {                    break;                }                memset(&service, 0, sizeof(service));                service.sin_family = AF_INET;                service.sin_addr.s_addr = INADDR_ANY;                service.sin_port = htons(LISTEN_PORT);                if (SOCKET_ERROR == bind(listenSocket, (struct sockaddr*)&service, sizeof(service)))                {                    break;                }                if (SOCKET_ERROR == listen(listenSocket, LISTEN_BACKLOG))                {                    break;                }                acceptSocket = accept(listenSocket, NULL, NULL);                if (acceptSocket == INVALID_SOCKET)                {                    break;                }                /* INCIDENTAL CWE 188 - reliance on data memory layout                 * recv and friends return "number of bytes" received                 * char's on our system, however, may not be "octets" (8-bit                 * bytes) but could be just about anything.  Also,                 * even if the external environment is ASCII or UTF8,                 * the ANSI/ISO C standard does not dictate that the                 * character set used by the actual language or character                 * constants matches.                 *                 * In practice none of these are usually issues...                 */                /* FLAW: read the new hostname from a network socket */                recvResult = recv(acceptSocket, data, 100 - 1, 0);                if (recvResult == SOCKET_ERROR || recvResult == 0)                {                    break;                }                data[recvResult] = '\0';            }            while (0);
+{                if (WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR)                {                    break;                }                wsaDataInit = 1;                listenSocket = socket(PF_INET, SOCK_STREAM, 0);                if (listenSocket == INVALID_SOCKET)                {                    break;                }                memset(&service, 0, sizeof(service));                service.sin_family = AF_INET;                service.sin_addr.s_addr = INADDR_ANY;                service.sin_port = htons(LISTEN_PORT);                if (SOCKET_ERROR == bind(listenSocket, (struct sockaddr*)&service, sizeof(service)))                {                    break;                }                if (SOCKET_ERROR == listen(listenSocket, LISTEN_BACKLOG))                {                    break;                }                acceptSocket = accept(listenSocket, NULL, NULL);                if (acceptSocket == INVALID_SOCKET)                {                    break;                }                /* INCIDENTAL CWE 188 - reliance on data memory layout                 * recv and friends return "number of bytes" received                 * char's on our system, however, may not be "octets" (8-bit                 * bytes) but could be just about anything.  Also,                 * even if the external environment is ASCII or UTF8,                 * the ANSI/ISO C standard does not dictate that the                 * character set used by the actual language or character                 * constants matches.                 *                 * In practice none of these are usually issues...                 */                /* FLAW: read the new hostname from a network socket */                recvResult = recv(acceptSocket, data, 100 - 1, 0);                if (recvResult == SOCKET_ERROR || recvResult == 0)                {                    break;                }                data[recvResult] = '\0';            }
+if (WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR)                {                    break;                }
+WSAStartup(MAKEWORD(2,2), &wsaData) != NO_ERROR
+WSAStartup(MAKEWORD(2,2), &wsaData)
+WSAStartup
+WSAStartup
+MAKEWORD(2,2)
+MAKEWORD
+MAKEWORD
+2
+2
+&wsaData
+wsaData
+wsaData
+NO_ERROR
+NO_ERROR
+{                    break;                }
+break;
+wsaDataInit = 1;
+wsaDataInit = 1
+wsaDataInit
+wsaDataInit
+1
+listenSocket = socket(PF_INET, SOCK_STREAM, 0);
+listenSocket = socket(PF_INET, SOCK_STREAM, 0)
+listenSocket
+listenSocket
+socket(PF_INET, SOCK_STREAM, 0)
+socket
+socket
+PF_INET
+PF_INET
+SOCK_STREAM
+SOCK_STREAM
+0
+if (listenSocket == INVALID_SOCKET)                {                    break;                }
+listenSocket == INVALID_SOCKET
+listenSocket
+listenSocket
+INVALID_SOCKET
+INVALID_SOCKET
+{                    break;                }
+break;
+memset(&service, 0, sizeof(service));
+memset(&service, 0, sizeof(service))
+memset
+memset
+&service
+service
+service
+0
+sizeof(service)
+(service)
+service
+service
+service.sin_family = AF_INET;
+service.sin_family = AF_INET
+service.sin_family
+service
+service
+sin_family
+AF_INET
+AF_INET
+service.sin_addr.s_addr = INADDR_ANY;
+service.sin_addr.s_addr = INADDR_ANY
+service.sin_addr.s_addr
+service.sin_addr
+service
+service
+sin_addr
+s_addr
+INADDR_ANY
+INADDR_ANY
+service.sin_port = htons(LISTEN_PORT);
+service.sin_port = htons(LISTEN_PORT)
+service.sin_port
+service
+service
+sin_port
+htons(LISTEN_PORT)
+htons
+htons
+LISTEN_PORT
+LISTEN_PORT
+if (SOCKET_ERROR == bind(listenSocket, (struct sockaddr*)&service, sizeof(service)))                {                    break;                }
+SOCKET_ERROR == bind(listenSocket, (struct sockaddr*)&service, sizeof(service))
+SOCKET_ERROR
+SOCKET_ERROR
+bind(listenSocket, (struct sockaddr*)&service, sizeof(service))
+bind
+bind
+listenSocket
+listenSocket
+(struct sockaddr*)&service
+struct sockaddr*
+struct sockaddr
+sockaddr
+*
+*
+&service
+service
+service
+sizeof(service)
+(service)
+service
+service
+{                    break;                }
+break;
+if (SOCKET_ERROR == listen(listenSocket, LISTEN_BACKLOG))                {                    break;                }
+SOCKET_ERROR == listen(listenSocket, LISTEN_BACKLOG)
+SOCKET_ERROR
+SOCKET_ERROR
+listen(listenSocket, LISTEN_BACKLOG)
+listen
+listen
+listenSocket
+listenSocket
+LISTEN_BACKLOG
+LISTEN_BACKLOG
+{                    break;                }
+break;
+acceptSocket = accept(listenSocket, NULL, NULL);
+acceptSocket = accept(listenSocket, NULL, NULL)
+acceptSocket
+acceptSocket
+accept(listenSocket, NULL, NULL)
+accept
+accept
+listenSocket
+listenSocket
+NULL
+NULL
+NULL
+NULL
+if (acceptSocket == INVALID_SOCKET)                {                    break;                }
+acceptSocket == INVALID_SOCKET
+acceptSocket
+acceptSocket
+INVALID_SOCKET
+INVALID_SOCKET
+{                    break;                }
+break;
+recvResult = recv(acceptSocket, data, 100 - 1, 0);
+recvResult = recv(acceptSocket, data, 100 - 1, 0)
+recvResult
+recvResult
+recv(acceptSocket, data, 100 - 1, 0)
+recv
+recv
+acceptSocket
+acceptSocket
+data
+data
+100 - 1
+100
+1
+0
+if (recvResult == SOCKET_ERROR || recvResult == 0)                {                    break;                }
+recvResult == SOCKET_ERROR || recvResult == 0
+recvResult == SOCKET_ERROR
+recvResult
+recvResult
+SOCKET_ERROR
+SOCKET_ERROR
+recvResult == 0
+recvResult
+recvResult
+0
+{                    break;                }
+break;
+data[recvResult] = '\0';
+data[recvResult] = '\0'
+data[recvResult]
+data
+data
+recvResult
+recvResult
+'\0'
+0
+if (acceptSocket != INVALID_SOCKET)            {                closesocket(acceptSocket);            }
+acceptSocket != INVALID_SOCKET
+acceptSocket
+acceptSocket
+INVALID_SOCKET
+INVALID_SOCKET
+{                closesocket(acceptSocket);            }
+closesocket(acceptSocket);
+closesocket(acceptSocket)
+closesocket
+closesocket
+acceptSocket
+acceptSocket
+if (listenSocket != INVALID_SOCKET)            {                closesocket(listenSocket);            }
+listenSocket != INVALID_SOCKET
+listenSocket
+listenSocket
+INVALID_SOCKET
+INVALID_SOCKET
+{                closesocket(listenSocket);            }
+closesocket(listenSocket);
+closesocket(listenSocket)
+closesocket
+closesocket
+listenSocket
+listenSocket
+if (wsaDataInit)            {                WSACleanup();            }
+wsaDataInit
+wsaDataInit
+{                WSACleanup();            }
+WSACleanup();
+WSACleanup()
+WSACleanup
+WSACleanup
+if (!SetComputerNameA(data))    {        printLine("Failure setting computer name");        exit(1);    }
+!SetComputerNameA(data)
+SetComputerNameA(data)
+SetComputerNameA
+SetComputerNameA
+data
+data
+{        printLine("Failure setting computer name");        exit(1);    }
+printLine("Failure setting computer name");
+printLine("Failure setting computer name")
+printLine
+printLine
+"Failure setting computer name"
+exit(1);
+exit(1)
+exit
+exit
+1
+-----joern-----
+(149,115,0)
+(98,122,0)
+(87,149,0)
+(152,123,0)
+(153,85,0)
+(1,149,0)
+(156,145,0)
+(160,32,0)
+(51,45,0)
+(45,55,0)
+(66,122,0)
+(61,172,0)
+(144,88,0)
+(38,17,0)
+(159,2,0)
+(73,2,0)
+(117,110,0)
+(140,87,0)
+(144,145,0)
+(3,23,0)
+(60,66,0)
+(43,115,0)
+(118,0,0)
+(167,125,0)
+(0,115,0)
+(109,82,0)
+(54,58,0)
+(63,145,0)
+(147,119,0)
+(96,34,0)
+(149,0,0)
+(42,172,0)
+(106,145,0)
+(134,46,0)
+(13,55,0)
+(130,99,0)
+(94,25,0)
+(4,172,0)
+(155,88,0)
+(33,122,0)
+(116,145,0)
+(62,17,0)
+(59,58,0)
+(46,3,0)
+(5,2,0)
+(55,26,0)
+(53,69,0)
+(135,159,0)
+(95,87,0)
+(141,2,0)
+(66,146,0)
+(133,0,0)
+(108,149,0)
+(40,84,0)
+(24,115,0)
+(142,167,0)
+(164,115,0)
+(122,145,0)
+(112,31,0)
+(139,122,0)
+(36,69,0)
+(44,110,0)
+(148,55,0)
+(70,103,0)
+(7,69,0)
+(81,3,0)
+(137,26,0)
+(30,9,0)
+(158,82,0)
+(114,4,0)
+(92,31,0)
+(31,92,0)
+(139,78,0)
+(52,66,0)
+(162,159,0)
+(29,153,0)
+(89,112,0)
+(9,122,0)
+(138,6,0)
+(85,145,0)
+(69,7,0)
+(107,147,0)
+(83,77,0)
+(97,109,0)
+(127,145,0)
+(161,146,0)
+(38,106,0)
+(109,71,0)
+(12,122,0)
+(143,23,0)
+(110,146,0)
+(88,144,0)
+(9,128,0)
+(77,122,0)
+(14,115,0)
+(47,31,0)
+(90,66,0)
+(77,78,0)
+(23,3,0)
+(69,26,0)
+(3,46,0)
+(105,78,0)
+(55,146,0)
+(37,45,0)
+(74,106,0)
+(126,57,0)
+(151,38,0)
+(8,33,0)
+(6,119,0)
+(68,47,0)
+(93,2,0)
+(157,150,0)
+(128,9,0)
+(72,92,0)
+(55,149,0)
+(146,66,0)
+(2,67,0)
+(91,4,0)
+(101,153,0)
+(27,77,0)
+(122,33,0)
+(7,25,0)
+(81,19,0)
+(25,7,0)
+(26,145,0)
+(80,128,0)
+(173,2,0)
+(113,2,0)
+(144,57,0)
+(17,38,0)
+(50,33,0)
+(26,55,0)
+(10,139,0)
+(76,9,0)
+(124,82,0)
+(81,20,0)
+(25,26,0)
+(22,17,0)
+(86,2,0)
+(3,81,0)
+(125,32,0)
+(121,161,0)
+(110,82,0)
+(125,145,0)
+(120,84,0)
+(64,145,0)
+(56,146,0)
+(31,47,0)
+(82,2,0)
+(165,144,0)
+(132,167,0)
+(171,25,0)
+(15,98,0)
+(166,136,0)
+(169,145,0)
+(136,145,0)
+(28,2,0)
+(111,20,0)
+(41,168,0)
+(3,122,0)
+(57,144,0)
+(20,81,0)
+(154,2,0)
+(75,161,0)
+(65,85,0)
+(49,61,0)
+(58,145,0)
+(87,136,0)
+(31,112,0)
+(35,55,0)
+(79,98,0)
+(102,172,0)
+(84,40,0)
+(18,3,0)
+(131,33,0)
+(11,2,0)
+(16,104,0)
+(109,146,0)
+(19,81,0)
+(146,145,0)
+(139,163,0)
+(32,125,0)
+(78,2,0)
+(84,149,0)
+(55,45,0)
+(170,115,0)
+(87,26,0)
+(21,78,0)
+(100,112,0)
+(160,167,1)
+(117,152,1)
+(114,61,1)
+(41,7,1)
+(77,122,1)
+(151,17,1)
+(54,92,1)
+(117,130,1)
+(48,147,1)
+(133,118,1)
+(130,128,1)
+(132,106,1)
+(46,134,1)
+(22,85,1)
+(68,112,1)
+(117,96,1)
+(131,50,1)
+(114,172,1)
+(140,95,1)
+(161,121,1)
+(117,157,1)
+(9,122,1)
+(65,153,1)
+(110,82,1)
+(84,120,1)
+(110,146,1)
+(49,70,1)
+(87,149,1)
+(51,148,1)
+(78,105,1)
+(162,135,1)
+(106,74,1)
+(37,51,1)
+(69,26,1)
+(89,129,1)
+(139,78,1)
+(58,59,1)
+(66,122,1)
+(117,129,1)
+(109,82,1)
+(108,1,1)
+(47,68,1)
+(70,39,1)
+(59,54,1)
+(81,20,1)
+(129,136,1)
+(92,72,1)
+(61,172,1)
+(33,131,1)
+(74,38,1)
+(21,159,1)
+(10,77,1)
+(84,149,1)
+(53,36,1)
+(55,35,1)
+(30,80,1)
+(167,142,1)
+(91,114,1)
+(94,26,1)
+(158,78,1)
+(20,111,1)
+(77,78,1)
+(1,0,1)
+(3,122,1)
+(153,29,1)
+(55,45,1)
+(31,47,1)
+(25,26,1)
+(27,83,1)
+(3,81,1)
+(44,117,1)
+(13,137,1)
+(117,16,1)
+(117,41,1)
+(89,82,1)
+(81,19,1)
+(56,128,1)
+(112,100,1)
+(101,144,1)
+(128,9,1)
+(85,65,1)
+(83,109,1)
+(109,146,1)
+(12,58,1)
+(38,17,1)
+(135,4,1)
+(26,55,1)
+(36,25,1)
+(61,49,1)
+(157,23,1)
+(95,7,1)
+(172,42,1)
+(98,15,1)
+(38,151,1)
+(109,97,1)
+(149,108,1)
+(152,98,1)
+(45,37,1)
+(143,125,1)
+(52,60,1)
+(62,22,1)
+(80,23,1)
+(137,161,1)
+(144,57,1)
+(136,166,1)
+(134,81,1)
+(124,158,1)
+(57,126,1)
+(66,90,1)
+(161,146,1)
+(155,165,1)
+(87,26,1)
+(139,10,1)
+(31,112,1)
+(4,91,1)
+(96,92,1)
+(16,161,1)
+(107,6,1)
+(147,107,1)
+(121,75,1)
+(159,162,1)
+(48,40,1)
+(72,31,1)
+(171,94,1)
+(105,21,1)
+(69,53,1)
+(3,46,1)
+(146,66,1)
+(40,84,1)
+(90,52,1)
+(4,172,1)
+(39,139,1)
+(148,13,1)
+(29,101,1)
+(165,57,1)
+(0,133,1)
+(111,18,1)
+(76,30,1)
+(75,146,1)
+(77,27,1)
+(142,132,1)
+(55,146,1)
+(49,39,1)
+(23,3,1)
+(144,88,1)
+(87,140,1)
+(138,40,1)
+(39,77,1)
+(122,33,1)
+(18,143,1)
+(42,102,1)
+(83,110,1)
+(32,160,1)
+(92,31,1)
+(149,0,1)
+(7,69,1)
+(55,149,1)
+(8,12,1)
+(125,32,1)
+(98,122,1)
+(17,62,1)
+(9,76,1)
+(97,110,1)
+(166,87,1)
+(6,138,1)
+(79,122,1)
+(100,89,1)
+(88,155,1)
+(139,122,1)
+(15,79,1)
+(7,25,1)
+(35,45,1)
+(120,4,1)
+(25,171,1)
+(60,56,1)
+(110,44,1)
+(50,8,1)
+(82,124,1)
+(126,98,1)
+(102,149,1)
+(135,4,2)
+(55,149,2)
+(49,4,2)
+(98,92,2)
+(4,4,2)
+(110,82,2)
+(18,98,2)
+(6,40,2)
+(94,161,2)
+(149,0,2)
+(27,4,2)
+(132,98,2)
+(96,92,2)
+(44,4,2)
+(77,78,2)
+(159,4,2)
+(61,172,2)
+(139,78,2)
+(101,98,2)
+(72,4,2)
+(110,146,2)
+(23,3,2)
+(128,9,2)
+(161,146,2)
+(130,128,2)
+(88,98,2)
+(55,161,2)
+(45,161,2)
+(84,149,2)
+(13,161,2)
+(111,98,2)
+(10,77,2)
+(89,129,2)
+(69,26,2)
+(12,92,2)
+(53,25,2)
+(17,98,2)
+(76,23,2)
+(26,55,2)
+(57,98,2)
+(35,161,2)
+(167,98,2)
+(125,98,2)
+(77,122,2)
+(50,92,2)
+(105,4,2)
+(162,4,2)
+(147,40,2)
+(29,98,2)
+(161,128,2)
+(139,77,2)
+(138,40,2)
+(26,161,2)
+(32,98,2)
+(92,129,2)
+(109,110,2)
+(128,23,2)
+(31,4,2)
+(125,32,2)
+(144,57,2)
+(87,26,2)
+(143,98,2)
+(66,122,2)
+(3,98,2)
+(81,98,2)
+(47,4,2)
+(106,98,2)
+(117,4,2)
+(3,81,2)
+(46,98,2)
+(124,4,2)
+(7,25,2)
+(7,161,2)
+(121,128,2)
+(126,98,2)
+(59,92,2)
+(100,129,2)
+(112,129,2)
+(51,161,2)
+(56,128,2)
+(7,69,2)
+(137,161,2)
+(30,23,2)
+(31,129,2)
+(21,4,2)
+(68,129,2)
+(83,4,2)
+(55,146,2)
+(81,20,2)
+(109,82,2)
+(87,149,2)
+(58,92,2)
+(92,4,2)
+(38,98,2)
+(54,92,2)
+(85,98,2)
+(166,7,2)
+(122,33,2)
+(33,92,2)
+(131,92,2)
+(136,7,2)
+(151,98,2)
+(109,146,2)
+(129,7,2)
+(90,128,2)
+(91,4,2)
+(9,122,2)
+(62,98,2)
+(31,112,2)
+(142,98,2)
+(16,161,2)
+(87,7,2)
+(165,98,2)
+(148,161,2)
+(9,23,2)
+(39,4,2)
+(66,128,2)
+(80,23,2)
+(92,31,2)
+(4,172,2)
+(65,98,2)
+(153,98,2)
+(158,4,2)
+(38,17,2)
+(97,110,2)
+(89,4,2)
+(25,161,2)
+(68,4,2)
+(79,92,2)
+(55,45,2)
+(146,128,2)
+(144,88,2)
+(95,7,2)
+(110,4,2)
+(139,122,2)
+(74,98,2)
+(61,4,2)
+(60,128,2)
+(78,4,2)
+(107,40,2)
+(75,128,2)
+(114,4,2)
+(70,39,2)
+(82,4,2)
+(25,26,2)
+(146,66,2)
+(157,23,2)
+(8,92,2)
+(122,92,2)
+(31,47,2)
+(37,161,2)
+(144,98,2)
+(52,128,2)
+(72,129,2)
+(134,98,2)
+(98,122,2)
+(112,4,2)
+(69,25,2)
+(23,98,2)
+(140,7,2)
+(40,84,2)
+(36,25,2)
+(3,122,2)
+(41,7,2)
+(20,98,2)
+(15,92,2)
+(3,46,2)
+(171,161,2)
+(155,98,2)
+(160,98,2)
+(100,4,2)
+(22,98,2)
+(47,129,2)
+(81,19,2)
+(77,4,2)
+(152,98,2)
+-----------------------------------
+(0,dataBuffer[100] = "")
+(1,data)
+(2,)
+(3,bind(listenSocket, (struct sockaddr*)
+(4,i < 1)
+(5,service)
+(6,printLine("Failure setting computer name")
+(7,recvResult == SOCKET_ERROR || recvResult == 0)
+(8,PF_INET)
+(9,listen(listenSocket, LISTEN_BACKLOG)
+(10,listenSocket)
+(11,wsaData)
+(12,listenSocket)
+(13,acceptSocket)
+(14,i)
+(15,INVALID_SOCKET)
+(16,break;)
+(17,service.sin_addr)
+(18,listenSocket)
+(19,struct sockaddr*)
+(20,&service)
+(21,listenSocket)
+(22,service)
+(23,SOCKET_ERROR == bind(listenSocket, (struct sockaddr*)
+(24,for(i = 0; i < 1; i++)
+(25,recvResult == SOCKET_ERROR)
+(26,recvResult = recv(acceptSocket, data, 100 - 1, 0)
+(27,INVALID_SOCKET)
+(28,if (acceptSocket != INVALID_SOCKET)
+(29,sin_family)
+(30,listenSocket)
+(31,WSAStartup(MAKEWORD(2,2)
+(32,htons(LISTEN_PORT)
+(33,socket(PF_INET, SOCK_STREAM, 0)
+(34,)
+(35,0)
+(36,recvResult)
+(37,1)
+(38,service.sin_addr.s_addr)
+(39,wsaDataInit)
+(40,!SetComputerNameA(data)
+(41,break;)
+(42,0)
+(43,if (!SetComputerNameA(data)
+(44,INVALID_SOCKET)
+(45,100 - 1)
+(46,sizeof(service)
+(47,&wsaData)
+(48,RET)
+(49,i)
+(50,SOCK_STREAM)
+(51,100)
+(52,NULL)
+(53,0)
+(54,wsaDataInit)
+(55,recv(acceptSocket, data, 100 - 1, 0)
+(56,acceptSocket)
+(57,&service)
+(58,wsaDataInit = 1)
+(59,1)
+(60,listenSocket)
+(61,i++)
+(62,sin_addr)
+(63,if (acceptSocket == INVALID_SOCKET)
+(64,if (WSAStartup(MAKEWORD(2,2)
+(65,AF_INET)
+(66,accept(listenSocket, NULL, NULL)
+(67,)
+(68,wsaData)
+(69,recvResult == 0)
+(70,WSACleanup()
+(71,)
+(72,NO_ERROR)
+(73,if (listenSocket != INVALID_SOCKET)
+(74,INADDR_ANY)
+(75,acceptSocket)
+(76,LISTEN_BACKLOG)
+(77,listenSocket != INVALID_SOCKET)
+(78,listenSocket = INVALID_SOCKET)
+(79,listenSocket)
+(80,SOCKET_ERROR)
+(81,(struct sockaddr*)
+(82,acceptSocket = INVALID_SOCKET)
+(83,listenSocket)
+(84,SetComputerNameA(data)
+(85,service.sin_family = AF_INET)
+(86,wsaDataInit)
+(87,data[recvResult])
+(88,sizeof(service)
+(89,2)
+(90,NULL)
+(91,1)
+(92,WSAStartup(MAKEWORD(2,2)
+(93,if (wsaDataInit)
+(94,recvResult)
+(95,data)
+(96,break;)
+(97,acceptSocket)
+(98,listenSocket == INVALID_SOCKET)
+(99,)
+(100,2)
+(101,service)
+(102,i)
+(103,)
+(104,)
+(105,INVALID_SOCKET)
+(106,service.sin_addr.s_addr = INADDR_ANY)
+(107,1)
+(108,dataBuffer)
+(109,closesocket(acceptSocket)
+(110,acceptSocket != INVALID_SOCKET)
+(111,service)
+(112,MAKEWORD(2,2)
+(113,recvResult)
+(114,i)
+(115,)
+(116,if (recvResult == SOCKET_ERROR || recvResult == 0)
+(117,acceptSocket)
+(118,dataBuffer)
+(119,)
+(120,data)
+(121,INVALID_SOCKET)
+(122,listenSocket = socket(PF_INET, SOCK_STREAM, 0)
+(123,)
+(124,INVALID_SOCKET)
+(125,service.sin_port = htons(LISTEN_PORT)
+(126,service)
+(127,if (SOCKET_ERROR == listen(listenSocket, LISTEN_BACKLOG)
+(128,SOCKET_ERROR == listen(listenSocket, LISTEN_BACKLOG)
+(129,0)
+(130,break;)
+(131,0)
+(132,service)
+(133,"")
+(134,service)
+(135,wsaDataInit)
+(136,data[recvResult] = \\\'\\\\0\\\')
+(137,recvResult)
+(138,"Failure setting computer name")
+(139,closesocket(listenSocket)
+(140,recvResult)
+(141,acceptSocket)
+(142,sin_port)
+(143,SOCKET_ERROR)
+(144,memset(&service, 0, sizeof(service)
+(145,)
+(146,acceptSocket = accept(listenSocket, NULL, NULL)
+(147,exit(1)
+(148,data)
+(149,data = dataBuffer)
+(150,)
+(151,s_addr)
+(152,break;)
+(153,service.sin_family)
+(154,do)
+(155,service)
+(156,if (SOCKET_ERROR == bind(listenSocket, (struct sockaddr*)
+(157,break;)
+(158,acceptSocket)
+(159,wsaDataInit = FALSE)
+(160,LISTEN_PORT)
+(161,acceptSocket == INVALID_SOCKET)
+(162,FALSE)
+(163,)
+(164,dataBuffer)
+(165,0)
+(166,\\\'\\\\0\\\')
+(167,service.sin_port)
+(168,)
+(169,if (listenSocket == INVALID_SOCKET)
+(170,data)
+(171,SOCKET_ERROR)
+(172,i = 0)
+(173,listenSocket)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
